@@ -59,6 +59,7 @@ fi
 
 # Ensure writable directories exist with correct permissions for www-data
 mkdir -p /var/www/html/writable/cache \
+         /var/www/html/writable/cache/views \
          /var/www/html/writable/logs \
          /var/www/html/writable/session \
          /var/www/html/writable/uploads \
@@ -69,6 +70,7 @@ chown -R www-data:www-data /var/www/html/writable
 chmod -R 775 /var/www/html/writable
 
 mkdir -p /var/www/html/public/uploads/profiles \
+         /var/www/html/public/uploads/products \
          /var/www/html/public/uploads/product_images \
          /var/www/html/public/uploads/business_permits \
          /var/www/html/public/uploads/shop_logos \
@@ -79,9 +81,21 @@ chown -R www-data:www-data /var/www/html/public/uploads
 chmod -R 775 /var/www/html/public/uploads
 
 # Run automatic database migrations if database environment variables are present
-if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ] || [ -n "$database_default_hostname" ]; then
-    echo "Database environment detected. Running CodeIgniter database migrations..."
-    php spark migrate --all || echo "Database migrations notice: already up to date or completed."
+if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ] || [ -n "$database_default_hostname" ] || [ -n "$DATABASE_DEFAULT_HOSTNAME" ]; then
+    echo "Database environment detected. Checking database connectivity before migrations..."
+    # Brief retry loop (up to 15 seconds) in case MySQL is still booting up on cold start
+    RETRY_COUNT=0
+    MAX_RETRIES=5
+    until php spark migrate --all || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        echo "Database migration attempt $RETRY_COUNT failed or waiting for MySQL readiness... retrying in 3s ($RETRY_COUNT/$MAX_RETRIES)"
+        sleep 3
+    done
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo "Warning: Database migrations could not be completed automatically. The application will continue booting."
+    else
+        echo "Database migrations completed successfully."
+    fi
 fi
 
 # Start PHP-FPM in the background

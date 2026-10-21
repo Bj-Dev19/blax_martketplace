@@ -1,4 +1,5 @@
 .env
+.env.*
 .git
 .github
 vendor
@@ -12,3 +13,24 @@ scratch
 .vscode
 *.log
 *.sql
+.stitch
+.agents
+skills-lock.json
+cookies.txt
+DESIGN.md
+
+# Ignore local test uploads in build context (keep .gitkeep so folders exist)
+public/uploads/business_permits/*
+!public/uploads/business_permits/.gitkeep
+public/uploads/cms/*
+!public/uploads/cms/.gitkeep
+public/uploads/printing/*
+!public/uploads/printing/.gitkeep
+public/uploads/products/*
+!public/uploads/products/.gitkeep
+public/uploads/product_images/*
+!public/uploads/product_images/.gitkeep
+public/uploads/profiles/*
+!public/uploads/profiles/.gitkeep
+public/uploads/shop_logos/*
+!public/uploads/shop_logos/.gitkeep

@@ -31,6 +31,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set correct permissions for CodeIgniter 4 writable storage directory and uploads
 RUN mkdir -p /var/www/html/writable/cache \
+             /var/www/html/writable/cache/views \
              /var/www/html/writable/logs \
              /var/www/html/writable/session \
              /var/www/html/writable/uploads \
@@ -38,6 +39,7 @@ RUN mkdir -p /var/www/html/writable/cache \
              /var/www/html/writable/uploads/business_permits \
              /var/www/html/writable/debugbar \
              /var/www/html/public/uploads/profiles \
+             /var/www/html/public/uploads/products \
              /var/www/html/public/uploads/product_images \
              /var/www/html/public/uploads/business_permits \
              /var/www/html/public/uploads/shop_logos \
