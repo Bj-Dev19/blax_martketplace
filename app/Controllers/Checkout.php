@@ -105,21 +105,106 @@ class Checkout extends BaseController
         }
 
         $subtotal = $unitPrice * $quantity;
-        $shipping = !empty($product['shipping_fee']) ? (float) $product['shipping_fee'] : 50.00;
+
+        // Calculate distance-based shipping quote using Admin's configured rates + Google Maps Routes API
+        $shippingSettings = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+        $mapsService      = new \App\Services\GoogleMapsService();
+        $defaultAddr      = $addresses[0];
+        foreach ($addresses as $a) {
+            if (!empty($a['is_default'])) {
+                $defaultAddr = $a;
+                break;
+            }
+        }
+
+        $shippingQuote = $mapsService->calculateDeliveryQuote($shop ?? [], $defaultAddr, $shippingSettings);
+        $shipping      = (float) ($shippingQuote['shipping_fee'] ?? $shippingSettings['base_shipping_fee'] ?? 50.00);
 
         return view('customer/buy_now', [
-            'product'         => $product,
-            'shop'            => $shop,
-            'selectedVariant' => $selectedVariant,
-            'variantLabel'    => $variantLabel,
-            'quantity'        => $quantity,
-            'unitPrice'       => $unitPrice,
-            'subtotal'        => $subtotal,
-            'shipping'        => $shipping,
-            'addresses'       => $addresses,
-            'imageUrl'        => $imageUrl,
-            'csrfName'        => csrf_token(),
-            'csrfHash'        => csrf_hash(),
+            'product'          => $product,
+            'shop'             => $shop,
+            'selectedVariant'  => $selectedVariant,
+            'variantLabel'     => $variantLabel,
+            'quantity'         => $quantity,
+            'unitPrice'        => $unitPrice,
+            'subtotal'         => $subtotal,
+            'shipping'         => $shipping,
+            'shippingQuote'    => $shippingQuote,
+            'shippingSettings' => $shippingSettings,
+            'addresses'        => $addresses,
+            'imageUrl'         => $imageUrl,
+            'csrfName'         => csrf_token(),
+            'csrfHash'         => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * AJAX endpoint: Compute distance-based shipping fee quote for a selected customer address and one or more shops.
+     * Route: POST customer/shipping/quote
+     */
+    public function shippingQuote()
+    {
+        $userId = (int) session()->get('user_id');
+        if ($userId <= 0) {
+            return $this->response->setStatusCode(401)->setJSON([
+                'success' => false,
+                'error'   => 'Unauthorized.',
+            ]);
+        }
+
+        $addressId  = (int) $this->request->getPost('address_id');
+        $rawShopIds = $this->request->getPost('shop_ids');
+
+        $shopIds = [];
+        if (is_array($rawShopIds)) {
+            $shopIds = array_map('intval', $rawShopIds);
+        } elseif (is_string($rawShopIds) && trim($rawShopIds) !== '') {
+            $shopIds = array_map('intval', explode(',', $rawShopIds));
+        }
+        $shopIds = array_values(array_unique(array_filter($shopIds, fn($id) => $id > 0)));
+
+        $addr = (new ShippingAddressModel())->find($addressId);
+        if (!$addr || (int) ($addr['user_id'] ?? 0) !== $userId) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'success'   => false,
+                'error'     => 'Invalid delivery address selected.',
+                'csrf_hash' => csrf_hash(),
+            ]);
+        }
+
+        $settings    = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+        $mapsService = new \App\Services\GoogleMapsService();
+        $shopModel   = new ShopModel();
+
+        $quotes        = [];
+        $totalShipping = 0.0;
+        $allDeliverable = true;
+        $firstError    = null;
+
+        foreach ($shopIds as $sId) {
+            $shop = $shopModel->find($sId);
+            if (!$shop) {
+                continue;
+            }
+            $quote = $mapsService->calculateDeliveryQuote($shop, $addr, $settings);
+            $quotes[$sId] = $quote;
+            if (!$quote['deliverable']) {
+                $allDeliverable = false;
+                if ($firstError === null) {
+                    $firstError = $quote['error'];
+                }
+            }
+            $totalShipping += (float) $quote['shipping_fee'];
+        }
+
+        return $this->response->setJSON([
+            'success'            => true,
+            'deliverable'        => $allDeliverable,
+            'total_shipping_fee' => round($totalShipping, 2),
+            'quotes'             => $quotes,
+            'settings'           => $settings,
+            'error'              => $firstError,
+            'csrf_hash'          => csrf_hash(),
         ]);
     }
 
@@ -212,3 +297,4 @@ class Checkout extends BaseController
         );
     }
 }
+

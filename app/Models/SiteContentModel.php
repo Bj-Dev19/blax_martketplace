@@ -66,6 +66,7 @@ class SiteContentModel extends Model
             cache()->delete('blax_site_contents_home_map');
             cache()->delete('blax_site_contents_all_key_map');
             cache()->delete('blax_platform_deduction_percent');
+            cache()->delete('blax_shipping_fee_settings');
         } catch (\Throwable $e) {
             // Ignore cache engine failure
         }
@@ -210,4 +211,118 @@ class SiteContentModel extends Model
             'sort_order'   => 1,
         ]);
     }
+
+    /**
+     * Retrieve Admin-configured distance-based shipping fee settings.
+     *
+     * @return array{base_shipping_fee: float, included_distance_km: float, additional_fee_per_km: float, max_delivery_distance_km: float}
+     */
+    public function getShippingFeeSettings(): array
+    {
+        if (isset(self::$requestCache['shipping_fee_settings'])) {
+            return self::$requestCache['shipping_fee_settings'];
+        }
+
+        try {
+            $cached = cache('blax_shipping_fee_settings');
+            if (is_array($cached) && isset($cached['base_shipping_fee'])) {
+                self::$requestCache['shipping_fee_settings'] = $cached;
+                return $cached;
+            }
+        } catch (\Throwable $e) {}
+
+        $defaults = [
+            'base_shipping_fee'        => 50.00,
+            'included_distance_km'     => 3.00,
+            'additional_fee_per_km'    => 10.00,
+            'max_delivery_distance_km' => 25.00,
+        ];
+
+        $keyMap = [
+            'shipping_base_fee'        => 'base_shipping_fee',
+            'shipping_included_km'     => 'included_distance_km',
+            'shipping_per_km_fee'      => 'additional_fee_per_km',
+            'shipping_max_distance_km' => 'max_delivery_distance_km',
+        ];
+
+        try {
+            $rows = $this->where('page', 'platform')
+                ->whereIn('content_key', array_keys($keyMap))
+                ->findAll();
+
+            foreach ($rows as $row) {
+                $cKey = $row['content_key'] ?? '';
+                if (isset($keyMap[$cKey]) && is_numeric($row['text_value'] ?? null)) {
+                    $defaults[$keyMap[$cKey]] = round((float) $row['text_value'], 2);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            cache()->save('blax_shipping_fee_settings', $defaults, 600);
+        } catch (\Throwable $e) {}
+
+        self::$requestCache['shipping_fee_settings'] = $defaults;
+        return $defaults;
+    }
+
+    /**
+     * Save Admin-configured distance-based shipping fee settings.
+     */
+    public function saveShippingFeeSettings(array $settings, ?int $updatedBy = null): bool
+    {
+        self::clearCache();
+
+        $entries = [
+            'shipping_base_fee' => [
+                'label' => 'Base Shipping Fee (PHP)',
+                'value' => round(max(0.0, (float) ($settings['base_shipping_fee'] ?? 50.00)), 2),
+                'sort'  => 10,
+            ],
+            'shipping_included_km' => [
+                'label' => 'Included Distance (km)',
+                'value' => round(max(0.0, (float) ($settings['included_distance_km'] ?? 3.00)), 2),
+                'sort'  => 11,
+            ],
+            'shipping_per_km_fee' => [
+                'label' => 'Additional Fee per Kilometer (PHP)',
+                'value' => round(max(0.0, (float) ($settings['additional_fee_per_km'] ?? 10.00)), 2),
+                'sort'  => 12,
+            ],
+            'shipping_max_distance_km' => [
+                'label' => 'Maximum Delivery Distance (km)',
+                'value' => round(max(0.5, (float) ($settings['max_delivery_distance_km'] ?? 25.00)), 2),
+                'sort'  => 13,
+            ],
+        ];
+
+        foreach ($entries as $contentKey => $meta) {
+            $formatted = number_format($meta['value'], 2, '.', '');
+            $existing = $this->where('page', 'platform')->where('content_key', $contentKey)->first();
+            if ($existing) {
+                $updateData = [
+                    'text_value' => $formatted,
+                    'label'      => $meta['label'],
+                ];
+                if ($updatedBy !== null) {
+                    $updateData['updated_by'] = $updatedBy;
+                }
+                $this->update($existing['id'], $updateData);
+            } else {
+                $this->insert([
+                    'page'         => 'platform',
+                    'content_key'  => $contentKey,
+                    'label'        => $meta['label'],
+                    'content_type' => 'text',
+                    'text_value'   => $formatted,
+                    'sort_order'   => $meta['sort'],
+                    'updated_by'   => $updatedBy,
+                ]);
+            }
+        }
+
+        self::clearCache();
+        return true;
+    }
 }
+

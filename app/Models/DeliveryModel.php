@@ -434,11 +434,11 @@ class DeliveryModel extends Model
     public const POLOMOLOK_LAT_MAX = 6.45;
     public const POLOMOLOK_LNG_MIN = 124.85;
     public const POLOMOLOK_LNG_MAX = 125.20;
-    public const POLOMOLOK_CENTER_LAT = 6.2136;
-    public const POLOMOLOK_CENTER_LNG = 125.0661;
+    public const POLOMOLOK_CENTER_LAT = 6.2196;
+    public const POLOMOLOK_CENTER_LNG = 125.0693;
 
-    public const TUPI_CENTER_LAT = 6.3333;
-    public const TUPI_CENTER_LNG = 124.9500;
+    public const TUPI_CENTER_LAT = 6.3389;
+    public const TUPI_CENTER_LNG = 124.9520;
 
     public const SERVICE_CENTER_LAT = 6.2735;
     public const SERVICE_CENTER_LNG = 125.0080;
@@ -456,66 +456,89 @@ class DeliveryModel extends Model
     }
 
     /**
-     * Get real geographic centroid for any official barangay in Polomolok or Tupi.
+     * Get real geographic centroid (PhilAtlas / PSA verified) for any official barangay in Polomolok or Tupi.
      */
     public static function getBarangayCoordinate(string $barangay, string $city = ''): ?array
     {
         $b = strtolower(trim($barangay));
+        if ($b === '') {
+            return null;
+        }
+
+        // Strip common prefixes like "Brgy.", "Barangay" for clean matching
+        $bClean = trim((string) preg_replace('/^(?:barangay|brgy\.?)\s+/i', '', $b));
+
+        $isTupi = (stripos($city, 'tupi') !== false) || (stripos($b, 'tupi') !== false);
+        $poblacionCoords = $isTupi ? [self::TUPI_CENTER_LAT, self::TUPI_CENTER_LNG] : [self::POLOMOLOK_CENTER_LAT, self::POLOMOLOK_CENTER_LNG];
+
         $centroids = [
-            // Polomolok Barangays
-            'bentung'           => [6.2625, 125.0480],
-            'cannery site'      => [6.2415, 125.0740],
-            'crossing palkan'   => [6.2580, 125.1050],
-            'glamang'           => [6.1785, 125.0390],
-            'kinilis'           => [6.2840, 125.0210],
-            'klinan 6'          => [6.1650, 125.0920],
-            'koronadal proper'  => [6.2250, 125.1020],
-            'lam-caliaf'        => [6.2910, 125.0680],
-            'landan'            => [6.3050, 125.0410],
-            'lumakil'           => [6.1950, 125.0780],
-            'maligo'            => [6.2890, 125.0990],
-            'palkan'            => [6.2710, 125.1180],
-            'poblacion'         => (stripos($city, 'tupi') !== false) ? [6.3333, 124.9500] : [6.2185, 125.0650],
-            'poblacion (tupi)'  => [6.3333, 124.9500],
-            'polo'              => [6.2080, 125.0350],
-            'pula bato'         => [6.2460, 125.0230],
-            'rubber'            => [6.1890, 125.1120],
-            'silway 7'          => [6.1550, 125.1250],
-            'silway 8'          => [6.1420, 125.1480],
-            'sulit'             => [6.2340, 125.1320],
-            'sumbakil'          => [6.2120, 125.1450],
-            'upper klinan'      => [6.1820, 125.0710],
-            'pagalungan'        => [6.1710, 125.0530],
-            'magsaysay'         => [6.2280, 125.0480],
-            // Tupi Barangays
-            'acmonan'           => [6.3350, 124.9650],
-            'bololmala'         => [6.3120, 124.9380],
-            'bunao'             => [6.3480, 124.9450],
-            'cebuano'           => [6.3620, 124.9320],
-            'crossing rubber'   => [6.3210, 124.9750],
-            'dajay'             => [6.3750, 124.9180],
-            'kablon'            => [6.3290, 125.0120],
-            'kalkam'            => [6.3420, 124.9850],
-            'linan'             => [6.2980, 124.9250],
-            'lunen'             => [6.3550, 124.9720],
-            'miaso'             => [6.3680, 124.9580],
-            'palian'            => [6.3150, 124.9920],
-            'polonoling'        => [6.3010, 124.9680],
-            'simbo'             => [6.3510, 124.9150],
-            'tubeng'            => [6.3820, 124.9350],
+            // Polomolok Barangays (PhilAtlas / PSA Verified)
+            'bentung'            => [6.2360, 125.0090],
+            'cannery site'       => [6.2409, 125.0902],
+            'crossing palkan'    => [6.2686, 125.0107],
+            'glamang'            => [6.1663, 125.0839],
+            'kinilis'            => [6.3130, 125.0795],
+            'klinan 6'           => [6.1861, 125.1371],
+            'koronadal proper'   => [6.2442, 124.9870],
+            'lam-caliaf'         => [6.2731, 125.0530],
+            'landan'             => [6.3277, 125.1471],
+            'lapu'               => [6.2220, 125.0150],
+            'lumakil'            => [6.2145, 125.0368],
+            'magsaysay'          => [6.2003, 125.0615],
+            'maligo'             => [6.3078, 125.1286],
+            'pagalungan'         => [6.2392, 125.0484],
+            'palkan'             => [6.2935, 125.0375],
+            'poblacion'          => $poblacionCoords,
+            'poblacion (tupi)'   => [self::TUPI_CENTER_LAT, self::TUPI_CENTER_LNG],
+            'polo'               => [6.2811, 125.1111],
+            'pula bato'          => [6.2220, 125.0150],
+            'rubber'             => [6.1972, 125.0435],
+            'silway 7'           => [6.1769, 125.1210],
+            'silway 8'           => [6.1940, 125.0931],
+            'sulit'              => [6.2362, 125.0246],
+            'sumbakil'           => [6.2544, 124.9799],
+            'upper klinan'       => [6.2249, 125.1227],
+
+            // Tupi Barangays (PhilAtlas / PSA Verified)
+            'acmonan'            => [6.3436, 124.9914],
+            'bololmala'          => [6.3912, 124.9200],
+            'bunao'              => [6.3249, 124.9423],
+            'cebuano'            => [6.3819, 124.9617],
+            'crossing rubber'    => [6.3648, 124.9206],
+            'juan-loreto tamayo' => [6.3530, 124.9480],
+            'kablon'             => [6.3165, 125.0147],
+            'kalkam'             => [6.3342, 124.9214],
+            'linan'              => [6.3713, 124.9867],
+            'lunen'              => [6.3397, 124.9003],
+            'miasong'            => [6.4131, 125.0932],
+            'miaso'              => [6.4131, 125.0932], // Legacy alias for Miasong
+            'palian'             => [6.3745, 124.9115],
+            'polonoling'         => [6.2862, 124.9711],
+            'polonuling'         => [6.2862, 124.9711],
+            'simbo'              => [6.2480, 124.9588],
+            'tubeng'             => [6.3593, 124.8810],
+            'dajay'              => [6.3389, 124.9520], // Legacy fallback to Tupi center
         ];
 
-        // 1. Exact match first (prevents substring collisions like 'polo' matching 'polonoling')
+        // 1. Exact match first
+        if (isset($centroids[$bClean])) {
+            return ['lat' => $centroids[$bClean][0], 'lng' => $centroids[$bClean][1]];
+        }
         if (isset($centroids[$b])) {
             return ['lat' => $centroids[$b][0], 'lng' => $centroids[$b][1]];
         }
 
-        // 2. Substring matching fallback
-        foreach ($centroids as $key => $coords) {
-            if (stripos($b, $key) !== false || stripos($key, $b) !== false) {
-                return ['lat' => $coords[0], 'lng' => $coords[1]];
+        // 2. Word-boundary matching sorted by longest barangay name first
+        //    Prevents 'polo' from matching 'Polomolok'/'Polonoling' and 'palkan' from hijacking 'crossing palkan'
+        $keys = array_keys($centroids);
+        usort($keys, static fn(string $a, string $k): int => strlen($k) <=> strlen($a));
+
+        foreach ($keys as $key) {
+            if (preg_match('/\b' . preg_quote($key, '/') . '\b/i', $bClean)) {
+                return ['lat' => $centroids[$key][0], 'lng' => $centroids[$key][1]];
             }
         }
+
         return null;
     }
 

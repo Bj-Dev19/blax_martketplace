@@ -38,20 +38,30 @@ trait CheckoutProcessorTrait
         string $cancelRedirectUrl = '/cart',
         string $failureRedirectUrl = '/cart'
     ): ResponseInterface {
-        // Polomolok boundary and address ownership check for deliveries
-        if ($fulfillmentMethod === 'delivery' && $addressId) {
+        // Polomolok / Tupi boundary, address ownership, and distance-based shipping calculation
+        $addr             = null;
+        $shippingSettings = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+        $mapsService      = new \App\Services\GoogleMapsService();
+        $shopQuotes       = [];
+
+        if ($fulfillmentMethod === 'delivery') {
+            if (!$addressId) {
+                return redirect()->to($failureRedirectUrl)->with('error', 'Please select a delivery address.');
+            }
             $addr = (new ShippingAddressModel())->find((int) $addressId);
             if (!$addr || (int) ($addr['user_id'] ?? 0) !== (int) $userId) {
                 return redirect()->to($failureRedirectUrl)->with('error', 'Invalid shipping address selected.');
             }
-            $cityOk = stripos($addr['city'] ?? '', 'Polomolok') !== false;
-            $provOk = stripos($addr['province'] ?? '', 'South Cotabato') !== false;
+            $cityStr = (string) ($addr['city'] ?? '');
+            $provStr = (string) ($addr['province'] ?? '');
+            $cityOk  = stripos($cityStr, 'Polomolok') !== false || stripos($cityStr, 'Tupi') !== false;
+            $provOk  = stripos($provStr, 'South Cotabato') !== false;
             if (!$cityOk && !$provOk) {
-                return redirect()->to($failureRedirectUrl)->with('error', 'Delivery is available only within Polomolok, South Cotabato.');
+                return redirect()->to($failureRedirectUrl)->with('error', 'Doorstep delivery is available within Polomolok and Tupi, South Cotabato.');
             }
         }
 
-        // Validate each merchant's service module availability for the chosen fulfillment method
+        // Validate each merchant's service module availability & max delivery distance for the chosen fulfillment method
         $shopModel = new ShopModel();
         foreach (array_keys($itemsByShop) as $shopId) {
             $shop = $shopModel->find((int) $shopId);
@@ -63,6 +73,13 @@ trait CheckoutProcessorTrait
                 if ($fulfillmentMethod === 'pickup' && isset($shop['offers_pickup']) && (int) $shop['offers_pickup'] === 0) {
                     $shopName = esc($shop['shop_name'] ?? 'The merchant');
                     return redirect()->to($failureRedirectUrl)->with('error', "Ang tindahan na \"{$shopName}\" ay kasalukuyang hindi nag-aalok ng Store Pick-up service.");
+                }
+                if ($fulfillmentMethod === 'delivery' && $addr) {
+                    $quote = $mapsService->calculateDeliveryQuote($shop, $addr, $shippingSettings);
+                    if (!$quote['deliverable']) {
+                        return redirect()->to($failureRedirectUrl)->with('error', $quote['error'] ?? 'Your delivery address exceeds the maximum delivery distance.');
+                    }
+                    $shopQuotes[(int) $shopId] = $quote;
                 }
             }
         }
@@ -106,7 +123,9 @@ trait CheckoutProcessorTrait
                 foreach ($items as $item) {
                     $subtotal += $item['unit_price'] * $item['quantity'];
                 }
-                $shippingFee = $fulfillmentMethod === 'delivery' ? 50.00 : 0.00;
+                $shippingFee = ($fulfillmentMethod === 'delivery')
+                    ? (float) ($shopQuotes[(int) $shopId]['shipping_fee'] ?? $shippingSettings['base_shipping_fee'] ?? 50.00)
+                    : 0.00;
                 $totalAmount = $subtotal + $shippingFee;
                 $grandTotal += $totalAmount;
 
@@ -227,7 +246,9 @@ trait CheckoutProcessorTrait
             foreach ($items as $item) {
                 $subtotal += $item['unit_price'] * $item['quantity'];
             }
-            $shippingFee = $fulfillmentMethod === 'delivery' ? 50.00 : 0.00;
+            $shippingFee = ($fulfillmentMethod === 'delivery')
+                ? (float) ($shopQuotes[(int) $shopId]['shipping_fee'] ?? $shippingSettings['base_shipping_fee'] ?? 50.00)
+                : 0.00;
             $totalAmount = $subtotal + $shippingFee;
 
             $orderId = $orderModel->insert([

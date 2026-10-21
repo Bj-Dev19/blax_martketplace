@@ -444,7 +444,14 @@ class Admin extends BaseController
         $maxPrRow = $printingModel->selectMax('id')->first();
         $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
 
-        $unreadCount = $adminUserId > 0 ? (new \App\Models\NotificationModel())->getUnreadCount($adminUserId) : 0;
+        $notifModel = new \App\Models\NotificationModel();
+        $unreadCount = $adminUserId > 0 ? $notifModel->getUnreadCount($adminUserId) : 0;
+        $recentNotifs = $adminUserId > 0 ? $notifModel->getRecent($adminUserId, 6) : [];
+
+        $db = \Config\Database::connect();
+        $pendingShops = $db->table('shops')->where('status', 'pending')->countAllResults();
+        $activeShops  = $db->table('shops')->where('status', 'active')->countAllResults();
+        $pendingPayments = $db->table('payout_requests')->where('status', 'pending')->where('destination_method', 'gcash')->countAllResults();
 
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
@@ -457,6 +464,12 @@ class Admin extends BaseController
                 'has_new_printing' => !empty($newPrinting),
                 'new_printing'     => $newPrinting,
                 'unread_count'     => $unreadCount,
+                'notifications'    => $recentNotifs,
+                'summary'          => [
+                    'pending_shops'    => $pendingShops,
+                    'active_shops'     => $activeShops,
+                    'pending_payments' => $pendingPayments,
+                ],
                 'timestamp'        => date('Y-m-d H:i:s'),
             ]);
     }
@@ -1832,4 +1845,116 @@ class Admin extends BaseController
 
         return redirect()->back()->with('success', 'Compliance issue resolved.');
     }
+
+    /**
+     * Render the Shipping Fee Settings page under Intelligence & Ops.
+     */
+    public function shippingSettings()
+    {
+        $auth = $this->checkAdminAuth();
+        if ($auth !== true) return $auth;
+
+        $db = \Config\Database::connect();
+        if (!$db->tableExists('site_contents')) {
+            $db->query("CREATE TABLE IF NOT EXISTS site_contents (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, page VARCHAR(60) NOT NULL, content_key VARCHAR(100) NOT NULL, label VARCHAR(150) NULL, content_type ENUM('text','textarea','image') DEFAULT 'text', text_value TEXT NULL, image_url VARCHAR(500) NULL, sort_order INT DEFAULT 0, updated_by BIGINT UNSIGNED NULL, created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, UNIQUE KEY uq_page_key (page,content_key))");
+        }
+
+        $model    = new SiteContentModel();
+        $settings = $model->getShippingFeeSettings();
+
+        // Active shops with coordinates count for operational readiness insight
+        $totalActiveShops = 0;
+        $pinnedShopsCount = 0;
+        if ($db->tableExists('shops')) {
+            $totalActiveShops = $db->table('shops')->where('status', 'active')->countAllResults();
+            $pinnedShopsCount = $db->table('shops')
+                ->where('status', 'active')
+                ->where('latitude IS NOT NULL')
+                ->where('longitude IS NOT NULL')
+                ->where('latitude !=', 0)
+                ->where('longitude !=', 0)
+                ->countAllResults();
+        }
+
+        $mapsConfig = config('GoogleMaps');
+        $hasMapsKey = !empty($mapsConfig->apiKey);
+
+        return view('admin/shipping_settings', [
+            'title'            => 'Shipping Fee Settings',
+            'subtitle'         => 'Configure distance-based delivery pricing & limits',
+            'activeNav'        => 'shipping_settings',
+            'settings'         => $settings,
+            'totalActiveShops' => $totalActiveShops,
+            'pinnedShopsCount' => $pinnedShopsCount,
+            'hasMapsKey'       => $hasMapsKey,
+        ]);
+    }
+
+    /**
+     * Validate and persist distance-based shipping fee settings.
+     */
+    public function saveShippingSettings()
+    {
+        $auth = $this->checkAdminAuth();
+        if ($auth !== true) return $auth;
+
+        $rawBase     = $this->request->getPost('base_shipping_fee');
+        $rawIncluded = $this->request->getPost('included_distance_km');
+        $rawPerKm    = $this->request->getPost('additional_fee_per_km');
+        $rawMaxDist  = $this->request->getPost('max_delivery_distance_km');
+
+        if (!is_numeric($rawBase) || !is_numeric($rawIncluded) || !is_numeric($rawPerKm) || !is_numeric($rawMaxDist)) {
+            return redirect()->back()->withInput()->with('error', 'All shipping fee fields must be valid numbers.');
+        }
+
+        $baseFee     = round((float) $rawBase, 2);
+        $includedKm  = round((float) $rawIncluded, 2);
+        $perKmFee    = round((float) $rawPerKm, 2);
+        $maxDistKm   = round((float) $rawMaxDist, 2);
+
+        if ($baseFee < 0 || $baseFee > 5000) {
+            return redirect()->back()->withInput()->with('error', 'Base shipping fee must be between ₱0.00 and ₱5,000.00.');
+        }
+        if ($includedKm < 0 || $includedKm > 100) {
+            return redirect()->back()->withInput()->with('error', 'Included distance must be between 0 km and 100 km.');
+        }
+        if ($perKmFee < 0 || $perKmFee > 1000) {
+            return redirect()->back()->withInput()->with('error', 'Additional fee per kilometer must be between ₱0.00 and ₱1,000.00.');
+        }
+        if ($maxDistKm <= 0 || $maxDistKm > 200) {
+            return redirect()->back()->withInput()->with('error', 'Maximum delivery distance must be greater than 0 km and at most 200 km.');
+        }
+        if ($maxDistKm < $includedKm) {
+            return redirect()->back()->withInput()->with('error', 'Maximum delivery distance (' . number_format($maxDistKm, 1) . ' km) must be greater than or equal to the included distance (' . number_format($includedKm, 1) . ' km).');
+        }
+
+        $adminId = (int) session()->get('user_id');
+        $model   = new SiteContentModel();
+        $model->saveShippingFeeSettings([
+            'base_shipping_fee'        => $baseFee,
+            'included_distance_km'     => $includedKm,
+            'additional_fee_per_km'    => $perKmFee,
+            'max_delivery_distance_km' => $maxDistKm,
+        ], $adminId);
+
+        try {
+            (new AuditLogModel())->log(
+                $adminId,
+                'admin',
+                sprintf(
+                    'Updated Shipping Fee Settings (Base: ₱%.2f, Included: %.1fkm, +₱%.2f/km, Max: %.1fkm)',
+                    $baseFee,
+                    $includedKm,
+                    $perKmFee,
+                    $maxDistKm
+                ),
+                'platform_settings',
+                'success',
+                null
+            );
+        } catch (\Throwable $e) {}
+
+        return redirect()->to('/admin/shipping-settings')->with('success', 'Shipping fee settings saved and applied to all marketplace checkouts.');
+    }
 }
+

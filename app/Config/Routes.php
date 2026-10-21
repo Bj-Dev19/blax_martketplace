@@ -85,6 +85,7 @@ $routes->group('customer', ['filter' => 'roleAccess:customer'], function ($route
     $routes->post('favorites/add', 'Customer::favoriteShop');
     $routes->post('shop/report', 'Customer::reportShop', ['filter' => 'actionThrottle']);
     $routes->get('realtime/check', 'Customer::realtimeCheck');
+    $routes->post('shipping/quote', 'Checkout::shippingQuote');
 });
 
 // Rating & Review Routes
@@ -161,6 +162,8 @@ $routes->group('tenant', ['filter' => 'roleAccess:tenant'], function ($routes) {
     $routes->get('deliveries/(:num)', 'Tenant::deliveryDetail/$1');
     $routes->get('orders/detail-json/(:num)', 'Tenant::orderDetailJson/$1');
     $routes->get('realtime/check', 'Tenant::realtimeCheck');
+    $routes->get('realtime-check', 'Tenant::realtimeCheck');
+    $routes->get('api/realtime-check', 'Tenant::realtimeCheck');
     $routes->post('compliance/report-customer', 'Tenant::reportCustomer');
 });
 
@@ -175,6 +178,8 @@ $routes->group('admin', ['filter' => 'roleAccess:admin'], function ($routes) {
     $routes->get('compliance', 'Admin::compliance');
     $routes->get('tracking', 'Admin::tracking');
     $routes->get('tracking/pins', 'Admin::trackingPins');
+    $routes->get('shipping-settings', 'Admin::shippingSettings');
+    $routes->post('shipping-settings/save', 'Admin::saveShippingSettings');
     $routes->get('audit-log', 'Admin::auditLog');
     $routes->get('audit-log/detail/(:num)', 'Admin::auditLogDetail/$1');
     $routes->get('audit-log/export', 'Admin::exportAuditLog');

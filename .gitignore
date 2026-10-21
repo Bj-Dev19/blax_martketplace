@@ -140,6 +140,9 @@ phpunit
 .claude/
 .gemini/
 .agents/
+.stitch/
+skills-lock.json
+cookies.txt
 
 #--------------------------------------------------------------------
 # IDE & DEVELOPMENT CONFIGURATIONS

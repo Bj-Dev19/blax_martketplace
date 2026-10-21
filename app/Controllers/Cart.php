@@ -41,22 +41,50 @@ class Cart extends BaseController
             ->delete();
 
         $cartItems = $cartItemModel->getCartItemsWithProducts($cart['id']);
-        $addresses = $addressModel->where('user_id', $userId)->findAll();
+        $addresses = $addressModel->where('user_id', $userId)->orderBy('is_default', 'DESC')->findAll();
 
-        $itemsByShop = [];
-        $total = 0;
+        $shippingSettings = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+        $mapsService      = new \App\Services\GoogleMapsService();
+        $defaultAddr      = $addresses[0] ?? null;
+
+        $itemsByShop   = [];
+        $shopQuotes    = [];
+        $total         = 0;
         $selectedCount = 0;
+
         foreach ($cartItems as $item) {
             $shopId = (int) ($item['shop_id'] ?? 0);
             if (!isset($itemsByShop[$shopId])) {
-                $itemsByShop[$shopId] = [
+                $shopMeta = [
+                    'id'              => $shopId,
                     'shop_id'         => $shopId,
                     'shop_name'       => $item['shop_name'] ?? 'Merchant Store',
                     'shop_slug'       => $item['shop_slug'] ?? '',
                     'offers_delivery' => (int) ($item['offers_delivery'] ?? 1),
                     'offers_pickup'   => (int) ($item['offers_pickup'] ?? 1),
-                    'items'           => [],
+                    'latitude'        => $item['shop_latitude'] ?? null,
+                    'longitude'       => $item['shop_longitude'] ?? null,
+                    'barangay'        => $item['shop_barangay'] ?? null,
+                    'city'            => $item['shop_city'] ?? null,
+                    'address_line'    => $item['shop_address_line'] ?? null,
                 ];
+                $itemsByShop[$shopId] = $shopMeta + ['items' => []];
+
+                if ($defaultAddr) {
+                    $shopQuotes[$shopId] = $mapsService->calculateDeliveryQuote($shopMeta, $defaultAddr, $shippingSettings);
+                } else {
+                    $shopQuotes[$shopId] = [
+                        'deliverable'              => true,
+                        'distance_km'              => 0.0,
+                        'distance_text'            => '—',
+                        'shipping_fee'             => (float) ($shippingSettings['base_shipping_fee'] ?? 50.00),
+                        'base_shipping_fee'        => (float) ($shippingSettings['base_shipping_fee'] ?? 50.00),
+                        'included_distance_km'     => (float) ($shippingSettings['included_distance_km'] ?? 3.00),
+                        'additional_fee_per_km'    => (float) ($shippingSettings['additional_fee_per_km'] ?? 10.00),
+                        'max_delivery_distance_km' => (float) ($shippingSettings['max_delivery_distance_km'] ?? 25.00),
+                        'error'                    => null,
+                    ];
+                }
             }
             $itemsByShop[$shopId]['items'][] = $item;
 
@@ -67,13 +95,15 @@ class Cart extends BaseController
         }
 
         return view('customer/cart', [
-            'cart'          => $cart,
-            'cartItems'     => $cartItems,
-            'itemsByShop'   => $itemsByShop,
-            'addresses'     => $addresses,
-            'total'         => $total,
-            'selectedCount' => $selectedCount,
-            'shippingFee'   => 50.00,
+            'cart'             => $cart,
+            'cartItems'        => $cartItems,
+            'itemsByShop'      => $itemsByShop,
+            'addresses'        => $addresses,
+            'total'            => $total,
+            'selectedCount'    => $selectedCount,
+            'shippingFee'      => (float) ($shippingSettings['base_shipping_fee'] ?? 50.00),
+            'shippingSettings' => $shippingSettings,
+            'shopQuotes'       => $shopQuotes,
         ]);
     }
 

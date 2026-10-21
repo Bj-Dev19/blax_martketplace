@@ -41,6 +41,8 @@ opcache.validate_timestamps=0
 opcache.revalidate_freq=0
 opcache.save_comments=1
 opcache.fast_shutdown=1
+opcache.jit=1255
+opcache.jit_buffer_size=64M
 realpath_cache_size=4096k
 realpath_cache_ttl=600
 EOF

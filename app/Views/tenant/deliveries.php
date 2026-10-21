@@ -1,124 +1,146 @@
 <?= $this->extend('layouts/tenant') ?>
 <?= $this->section('content') ?>
 
-<div class="flex-1 space-y-lg max-w-7xl mx-auto pb-xl">
+<div class="flex-1 space-y-6 max-w-7xl mx-auto pb-12">
 
     <?php if (session()->getFlashdata('success')): ?>
-        <div class="p-md rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-sm font-semibold flex items-center gap-sm">
-            <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-sm font-semibold flex items-center gap-2.5 shadow-xs">
+            <span class="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
             <span><?= session()->getFlashdata('success') ?></span>
         </div>
     <?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?>
-        <div class="p-md rounded-xl bg-error-container/40 border border-error/30 text-on-error-container text-sm font-semibold flex items-center gap-sm">
-            <span class="material-symbols-outlined text-[20px]">error</span>
+        <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300 text-sm font-semibold flex items-center gap-2.5 shadow-xs">
+            <span class="material-symbols-outlined text-[20px] text-rose-600">error</span>
             <span><?= session()->getFlashdata('error') ?></span>
         </div>
     <?php endif; ?>
 
-    <!-- Header + Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-            <h1 class="text-headline-sm font-extrabold text-on-surface tracking-tight">Delivery Management</h1>
-            <p class="text-body-md text-on-surface-variant mt-0.5">Track, search, and manage your shipments across Polomolok.</p>
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold">
+                    <span class="material-symbols-outlined text-[22px]">local_shipping</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white">Delivery Management</h1>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Track, dispatch, and monitor live doorstep shipments across Polomolok.</p>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center gap-sm flex-wrap">
+        <div class="flex items-center gap-2.5 flex-wrap">
             <?php if (($kpis['shipped'] ?? 0) > 0): ?>
                 <form action="<?= base_url('tenant/deliveries/bulk-in-transit') ?>" method="POST" class="inline" onsubmit="return confirm('Dispatch and change all <?= (int) ($kpis['shipped'] ?? 0) ?> shipped package(s) to In Transit?');">
                     <?= csrf_field() ?>
-                    <button type="submit" class="inline-flex items-center gap-sm px-md py-sm bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-label-sm font-bold transition-all shadow-sm active:scale-95 cursor-pointer" title="Dispatch all shipped packages to In Transit">
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer" title="Dispatch all shipped packages to In Transit">
                         <span class="material-symbols-outlined text-[18px]">navigation</span>
-                        <span>In Transit (<?= (int) ($kpis['shipped'] ?? 0) ?>)</span>
+                        <span>Bulk In Transit (<?= (int) ($kpis['shipped'] ?? 0) ?>)</span>
                     </button>
                 </form>
             <?php endif; ?>
-            <button type="button" id="btnOpenDeliveryScanner" onclick="openScanner()" class="inline-flex items-center gap-sm px-md py-sm bg-primary text-on-primary rounded-xl text-label-sm font-bold hover:bg-primary/90 transition-all shadow-sm active:scale-95 cursor-pointer">
+            <button type="button" id="btnOpenDeliveryScanner" onclick="openScanner()" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-terra-green hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">qr_code_scanner</span>
-                <span>Scan QR Code</span>
+                <span>Scan Delivery QR</span>
             </button>
         </div>
     </div>
 
-    <!-- Metrics Grid -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-md">
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs transition-all hover:border-primary/40">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-primary-container/20 text-primary rounded-xl">
+    <!-- 4-Column Bento Metrics Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Active Deliveries -->
+        <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-all hover:border-terra-green/40 flex flex-col justify-between h-32">
+            <div class="flex justify-between items-start">
+                <div class="p-2 bg-terra-green/10 text-terra-green rounded-xl">
                     <span class="material-symbols-outlined text-[20px]">local_shipping</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Active</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-terra-green bg-terra-green/10 border border-terra-green/20 px-2.5 py-0.5 rounded-full">Active</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Active Deliveries</h3>
-            <p class="text-headline-md font-extrabold text-on-surface mt-xs font-mono"><?= number_format((int) ($kpis['active'] ?? 0)) ?></p>
+            <div>
+                <h3 class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Active Deliveries</h3>
+                <p class="font-mono text-2xl font-black text-slate-900 dark:text-white mt-0.5"><?= number_format((int) ($kpis['active'] ?? 0)) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs transition-all hover:border-blue-500/40">
-            <div class="flex justify-between items-start mb-sm">
+        <!-- Shipped Packages -->
+        <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-all hover:border-blue-500/40 flex flex-col justify-between h-32">
+            <div class="flex justify-between items-start">
                 <div class="p-2 bg-blue-500/10 text-blue-600 rounded-xl">
                     <span class="material-symbols-outlined text-[20px]">inventory</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-500/10 px-2 py-0.5 rounded-full">Shipped</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-full">Shipped</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Shipped Packages</h3>
-            <p class="text-headline-md font-extrabold text-blue-700 mt-xs font-mono"><?= number_format((int) ($kpis['shipped'] ?? 0)) ?></p>
+            <div>
+                <h3 class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Shipped Packages</h3>
+                <p class="font-mono text-2xl font-black text-blue-600 dark:text-blue-400 mt-0.5"><?= number_format((int) ($kpis['shipped'] ?? 0)) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs transition-all hover:border-amber-500/40">
-            <div class="flex justify-between items-start mb-sm">
+        <!-- In Transit -->
+        <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-all hover:border-amber-500/40 flex flex-col justify-between h-32">
+            <div class="flex justify-between items-start">
                 <div class="p-2 bg-amber-500/10 text-amber-600 rounded-xl">
                     <span class="material-symbols-outlined text-[20px]">navigation</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">In Transit</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span>Transit</span>
+                </span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">In Transit</h3>
-            <p class="text-headline-md font-extrabold text-amber-700 mt-xs font-mono"><?= number_format((int) ($kpis['in_transit'] ?? 0)) ?></p>
+            <div>
+                <h3 class="text-xs text-slate-500 dark:text-slate-400 font-semibold">In Transit (Courier)</h3>
+                <p class="font-mono text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5"><?= number_format((int) ($kpis['in_transit'] ?? 0)) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs transition-all hover:border-emerald-500/40">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+        <!-- Completed Today -->
+        <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs transition-all hover:border-emerald-500/40 flex flex-col justify-between h-32">
+            <div class="flex justify-between items-start">
+                <div class="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl">
                     <span class="material-symbols-outlined text-[20px]">check_circle</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">Today</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">Today</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Completed Today</h3>
-            <p class="text-headline-md font-extrabold text-emerald-700 mt-xs font-mono"><?= number_format((int) ($kpis['completed_today'] ?? 0)) ?></p>
+            <div>
+                <h3 class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Delivered Today</h3>
+                <p class="font-mono text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-0.5"><?= number_format((int) ($kpis['completed_today'] ?? 0)) ?></p>
+            </div>
         </div>
     </div>
 
     <!-- Search & Filter Controls -->
-    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-md shadow-2xs space-y-md">
-        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-md">
+    <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <!-- Live Search Input -->
             <div class="relative flex-1">
-                <span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
                 <input id="liveShipmentSearch" 
                        type="text" 
                        placeholder="Search by product name, order #, tracking ID, customer, or destination..." 
                        value="<?= esc($filters['q'] ?? '') ?>"
                        autocomplete="off"
-                       class="w-full pl-11 pr-md py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                       class="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-terra-green transition-all">
             </div>
 
             <!-- Status Dropdown Filter -->
-            <div class="flex items-center gap-xs flex-wrap shrink-0">
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
                 <select id="liveStatusFilter" 
                         onchange="applyStatusFilter(this.value)"
-                        class="px-md py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs font-bold text-on-surface focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-terra-green cursor-pointer">
                     <option value="">All Active Deliveries</option>
                     <?php foreach ($statusOptions as $val => $label): ?>
                         <option value="<?= esc($val) ?>" <?= ($filters['status'] ?? '') === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <button type="button" onclick="resetShipmentFilters()" class="px-md py-2.5 text-xs font-bold rounded-xl border border-outline-variant/40 hover:bg-surface-container transition-colors text-on-surface-variant">
+                <button type="button" onclick="resetShipmentFilters()" class="px-4 py-2.5 text-xs font-bold rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300">
                     Reset
                 </button>
             </div>
         </div>
 
         <!-- Quick Status Pills -->
-        <div class="flex items-center gap-xs overflow-x-auto pb-1 text-xs font-semibold custom-scrollbar">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold custom-scrollbar">
             <?php
                 $activeFilter = $filters['status'] ?? '';
                 $pills = [
@@ -130,7 +152,7 @@
             <?php foreach ($pills as $pkey => $plabel): ?>
                 <button type="button" 
                         onclick="quickFilterStatus('<?= esc($pkey) ?>')" 
-                        class="status-pill px-3 py-1.5 rounded-xl border transition-all whitespace-nowrap <?= $activeFilter === $pkey ? 'bg-primary text-on-primary border-primary font-bold shadow-xs' : 'bg-surface-container-low border-outline-variant/30 text-on-surface-variant hover:bg-surface-container' ?>"
+                        class="status-pill px-3.5 py-1.5 rounded-xl border transition-all whitespace-nowrap <?= $activeFilter === $pkey ? 'bg-terra-green text-white border-terra-green font-bold shadow-xs' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700' ?>"
                         data-status="<?= esc($pkey) ?>">
                     <?= esc($plabel) ?>
                 </button>
@@ -139,15 +161,15 @@
     </div>
 
     <!-- Section Heading & Realtime Count -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-sm px-1">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
         <div>
-            <h2 class="text-title-md font-bold text-on-surface flex items-center gap-sm">
+            <h2 class="text-base font-bold font-display text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Shipment Packages</span>
-                <span id="shipmentCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-mono font-semibold">
+                <span id="shipmentCountBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono font-bold border border-slate-200 dark:border-slate-700">
                     <?= count($deliveries ?? []) ?> package(s)
                 </span>
             </h2>
-            <p class="text-xs text-on-surface-variant mt-0.5">Click any shipment card to open its dedicated live route &amp; GPS mapping page.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Click any shipment card to view its dedicated live route &amp; GPS mapping page.</p>
         </div>
         <?php if (($kpis['shipped'] ?? 0) > 0): ?>
             <form action="<?= base_url('tenant/deliveries/bulk-in-transit') ?>" method="POST" class="inline" onsubmit="return confirm('Change all <?= (int) ($kpis['shipped'] ?? 0) ?> shipped package(s) to In Transit?');">
@@ -160,8 +182,8 @@
         <?php endif; ?>
     </div>
 
-    <!-- Shipment Cards Grid (Replaces old table & side map) -->
-    <div id="shipmentsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-md lg:gap-lg">
+    <!-- Shipment Cards Grid -->
+    <div id="shipmentsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <?php if (!empty($deliveries)): ?>
             <?php foreach ($deliveries as $d): ?>
                 <?php
@@ -179,14 +201,14 @@
                     $variantLabel = esc($d['variant_label'] ?? '');
                     $searchIndex = strtolower($productName . ' ' . $allProductsList . ' ' . $trackingClean . ' ' . $refClean . ' ' . $fullName . ' ' . $destAddress . ' ' . $d['status']);
                 ?>
-                <div class="shipment-card bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-md sm:p-lg shadow-2xs hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between group relative"
+                <div class="shipment-card bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-terra-green/50 transition-all flex flex-col justify-between group relative"
                      data-tracking="<?= $trackingClean ?>"
                      data-status="<?= esc($d['status']) ?>"
                      data-search="<?= esc($searchIndex) ?>">
 
                     <!-- Top Bar: Status Badge & Fulfillment Badge -->
                     <div>
-                        <div class="flex items-center justify-between gap-sm mb-sm">
+                        <div class="flex items-center justify-between gap-2 mb-3">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <?= status_badge($d['status']) ?>
                                 <?php if ($d['status'] === 'shipped'): ?>
@@ -200,7 +222,7 @@
                                         </button>
                                     </form>
                                 <?php endif; ?>
-                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-terra-green bg-terra-green/10 border border-terra-green/20 px-2.5 py-0.5 rounded-full">
                                     <span class="material-symbols-outlined text-[13px]">local_shipping</span>
                                     <span>Doorstep Delivery</span>
                                 </span>
@@ -211,24 +233,24 @@
                                 <button type="button" 
                                         data-row="<?= (int) $d['id'] ?>" 
                                         onclick="toggleDropdown(this, event)" 
-                                        class="more-toggle p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container transition-colors"
+                                        class="more-toggle p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                                         title="Quick Actions">
                                     <span class="material-symbols-outlined text-[18px]">more_vert</span>
                                 </button>
-                                <div id="more-menu-<?= (int) $d['id'] ?>" class="hidden more-menu z-50 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-xl p-sm min-w-[200px] absolute right-0 top-full mt-1" role="menu">
-                                    <p class="text-label-sm font-bold text-on-surface-variant px-sm pb-xs">Change Status</p>
-                                    <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" class="space-y-xs px-sm pb-sm" onclick="event.stopPropagation();">
+                                <div id="more-menu-<?= (int) $d['id'] ?>" class="hidden more-menu z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 min-w-[200px] absolute right-0 top-full mt-1" role="menu">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 pb-1">Change Status</p>
+                                    <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" class="space-y-1.5 px-2 pb-2" onclick="event.stopPropagation();">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="delivery_id" value="<?= (int) $d['id'] ?>">
-                                        <select name="delivery_status" class="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs font-semibold">
+                                        <select name="delivery_status" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-terra-green">
                                             <?php foreach ($statusOptions as $val => $label): ?>
                                                 <option value="<?= esc($val) ?>" <?= $d['status'] === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="submit" class="w-full py-1.5 bg-primary text-on-primary rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors mt-1">Apply</button>
+                                        <button type="submit" class="w-full py-1.5 bg-terra-green text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors mt-1">Apply</button>
                                     </form>
-                                    <div class="border-t border-outline-variant/20 my-xs"></div>
-                                    <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="w-full text-left px-sm py-1.5 rounded-lg text-primary text-xs font-bold hover:bg-primary/10 flex items-center gap-xs">
+                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                    <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="w-full text-left px-2 py-1.5 rounded-xl text-terra-green text-xs font-bold hover:bg-terra-green/10 flex items-center gap-1.5">
                                         <span class="material-symbols-outlined text-[16px]">near_me</span> View Full Map
                                     </a>
                                 </div>
@@ -236,68 +258,68 @@
                         </div>
 
                         <!-- Product Name & Order ID Header -->
-                        <div class="space-y-1.5 border-b border-outline-variant/20 pb-sm mb-sm">
-                            <div class="flex items-start justify-between gap-sm">
+                        <div class="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
+                            <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0 flex-1">
                                     <!-- Primary Product Name Header -->
                                     <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" 
-                                       class="text-title-sm font-extrabold text-on-surface hover:text-primary transition-colors flex items-center gap-1.5 leading-snug group/title" 
+                                       class="text-sm font-bold font-display text-slate-900 dark:text-white hover:text-terra-green transition-colors flex items-center gap-1.5 leading-snug group/title" 
                                        title="<?= $allProductsList ?>">
-                                        <span class="material-symbols-outlined text-[19px] text-primary shrink-0">inventory_2</span>
+                                        <span class="material-symbols-outlined text-[18px] text-terra-green shrink-0">inventory_2</span>
                                         <span class="truncate"><?= $productName ?></span>
                                     </a>
 
                                     <!-- Product Quantities / Extra Items Pill -->
                                     <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
                                         <?php if ($extraItems > 0): ?>
-                                            <span class="inline-flex items-center text-[10px] font-extrabold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-md" title="<?= $allProductsList ?>">
+                                            <span class="inline-flex items-center text-[10px] font-extrabold text-terra-green bg-terra-green/10 border border-terra-green/20 px-2 py-0.5 rounded-lg" title="<?= $allProductsList ?>">
                                                 +<?= $extraItems ?> more item<?= $extraItems > 1 ? 's' : '' ?> (<?= $totalQty ?> total pcs)
                                             </span>
                                         <?php elseif ($totalQty > 0): ?>
-                                            <span class="text-[11px] font-medium text-on-surface-variant">
-                                                Qty: <strong class="text-on-surface"><?= $totalQty ?></strong><?= $variantLabel !== '' ? ' &bull; ' . $variantLabel : '' ?>
+                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                Qty: <strong class="text-slate-800 dark:text-slate-200"><?= $totalQty ?></strong><?= $variantLabel !== '' ? ' &bull; ' . $variantLabel : '' ?>
                                             </span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
 
-                                <!-- Order ID / Reference is retained here ("hindi total na mawawala ang order id nandyan parin") -->
+                                <!-- Order ID / Reference -->
                                 <div class="flex flex-col items-end shrink-0">
-                                    <span class="text-[11px] font-mono font-extrabold text-on-surface bg-surface-container border border-outline-variant/40 px-2 py-0.5 rounded-md" title="Order Reference Number">
+                                    <span class="text-[11px] font-mono font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg" title="Order Reference Number">
                                         <?= $refClean ?>
                                     </span>
-                                    <span class="text-[9px] uppercase tracking-wider text-outline font-bold mt-0.5">Order Ref</span>
+                                    <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-0.5">Order Ref</span>
                                 </div>
                             </div>
 
                             <!-- Tracking ID and Deliverable Type Row -->
-                            <div class="flex items-center justify-between gap-sm text-[11px] pt-1 text-on-surface-variant font-medium">
-                                <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="font-mono font-bold text-primary hover:underline flex items-center gap-1">
+                            <div class="flex items-center justify-between gap-2 text-[11px] pt-1 text-slate-500 dark:text-slate-400 font-medium">
+                                <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="font-mono font-bold text-terra-green hover:underline flex items-center gap-1">
                                     <span class="material-symbols-outlined text-[15px]">local_shipping</span>
                                     <span>#<?= $trackingClean ?></span>
                                 </a>
-                                <span class="text-[11px] text-outline">
+                                <span class="text-[11px] text-slate-400">
                                     <?= esc(ucfirst(str_replace('_', ' ', $d['deliverable_type'] ?? 'order'))) ?> &bull; <?= date('M d, Y h:i A', strtotime($d['created_at'])) ?>
                                 </span>
                             </div>
                         </div>
 
                         <!-- Customer & Destination Information -->
-                        <div class="space-y-2 text-xs">
+                        <div class="space-y-2.5 text-xs">
                             <!-- Customer Row -->
-                            <div class="flex items-center gap-sm">
+                            <div class="flex items-center gap-2.5">
                                 <?php if ($profileImage !== ''): ?>
-                                    <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-outline-variant/30 shrink-0" alt="Customer">
+                                    <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="Customer">
                                 <?php else: ?>
-                                    <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                                    <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-slate-100 dark:ring-slate-800">
                                         <?= esc($initials) ?>
                                     </div>
                                 <?php endif; ?>
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-bold text-on-surface truncate"><?= esc($fullName ?: 'Online Customer') ?></p>
+                                    <p class="font-bold text-slate-900 dark:text-white truncate"><?= esc($fullName ?: 'Online Customer') ?></p>
                                     <?php if (!empty($d['customer_phone'])): ?>
-                                        <p class="text-[11px] text-on-surface-variant flex items-center gap-0.5 font-mono">
-                                            <span class="material-symbols-outlined text-[13px] text-primary">phone</span>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5 font-mono">
+                                            <span class="material-symbols-outlined text-[13px] text-terra-green">phone</span>
                                             <span><?= esc($d['customer_phone']) ?></span>
                                         </p>
                                     <?php endif; ?>
@@ -305,9 +327,9 @@
                             </div>
 
                             <!-- Destination Address Row -->
-                            <div class="flex items-start gap-1.5 p-2 bg-surface-container-low/70 rounded-xl border border-outline-variant/20">
+                            <div class="flex items-start gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
                                 <span class="material-symbols-outlined text-[16px] text-emerald-600 shrink-0 mt-0.5">location_on</span>
-                                <p class="text-[11px] text-on-surface leading-tight line-clamp-2" title="<?= $destAddress ?>">
+                                <p class="text-[11px] text-slate-700 dark:text-slate-300 leading-tight line-clamp-2" title="<?= $destAddress ?>">
                                     <?= $destAddress ?>
                                 </p>
                             </div>
@@ -315,9 +337,9 @@
                     </div>
 
                     <!-- Card Action Footer: Direct Navigation to Dedicated Live Route Map -->
-                    <div class="mt-md pt-sm border-t border-outline-variant/20">
+                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                         <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" 
-                           class="w-full py-2.5 px-md rounded-xl bg-primary text-on-primary font-bold text-xs flex items-center justify-center gap-2 hover:bg-primary/90 shadow-sm transition-all group-hover:scale-[1.01] active:scale-95">
+                           class="w-full py-2.5 px-4 rounded-xl bg-terra-green text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-xs transition-all group-hover:scale-[1.01] active:scale-95">
                             <span class="material-symbols-outlined text-[18px]">near_me</span>
                             <span>View Live Route &amp; Map</span>
                             <span class="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
@@ -327,13 +349,13 @@
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="col-span-full py-2xl text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-xl space-y-sm">
-                <span class="w-16 h-16 rounded-full bg-surface-container text-outline flex items-center justify-center mx-auto text-3xl material-symbols-outlined">
-                    local_shipping
-                </span>
-                <h3 class="text-title-md font-bold text-on-surface">No Deliveries Found</h3>
-                <p class="text-xs text-on-surface-variant max-w-sm mx-auto">There are currently no active doorstep deliveries matching your filter. Orders dispatched for delivery will appear here.</p>
-                <button type="button" onclick="resetShipmentFilters()" class="mt-2 px-md py-sm bg-primary text-on-primary text-xs font-bold rounded-xl hover:bg-primary/90">
+            <div class="col-span-full py-16 text-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 space-y-3">
+                <div class="w-16 h-16 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center mx-auto">
+                    <span class="material-symbols-outlined text-3xl">local_shipping</span>
+                </div>
+                <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">No Deliveries Found</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">There are currently no active doorstep deliveries matching your filter. Orders dispatched for delivery will appear here.</p>
+                <button type="button" onclick="resetShipmentFilters()" class="mt-2 px-4 py-2 bg-terra-green text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors">
                     Clear Filters
                 </button>
             </div>
@@ -341,11 +363,11 @@
     </div>
 
     <!-- No Match Dynamic Message for Client Filtering -->
-    <div id="noMatchMessage" class="hidden py-2xl text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-xl space-y-sm">
-        <span class="material-symbols-outlined text-3xl text-outline">search_off</span>
-        <h3 class="text-title-md font-bold text-on-surface">No matching shipments</h3>
-        <p class="text-xs text-on-surface-variant">Try searching for a different product, order reference, customer, or status.</p>
-        <button type="button" onclick="resetShipmentFilters()" class="px-md py-sm bg-primary text-on-primary text-xs font-bold rounded-xl hover:bg-primary/90">
+    <div id="noMatchMessage" class="hidden py-16 text-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 space-y-3">
+        <span class="material-symbols-outlined text-4xl text-slate-400">search_off</span>
+        <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">No matching shipments</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Try searching for a different product, order reference, customer, or status.</p>
+        <button type="button" onclick="resetShipmentFilters()" class="px-4 py-2 bg-terra-green text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors">
             Reset Filters
         </button>
     </div>
@@ -359,13 +381,13 @@
             $dStart = $dTot === 0 ? 0 : ($dCur - 1) * 12 + 1;
             $dEnd   = min($dCur * 12, $dTot);
         ?>
-        <div class="mt-lg pt-md flex flex-col sm:flex-row items-center justify-between gap-md border-t border-outline-variant/30">
-            <p class="text-xs text-on-surface-variant font-medium">
-                Showing <span class="font-bold text-on-surface"><?= number_format($dStart) ?></span> to <span class="font-bold text-on-surface"><?= number_format($dEnd) ?></span> of <span class="font-bold text-on-surface"><?= number_format($dTot) ?></span> deliveries
+        <div class="mt-6 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200/80 dark:border-slate-800">
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Showing <span class="font-bold text-slate-900 dark:text-white"><?= number_format($dStart) ?></span> to <span class="font-bold text-slate-900 dark:text-white"><?= number_format($dEnd) ?></span> of <span class="font-bold text-slate-900 dark:text-white"><?= number_format($dTot) ?></span> deliveries
             </p>
             <?php if ($dPag > 1): ?>
-                <div class="flex items-center gap-xs">
-                    <a class="w-8 h-8 rounded-xl border border-outline-variant/40 hover:bg-surface-container text-on-surface flex items-center justify-center transition-all <?= $dCur <= 1 ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getPreviousPageURI('deliveries') ?>" title="Previous">
+                <div class="flex items-center gap-1.5">
+                    <a class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all <?= $dCur <= 1 ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getPreviousPageURI('deliveries') ?>" title="Previous">
                         <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                     </a>
                     <?php
@@ -375,17 +397,17 @@
                     }
                     $pv = 0;
                     foreach ($w as $n):
-                        if ($n - $pv > 1): ?><span class="px-xs text-outline font-bold">...</span><?php endif; ?>
-                        <a class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all <?= $dCur === $n ? 'bg-primary text-on-primary shadow-xs' : 'hover:bg-surface-container text-on-surface border border-outline-variant/20' ?>" href="<?= $pager->getPageURI($n, 'deliveries') ?>"><?= $n ?></a>
+                        if ($n - $pv > 1): ?><span class="px-1 text-slate-400 font-bold">...</span><?php endif; ?>
+                        <a class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold transition-all <?= $dCur === $n ? 'bg-terra-green text-white shadow-xs' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' ?>" href="<?= $pager->getPageURI($n, 'deliveries') ?>"><?= $n ?></a>
                     <?php $pv = $n; endforeach; ?>
-                    <a class="w-8 h-8 rounded-xl border border-outline-variant/40 hover:bg-surface-container text-on-surface flex items-center justify-center transition-all <?= $dCur >= $dPag ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getNextPageURI('deliveries') ?>" title="Next">
+                    <a class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all <?= $dCur >= $dPag ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getNextPageURI('deliveries') ?>" title="Next">
                         <span class="material-symbols-outlined text-[18px]">chevron_right</span>
                     </a>
                 </div>
             <?php endif; ?>
         </div>
     <?php elseif (isset($pager) && is_string($pager) && trim($pager) !== ''): ?>
-        <div class="mt-lg pt-md">
+        <div class="mt-6 pt-4">
             <?= $pager ?>
         </div>
     <?php endif; ?>
@@ -393,81 +415,83 @@
 </div>
 
 <!-- QR Code Scanner Modal -->
-<div id="deliveryScannerModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-md backdrop-blur-sm">
-    <div class="bg-surface-container-lowest rounded-2xl p-lg sm:p-xl max-w-md w-full border border-outline-variant/30 shadow-2xl space-y-md relative">
-        <div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
-            <div class="flex items-center gap-sm">
-                <span class="p-2 bg-primary/10 text-primary rounded-xl material-symbols-outlined text-[20px]">qr_code_scanner</span>
+<div id="deliveryScannerModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 relative">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                </div>
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface">Scan Delivery &amp; Order QR</h3>
-                    <p class="text-xs text-on-surface-variant">Live camera or scan from saved photo</p>
+                    <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Scan Delivery &amp; Order QR</h3>
+                    <p class="text-[11px] text-slate-400">Live camera or scan from saved photo</p>
                 </div>
             </div>
-            <button type="button" onclick="closeScanner()" class="p-1 text-outline hover:text-on-surface rounded-full hover:bg-surface-container">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" onclick="closeScanner()" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
-        <!-- Scan Mode Tabs: Live Camera vs Photo Upload -->
-        <div class="flex items-center gap-xs p-1 bg-surface-container-low rounded-xl border border-outline-variant/20">
-            <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-sm rounded-lg text-xs font-bold transition-all bg-surface-container-lowest text-primary shadow-sm flex items-center justify-center gap-1">
+        <!-- Scan Mode Tabs -->
+        <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white dark:bg-slate-900 text-terra-green shadow-xs flex items-center justify-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px]">photo_camera</span>
                 <span>Live Camera</span>
             </button>
-            <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-sm rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1">
+            <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px]">add_photo_alternate</span>
                 <span>Scan from Photo</span>
             </button>
         </div>
 
-        <!-- Mode 1: Live Camera Viewfinder (Unobstructed, No Dark Box) -->
-        <div id="deliveryCameraContainer" class="space-y-sm">
-            <div class="rounded-2xl overflow-hidden bg-black aspect-square relative flex items-center justify-center border border-outline-variant/30 shadow-inner">
+        <!-- Mode 1: Live Camera Viewfinder -->
+        <div id="deliveryCameraContainer" class="space-y-2">
+            <div class="rounded-2xl overflow-hidden bg-black aspect-square relative flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
                 <div id="qr-reader" class="w-full h-full"></div>
                 <!-- Clean, non-blocking transparent corner reticle -->
                 <div class="qr-viewfinder-overlay pointer-events-none absolute inset-4 border border-white/20 rounded-xl">
-                    <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
-                    <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
-                    <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
-                    <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+                    <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-terra-green rounded-tl-lg"></div>
+                    <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-terra-green rounded-tr-lg"></div>
+                    <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-terra-green rounded-bl-lg"></div>
+                    <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-terra-green rounded-br-lg"></div>
                     <div class="qr-laser-line"></div>
                 </div>
             </div>
-            <p id="scannerStatus" class="text-xs text-center text-on-surface-variant font-medium">Point camera directly at QR code or phone screen</p>
+            <p id="scannerStatus" class="text-xs text-center text-slate-400 font-medium">Point camera directly at QR code or phone screen</p>
         </div>
 
         <!-- Mode 2: Scan from Photo / Image File -->
-        <div id="deliveryFileContainer" class="hidden space-y-sm">
-            <label for="deliveryPhotoUpload" class="flex flex-col items-center justify-center p-xl border-2 border-dashed border-primary/40 hover:border-primary rounded-2xl bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer text-center group">
-                <span class="p-3 bg-primary/10 text-primary rounded-2xl material-symbols-outlined text-3xl group-hover:scale-110 transition-transform mb-2">image_search</span>
-                <span class="text-xs font-bold text-on-surface">Click to Select QR Photo / Take Photo</span>
-                <span class="text-[11px] text-on-surface-variant mt-1">Upload the photo of the completed order/slip</span>
+        <div id="deliveryFileContainer" class="hidden space-y-2">
+            <label for="deliveryPhotoUpload" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-terra-green/40 hover:border-terra-green rounded-2xl bg-terra-green/5 hover:bg-terra-green/10 transition-all cursor-pointer text-center group">
+                <span class="p-3 bg-terra-green/10 text-terra-green rounded-2xl material-symbols-outlined text-3xl group-hover:scale-110 transition-transform mb-2">image_search</span>
+                <span class="text-xs font-bold text-slate-900 dark:text-white">Click to Select QR Photo / Take Photo</span>
+                <span class="text-[11px] text-slate-400 mt-1">Upload the photo of the completed order/slip</span>
                 <input id="deliveryPhotoUpload" type="file" accept="image/*" class="hidden" onchange="handleDeliveryPhotoUpload(this)">
             </label>
-            <p id="photoScanStatus" class="text-xs text-center text-on-surface-variant font-medium hidden"></p>
+            <p id="photoScanStatus" class="text-xs text-center text-slate-400 font-medium hidden"></p>
         </div>
 
         <!-- Result Box with Direct Route Map Link -->
-        <div id="scanResultBox" class="hidden p-md rounded-xl border space-y-sm transition-all">
-            <div class="flex items-start gap-sm">
+        <div id="scanResultBox" class="hidden p-3.5 rounded-2xl border space-y-2 transition-all">
+            <div class="flex items-start gap-2.5">
                 <span id="scanResultIcon" class="material-symbols-outlined text-[22px] mt-0.5">check_circle</span>
                 <div class="flex-1 min-w-0">
                     <p id="scanResultMessage" class="text-xs font-bold leading-relaxed"></p>
-                    <p id="scanResultSub" class="text-[11px] text-on-surface-variant mt-0.5"></p>
+                    <p id="scanResultSub" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5"></p>
                 </div>
             </div>
             <div id="scanActionBtnContainer" class="pt-1"></div>
         </div>
 
         <!-- Manual Tracking ID Input -->
-        <div class="pt-sm border-t border-outline-variant/20 space-y-xs">
-            <label class="text-[11px] font-bold text-outline uppercase tracking-wider">Manual Code / Order Entry</label>
-            <div class="flex items-center gap-xs">
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Manual Code / Order Entry</label>
+            <div class="flex items-center gap-2">
                 <input id="manualTrackingInput" 
                        type="text" 
-                       placeholder="e.g. TRK-F7E82B04, ORD-88460, PR-190, or 190" 
-                       class="flex-1 px-md py-2 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none">
-                <button type="button" onclick="submitManualTracking()" class="px-md py-2 bg-primary text-on-primary font-bold text-xs rounded-xl hover:bg-primary/90 transition-all">
+                       placeholder="e.g. TRK-F7E82B04, ORD-88460, PR-190" 
+                       class="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:outline-none">
+                <button type="button" onclick="submitManualTracking()" class="px-4 py-2 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shadow-xs">
                     Lookup
                 </button>
             </div>
@@ -476,7 +500,6 @@
 </div>
 
 <style>
-/* Remove Html5Qrcode blocking dark region box */
 #qr-reader #qr-shaded-region,
 #posQrReader #qr-shaded-region {
     display: none !important;
@@ -488,15 +511,15 @@
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
-    border-radius: 0.875rem !important;
+    border-radius: 1rem !important;
 }
 .qr-laser-line {
     position: absolute;
     left: 10px;
     right: 10px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
-    box-shadow: 0 0 10px #3b82f6;
+    background: linear-gradient(90deg, transparent, #4A943E, transparent);
+    box-shadow: 0 0 10px #4A943E;
     animation: qrLaserScan 2s ease-in-out infinite alternate;
 }
 @keyframes qrLaserScan {
@@ -581,11 +604,11 @@
         // Update pills
         document.querySelectorAll('.status-pill').forEach(pill => {
             if (pill.dataset.status === status) {
-                pill.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
-                pill.classList.add('bg-primary', 'text-on-primary', 'font-bold', 'border-primary', 'shadow-xs');
+                pill.classList.remove('bg-slate-50', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                pill.classList.add('bg-terra-green', 'text-white', 'font-bold', 'border-terra-green', 'shadow-xs');
             } else {
-                pill.classList.remove('bg-primary', 'text-on-primary', 'font-bold', 'border-primary', 'shadow-xs');
-                pill.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+                pill.classList.remove('bg-terra-green', 'text-white', 'font-bold', 'border-terra-green', 'shadow-xs');
+                pill.classList.add('bg-slate-50', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
             }
         });
     }
@@ -621,18 +644,18 @@
         const fileBox = document.getElementById('deliveryFileContainer');
 
         if (mode === 'camera') {
-            camBtn.classList.remove('text-on-surface-variant');
-            camBtn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
-            fileBtn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
-            fileBtn.classList.add('text-on-surface-variant');
+            camBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+            camBtn.classList.add('bg-white', 'dark:bg-slate-900', 'text-terra-green', 'shadow-xs');
+            fileBtn.classList.remove('bg-white', 'dark:bg-slate-900', 'text-terra-green', 'shadow-xs');
+            fileBtn.classList.add('text-slate-600', 'dark:text-slate-400');
             camBox.classList.remove('hidden');
             fileBox.classList.add('hidden');
             startDeliveryCamera();
         } else {
-            fileBtn.classList.remove('text-on-surface-variant');
-            fileBtn.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
-            camBtn.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
-            camBtn.classList.add('text-on-surface-variant');
+            fileBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+            fileBtn.classList.add('bg-white', 'dark:bg-slate-900', 'text-terra-green', 'shadow-xs');
+            camBtn.classList.remove('bg-white', 'dark:bg-slate-900', 'text-terra-green', 'shadow-xs');
+            camBtn.classList.add('text-slate-600', 'dark:text-slate-400');
             fileBox.classList.remove('hidden');
             camBox.classList.add('hidden');
             stopDeliveryCamera();
@@ -658,7 +681,6 @@
             deliveryHtml5QrCode = new Html5Qrcode("qr-reader");
         }
         
-        // Scan full viewfinder without dark restrictive box overlay
         const config = { fps: 12 };
         deliveryHtml5QrCode.start(
             { facingMode: "environment" },
@@ -668,7 +690,6 @@
             },
             () => {}
         ).catch(err => {
-            // If environment camera fails, try any available camera
             if (Html5Qrcode.getCameras) {
                 Html5Qrcode.getCameras().then(cameras => {
                     if (cameras && cameras.length > 0) {
@@ -738,7 +759,7 @@
         const file = input.files[0];
         const statusEl = document.getElementById('photoScanStatus');
         if (statusEl) {
-            statusEl.className = 'text-xs text-center text-primary font-bold animate-pulse';
+            statusEl.className = 'text-xs text-center text-terra-green font-bold animate-pulse';
             statusEl.textContent = 'Scanning image for QR code...';
             statusEl.classList.remove('hidden');
         }
@@ -757,7 +778,7 @@
             })
             .catch(err => {
                 if (statusEl) {
-                    statusEl.className = 'text-xs text-center text-red-600 font-bold';
+                    statusEl.className = 'text-xs text-center text-rose-600 font-bold';
                     statusEl.textContent = 'Could not detect a QR code in this photo. Please ensure good lighting or enter the code manually.';
                     statusEl.classList.remove('hidden');
                 }
@@ -777,8 +798,8 @@
         const iconEl = document.getElementById('scanResultIcon');
         const btnContainer = document.getElementById('scanActionBtnContainer');
 
-        resultBox.classList.remove('hidden', 'bg-red-50', 'text-red-800', 'border-red-200', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200', 'bg-blue-50', 'text-blue-800', 'border-blue-200');
-        resultBox.classList.add('bg-surface-container', 'text-on-surface', 'border-outline-variant');
+        resultBox.classList.remove('hidden', 'bg-rose-50', 'text-rose-800', 'border-rose-200', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200', 'bg-blue-50', 'text-blue-800', 'border-blue-200');
+        resultBox.classList.add('bg-slate-50', 'text-slate-800', 'border-slate-200');
         iconEl.textContent = 'progress_activity';
         iconEl.classList.add('animate-spin');
         msgEl.textContent = 'Looking up code: ' + trackingCode + '...';
@@ -805,13 +826,13 @@
             }
             if (data.success && data.delivery) {
                 const isDelivered = data.action_type === 'delivered' || data.action_type === 'already_delivered' || data.delivery.status === 'delivered' || data.delivery.status === 'completed';
-                resultBox.classList.remove('bg-surface-container', 'text-on-surface', 'border-outline-variant');
+                resultBox.classList.remove('bg-slate-50', 'text-slate-800', 'border-slate-200');
                 
                 if (isDelivered) {
-                    resultBox.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+                    resultBox.classList.add('bg-emerald-500/10', 'text-emerald-800', 'dark:text-emerald-300', 'border-emerald-500/20');
                     iconEl.textContent = 'check_circle';
                 } else {
-                    resultBox.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-200');
+                    resultBox.classList.add('bg-blue-500/10', 'text-blue-800', 'dark:text-blue-300', 'border-blue-500/20');
                     iconEl.textContent = 'local_shipping';
                 }
 
@@ -826,19 +847,19 @@
 
                 const targetUrl = '<?= base_url('tenant/deliveries') ?>/' + data.delivery.id;
                 btnContainer.innerHTML = `
-                    <div class="flex items-center gap-xs mt-1">
-                        <a href="${targetUrl}" class="flex-1 py-2 bg-primary text-on-primary font-bold text-xs rounded-xl flex items-center justify-center gap-1 shadow-sm hover:bg-primary/90 transition-all">
+                    <div class="flex items-center gap-2 mt-1">
+                        <a href="${targetUrl}" class="flex-1 py-2 bg-terra-green text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm hover:bg-emerald-700 transition-all">
                             <span class="material-symbols-outlined text-[16px]">map</span>
                             <span>Open Route &amp; Shipment →</span>
                         </a>
-                        <button type="button" onclick="closeScanner(); location.reload();" class="px-md py-2 border border-outline-variant font-bold text-xs rounded-xl hover:bg-surface-container transition-all">
+                        <button type="button" onclick="closeScanner(); location.reload();" class="px-3.5 py-2 border border-slate-200 dark:border-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-700 dark:text-slate-300">
                             Done
                         </button>
                     </div>
                 `;
             } else {
-                resultBox.classList.remove('bg-surface-container', 'text-on-surface', 'border-outline-variant');
-                resultBox.classList.add('bg-red-50', 'text-red-800', 'border-red-200');
+                resultBox.classList.remove('bg-slate-50', 'text-slate-800', 'border-slate-200');
+                resultBox.classList.add('bg-rose-500/10', 'text-rose-800', 'dark:text-rose-300', 'border-rose-500/20');
                 iconEl.textContent = 'error';
                 msgEl.textContent = data.error || data.message || 'No matching order or request found.';
                 if (subEl) subEl.textContent = 'Please check the order number or take a clearer picture.';
@@ -846,8 +867,8 @@
         })
         .catch(() => {
             iconEl.classList.remove('animate-spin');
-            resultBox.classList.remove('bg-surface-container', 'text-on-surface', 'border-outline-variant');
-            resultBox.classList.add('bg-red-50', 'text-red-800', 'border-red-200');
+            resultBox.classList.remove('bg-slate-50', 'text-slate-800', 'border-slate-200');
+            resultBox.classList.add('bg-rose-500/10', 'text-rose-800', 'dark:text-rose-300', 'border-rose-500/20');
             iconEl.textContent = 'error';
             msgEl.textContent = 'Server connection error during lookup.';
             if (subEl) subEl.textContent = 'Please try again or enter the code manually.';

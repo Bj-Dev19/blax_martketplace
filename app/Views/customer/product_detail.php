@@ -1,12 +1,12 @@
 <?= $this->extend('layouts/marketplace') ?>
 <?= $this->section('content') ?>
 
-<main class="max-w-container-max mx-auto px-4 md:px-8 lg:px-10 py-8 md:py-xl flex-grow w-full">
+<main class="max-w-container-max mx-auto px-4 md:px-8 lg:px-10 py-6 md:py-10 pb-28 flex-grow w-full">
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-xxl">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
 
-        <!-- Left: Visual Assets -->
-        <div class="lg:col-span-7 space-y-lg">
+        <!-- Left: Visual Assets Stage (Bento Card 7 Cols) -->
+        <div class="lg:col-span-7 bento-card p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl space-y-4 shadow-2xs">
 
             <?php
                 $primaryImgUrl = null;
@@ -22,255 +22,227 @@
                     }
                 }
                 $displayMainImg = $primaryImgUrl ?: ($product['image_url'] ?? null);
+                $stockQty = (int) ($product['stock_quantity'] ?? 0);
+                $outOfStock = $stockQty <= 0;
             ?>
 
-            <div class="relative rounded-2xl overflow-hidden bg-white shadow-md aspect-square group">
+            <div class="relative rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 aspect-square sm:aspect-[4/3] lg:aspect-square max-h-[520px] w-full group flex items-center justify-center p-4">
 
-                <img id="main-product-image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="<?= esc(product_image_url($displayMainImg, 'detail')) ?>" alt="<?= esc($product['name']) ?>">
+                <img id="main-product-image" class="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" src="<?= esc(product_image_url($displayMainImg, 'detail')) ?>" alt="<?= esc($product['name']) ?>">
 
                 <?php if (!empty($product['is_bestseller'])): ?>
-
-                    <div class="absolute top-md left-md bg-primary-container/90 backdrop-blur text-on-primary-container px-md py-xs rounded-full font-label-sm text-label-sm">Bestseller</div>
-
+                    <div class="absolute top-3 left-3 bg-terra-green text-white px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase shadow-2xs">Bestseller</div>
                 <?php endif; ?>
 
             </div>
 
             <?php if (!empty($productImages)): ?>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-md">
-
+                <div class="grid grid-cols-4 sm:grid-cols-5 gap-2.5 sm:gap-3">
                     <?php foreach ($productImages as $idx => $img): ?>
-
                         <?php 
                             $thumbUrl = product_image_url($img['image_url'] ?? null, 'thumbnail'); 
                             $detailUrl = product_image_url($img['image_url'] ?? null, 'detail');
                             $isMainThumb = (!empty($img['is_primary']) || ($idx === 0 && !$primaryImgUrl));
                         ?>
 
-                        <button type="button" class="gallery-thumb rounded-xl overflow-hidden h-24 cursor-pointer transition-colors p-0 <?= $isMainThumb ? 'border-2 border-primary' : 'border border-outline-variant/30 hover:border-primary' ?>" data-image="<?= esc($detailUrl) ?>" aria-label="View product image">
-
-                            <img class="w-full h-full object-cover" src="<?= esc($thumbUrl) ?>" alt="<?= esc($img['alt_text'] ?? $product['name']) ?>">
-
+                        <button type="button" class="gallery-thumb rounded-xl overflow-hidden h-18 sm:h-20 cursor-pointer transition-all p-1 bg-slate-50 dark:bg-slate-800 <?= $isMainThumb ? 'border-2 border-terra-green ring-2 ring-terra-green/20' : 'border border-slate-200 dark:border-slate-700 hover:border-terra-green/50' ?>" data-image="<?= esc($detailUrl) ?>" aria-label="View product image">
+                            <img class="w-full h-full object-contain" src="<?= esc($thumbUrl) ?>" alt="<?= esc($img['alt_text'] ?? $product['name']) ?>">
                         </button>
-
                     <?php endforeach; ?>
-
                 </div>
-
             <?php endif; ?>
 
         </div>
 
-        <!-- Right: Product Controls & Info -->
-        <div class="lg:col-span-5 flex flex-col">
+        <!-- Right: Product Controls & Purchase Box (Bento Card 5 Cols) -->
+        <div class="lg:col-span-5 bento-card p-6 sm:p-7 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl flex flex-col justify-between shadow-2xs">
 
-            <nav class="flex items-center gap-xs text-label-sm font-label-sm text-on-surface-variant mb-md flex-wrap">
+            <div>
 
-                <a class="hover:text-primary" href="<?= base_url('/') ?>">Home</a>
-                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-
-                <?php if (!empty($product['category_name'])): ?>
-
-                    <a class="hover:text-primary" href="<?= base_url('categories') ?>"><?= esc($product['category_name']) ?></a>
+                <nav class="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3 flex-wrap">
+                    <a class="hover:text-terra-green transition-colors" href="<?= base_url('/') ?>">Home</a>
                     <span class="material-symbols-outlined text-[14px]">chevron_right</span>
 
-                <?php endif; ?>
+                    <?php if (!empty($product['category_name'])): ?>
+                        <a class="hover:text-terra-green transition-colors" href="<?= base_url('categories') ?>"><?= esc($product['category_name']) ?></a>
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                    <?php endif; ?>
 
-                <span class="text-on-surface"><?= esc($product['name']) ?></span>
+                    <span class="text-slate-800 dark:text-slate-200 line-clamp-1"><?= esc($product['name']) ?></span>
+                </nav>
 
-            </nav>
+                <h1 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2.5 leading-tight"><?= esc($product['name']) ?></h1>
 
-            <h1 class="text-headline-lg font-headline-lg text-on-surface mb-xs"><?= esc($product['name']) ?></h1>
+                <div class="flex items-center gap-2 mb-4 flex-wrap text-xs">
+                    <div class="flex items-center text-terra-amber">
+                        <?php
+                            $rating    = (float) ($product['rating_average'] ?? 0);
+                            $fullStars = (int) floor($rating);
+                            $hasHalf   = ($rating - $fullStars) >= 0.5;
+                        ?>
 
-            <div class="flex items-center gap-md mb-lg flex-wrap">
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <?php if ($i <= $fullStars): ?>
+                                <span class="material-symbols-outlined fill-icon text-[17px]">star</span>
+                            <?php elseif ($i === $fullStars + 1 && $hasHalf): ?>
+                                <span class="material-symbols-outlined text-[17px]">star_half</span>
+                            <?php else: ?>
+                                <span class="material-symbols-outlined text-[17px] text-slate-300 dark:text-slate-600">star</span>
+                            <?php endif; ?>
+                        <?php endfor; ?>
 
-                <div class="flex items-center text-primary">
+                        <span class="ml-1 font-bold font-mono text-slate-800 dark:text-slate-200"><?= number_format($rating, 1) ?></span>
+                    </div>
+
+                    <a href="#reviews" class="text-slate-400 hover:text-terra-green font-mono transition-colors">(<?= number_format($product['rating_count'] ?? 0) ?> reviews)</a>
+
+                    <?php if (!empty($product['sku'])): ?>
+                        <div class="h-3.5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                        <span class="text-slate-500 dark:text-slate-400 font-mono text-[11px]">SKU: <?= esc($product['sku']) ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Clean Price & Stock Status Box (Zero Duplicate Description Clutter) -->
+                <div class="bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-4 sm:p-5 mb-5 border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-between gap-3 flex-wrap">
+                    <div class="flex items-baseline gap-2.5 flex-wrap font-mono">
+                        <span class="text-3xl sm:text-4xl font-black text-terra-green">₱<?= number_format($product['price'], 2) ?></span>
+
+                        <?php if (!empty($product['compare_at_price']) && $product['compare_at_price'] > $product['price']): ?>
+                            <span class="text-slate-400 line-through text-sm">₱<?= number_format($product['compare_at_price'], 2) ?></span>
+                            <span class="font-bold text-xs bg-terra-amber/15 text-terra-amber-dark dark:text-terra-amber px-2 py-0.5 rounded-full border border-terra-amber/30">
+                                Save <?= round((1 - $product['price'] / $product['compare_at_price']) * 100) ?>%
+                            </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold <?= $outOfStock ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' ?>">
+                        <span class="w-1.5 h-1.5 rounded-full <?= $outOfStock ? 'bg-rose-500' : 'bg-emerald-500' ?>"></span>
+                        <?= $outOfStock ? 'Out of Stock' : ($stockQty . ' in stock') ?>
+                    </span>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="mt-auto space-y-4">
 
                     <?php
-                        $rating    = (float) ($product['rating_average'] ?? 0);
-                        $fullStars = (int) floor($rating);
-                        $hasHalf   = ($rating - $fullStars) >= 0.5;
+                        $groupedVariants = [];
+                        if (!empty($variants)) {
+                            foreach ($variants as $v) {
+                                $groupedVariants[$v['name']][] = $v;
+                            }
+                        }
+                        $hasVariants = !empty($groupedVariants);
+                        $firstGroupName = $hasVariants ? array_key_first($groupedVariants) : 'option';
+                        $cartDisabled = $outOfStock || $hasVariants;
                     ?>
 
-                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <?php if ($hasVariants): ?>
+                        <div class="bg-slate-50 dark:bg-slate-800/70 rounded-2xl p-3.5 sm:p-4 mb-3 border border-slate-200 dark:border-slate-700 space-y-3" id="variants-section">
+                            <?php foreach ($groupedVariants as $groupName => $options): ?>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Select <?= esc($groupName) ?>:</span>
+                                        <span id="selected-val-<?= esc(url_title($groupName, '-', true)) ?>" class="text-xs font-bold text-terra-green"></span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <?php foreach ($options as $opt): ?>
+                                            <?php $isOutOfStock = (int) $opt['stock_quantity'] <= 0; ?>
+                                            <button type="button"
+                                                    class="variant-pill px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1 <?= $isOutOfStock ? 'opacity-40 border-dashed border-slate-300 cursor-not-allowed line-through bg-slate-100 dark:bg-slate-800 text-slate-400' : 'border-slate-200 dark:border-slate-700 hover:border-terra-green bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs' ?>"
+                                                    <?= $isOutOfStock ? 'disabled title="Out of Stock"' : '' ?>
+                                                    data-id="<?= (int) $opt['id'] ?>"
+                                                    data-group="<?= esc($groupName) ?>"
+                                                    data-group-slug="<?= esc(url_title($groupName, '-', true)) ?>"
+                                                    data-value="<?= esc($opt['value']) ?>"
+                                                    data-stock="<?= (int) $opt['stock_quantity'] ?>"
+                                                    data-price="<?= $opt['price_override'] !== null ? (float) $opt['price_override'] : '' ?>">
+                                                <span><?= esc($opt['value']) ?></span>
+                                                <?php if ($opt['price_override'] !== null && (float) $opt['price_override'] > 0): ?>
+                                                    <span class="text-[10px] opacity-75 font-mono">₱<?= number_format((float) $opt['price_override'], 2) ?></span>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <div id="variant-stock-status" class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                                <span class="material-symbols-outlined text-[16px] text-terra-green">info</span>
+                                <span id="variant-stock-text">Please select a <?= esc($firstGroupName) ?> above</span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
-                        <?php if ($i <= $fullStars): ?>
+                    <form action="<?= base_url('cart/add') ?>" method="POST" id="product-purchase-form" class="space-y-3">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                        <input type="hidden" name="variant_id" id="selected-variant-id" value="">
+                        <input type="hidden" name="quantity" id="quantity-input" value="1" min="1" max="<?= esc($product['stock_quantity'] ?? 99) ?>">
 
-                            <span class="material-symbols-outlined fill-icon text-[18px]">star</span>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700 shadow-inner">
+                                <button type="button" id="qty-minus" class="p-1 px-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" <?= $outOfStock ? 'disabled' : '' ?> aria-label="Decrease quantity">
+                                    <span class="material-symbols-outlined text-[18px]">remove</span>
+                                </button>
 
-                        <?php elseif ($i === $fullStars + 1 && $hasHalf): ?>
+                                <span id="quantity-display" class="w-9 text-center font-mono font-bold text-sm text-slate-800 dark:text-slate-100">1</span>
 
-                            <span class="material-symbols-outlined text-[18px]">star_half</span>
+                                <button type="button" id="qty-plus" class="p-1 px-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" <?= $outOfStock ? 'disabled' : '' ?> aria-label="Increase quantity">
+                                    <span class="material-symbols-outlined text-[18px]">add</span>
+                                </button>
+                            </div>
 
-                        <?php else: ?>
+                            <button type="submit" id="add-to-cart-btn" formaction="<?= base_url('cart/add') ?>" formmethod="POST" class="flex-1 bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm border border-terra-green/30 transition-all flex items-center justify-center gap-2 shadow-2xs active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed" <?= $cartDisabled ? 'disabled' : '' ?>>
+                                <span class="material-symbols-outlined text-[18px]">shopping_cart</span>
+                                <span id="cart-btn-text"><?= $outOfStock ? 'Out of Stock' : ($hasVariants ? 'Select an option' : 'Add to Cart') ?></span>
+                            </button>
+                        </div>
 
-                            <span class="material-symbols-outlined text-[18px] text-outline-variant">star</span>
+                        <button type="button" id="buy-now-btn" class="w-full bg-terra-green hover:bg-terra-green-dark text-white py-3 rounded-xl font-bold text-sm shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5" <?= $cartDisabled ? 'disabled' : '' ?>>
+                            <span class="material-symbols-outlined text-[18px]">bolt</span>
+                            <span>Buy Now</span>
+                        </button>
+                    </form>
 
+                    <div class="flex justify-center gap-4 py-3 border-t border-slate-100 dark:border-slate-800 mt-2 flex-wrap text-xs text-slate-500 dark:text-slate-400">
+                        <?php if (!empty($product['warranty_period'])): ?>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-terra-green">verified_user</span>
+                                <span><?= esc($product['warranty_period']) ?></span>
+                            </div>
                         <?php endif; ?>
 
-                    <?php endfor; ?>
-
-                    <span class="ml-xs font-bold text-label-sm"><?= number_format($rating, 1) ?></span>
-
-                </div>
-
-                <span class="text-on-surface-variant text-label-sm">(<?= number_format($product['rating_count'] ?? 0) ?> reviews)</span>
-
-                <div class="h-4 w-[1px] bg-outline-variant"></div>
-
-                <?php if (!empty($product['sku'])): ?>
-
-                    <span class="text-secondary text-label-sm">SKU: <?= esc($product['sku']) ?></span>
-
-                <?php endif; ?>
-
-                <a href="<?= base_url('shop/' . ($product['shop_slug'] ?? $product['shop_id'] ?? '')) ?>" class="text-primary font-bold text-label-sm hover:underline">Shop: <?= esc($product['shop_name'] ?? 'RHK Merchant') ?></a>
-
-            </div>
-
-            <div class="bg-surface-container-low rounded-2xl p-lg mb-lg border border-outline-variant/20">
-
-                <div class="flex items-baseline gap-sm mb-base flex-wrap">
-
-                    <span class="text-display font-display text-primary">₱<?= number_format($product['price'], 2) ?></span>
-
-                    <?php if (!empty($product['compare_at_price']) && $product['compare_at_price'] > $product['price']): ?>
-
-                        <span class="text-on-surface-variant line-through text-body-md">₱<?= number_format($product['compare_at_price'], 2) ?></span>
-                        <span class="text-error font-bold text-label-sm">Save <?= round((1 - $product['price'] / $product['compare_at_price']) * 100) ?>%</span>
-
-                    <?php endif; ?>
-
-                </div>
-
-                <p class="text-on-surface-variant font-body-md leading-relaxed">
-                    <?= esc($product['description'] ?? 'No product description available.') ?>
-                </p>
-
-            </div>
-
-            <!-- Action Controls -->
-            <div class="mt-auto space-y-md">
-
-                <?php
-                // Note: Currently supports single-axis variant selection (e.g. Color OR Size). For multi-axis products (Color AND Size combinations), a matrix option model with combined SKU/stock will be needed in a future update.
-                $groupedVariants = [];
-                if (!empty($variants)) {
-                    foreach ($variants as $v) {
-                        $groupedVariants[$v['name']][] = $v;
-                    }
-                }
-                $hasVariants = !empty($groupedVariants);
-                $firstGroupName = $hasVariants ? array_key_first($groupedVariants) : 'option';
-                $outOfStock = (int) ($product['stock_quantity'] ?? 0) <= 0;
-                $cartDisabled = $outOfStock || $hasVariants;
-                ?>
-
-                <?php if ($hasVariants): ?>
-                    <div class="bg-surface-container-low/70 rounded-2xl p-md mb-md border border-outline-variant/30 space-y-md" id="variants-section">
-                        <?php foreach ($groupedVariants as $groupName => $options): ?>
-                            <div>
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <span class="text-label-sm font-bold text-on-surface uppercase tracking-wider">Select <?= esc($groupName) ?>:</span>
-                                    <span id="selected-val-<?= esc(url_title($groupName, '-', true)) ?>" class="text-xs font-bold text-primary"></span>
-                                </div>
-                                <div class="flex flex-wrap gap-xs">
-                                    <?php foreach ($options as $opt): ?>
-                                        <?php $isOutOfStock = (int) $opt['stock_quantity'] <= 0; ?>
-                                        <button type="button"
-                                                class="variant-pill px-md py-1.5 rounded-xl border text-label-sm font-semibold transition-all flex items-center gap-xs <?= $isOutOfStock ? 'opacity-40 border-dashed border-outline-variant cursor-not-allowed line-through bg-surface-container/50 text-on-surface-variant' : 'border-outline-variant/50 hover:border-primary bg-surface-container hover:bg-surface-variant text-on-surface' ?>"
-                                                <?= $isOutOfStock ? 'disabled title="Out of Stock"' : '' ?>
-                                                data-id="<?= (int) $opt['id'] ?>"
-                                                data-group="<?= esc($groupName) ?>"
-                                                data-group-slug="<?= esc(url_title($groupName, '-', true)) ?>"
-                                                data-value="<?= esc($opt['value']) ?>"
-                                                data-stock="<?= (int) $opt['stock_quantity'] ?>"
-                                                data-price="<?= $opt['price_override'] !== null ? (float) $opt['price_override'] : '' ?>">
-                                            <span><?= esc($opt['value']) ?></span>
-                                            <?php if ($opt['price_override'] !== null && (float) $opt['price_override'] > 0): ?>
-                                                <span class="text-[11px] opacity-75 font-normal">₱<?= number_format((float) $opt['price_override'], 2) ?></span>
-                                            <?php endif; ?>
-                                        </button>
-                                    <?php endforeach; ?>
-                                </div>
+                        <?php if (!empty($product['return_policy_days'])): ?>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-terra-green">keyboard_return</span>
+                                <span><?= (int) $product['return_policy_days'] ?>-Day Returns</span>
                             </div>
-                        <?php endforeach; ?>
-                        <div id="variant-stock-status" class="text-xs font-semibold text-on-surface-variant flex items-center gap-xs pt-1 border-t border-outline-variant/20">
-                            <span class="material-symbols-outlined text-[16px] text-primary">info</span>
-                            <span id="variant-stock-text">Please select a <?= esc($firstGroupName) ?> above</span>
+                        <?php endif; ?>
+
+                        <div class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-terra-green">local_shipping</span>
+                            <span>Road Distance Delivery & Store Pick-up</span>
                         </div>
                     </div>
-                <?php endif; ?>
 
-                <form action="<?= base_url('cart/add') ?>" method="POST" id="product-purchase-form" class="space-y-md">
-
-                    <?= csrf_field() ?>
-
-                    <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
-                    <input type="hidden" name="variant_id" id="selected-variant-id" value="">
-                    <input type="hidden" name="quantity" id="quantity-input" value="1" min="1" max="<?= esc($product['stock_quantity'] ?? 99) ?>">
-
-                    <div class="flex items-center gap-md">
-
-                        <div class="flex items-center bg-surface-container-high rounded-full px-md py-xs border border-outline-variant/30">
-
-                            <button type="button" id="qty-minus" class="p-xs px-sm hover:bg-surface-container text-on-surface-variant" <?= $outOfStock ? 'disabled' : '' ?> aria-label="Decrease quantity">
-
-                                <span class="material-symbols-outlined text-[20px]">remove</span>
-
-                            </button>
-
-                            <span id="quantity-display" class="w-12 text-center font-bold">1</span>
-
-                            <button type="button" id="qty-plus" class="p-xs px-sm hover:bg-surface-container text-on-surface-variant" <?= $outOfStock ? 'disabled' : '' ?> aria-label="Increase quantity">
-
-                                <span class="material-symbols-outlined text-[20px]">add</span>
-
-                            </button>
-
+                    <!-- Integrated Compact Merchant Storefront Card -->
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-terra-green shrink-0 shadow-2xs">
+                                <span class="material-symbols-outlined text-[20px]">storefront</span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1">
+                                    <p class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate"><?= esc($product['shop_name'] ?? 'Polomolok Merchant') ?></p>
+                                    <span class="material-symbols-outlined text-[14px] text-terra-green shrink-0" title="Verified Merchant">verified</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">Verified Blax Marketplace Partner</p>
+                            </div>
                         </div>
-
-                        <button type="submit" id="add-to-cart-btn" formaction="<?= base_url('cart/add') ?>" formmethod="POST" class="flex-1 bg-secondary-container text-on-secondary-container py-md rounded-full font-button text-button hover:brightness-95 transition-all flex items-center justify-center gap-sm disabled:opacity-50 disabled:cursor-not-allowed" <?= $cartDisabled ? 'disabled' : '' ?>>
-
-                            <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
-                            <span id="cart-btn-text"><?= $outOfStock ? 'Out of Stock' : ($hasVariants ? 'Select an option to continue' : 'Add to Cart') ?></span>
-
-                        </button>
-
+                        <a href="<?= base_url('shop/' . ($product['shop_slug'] ?? $product['shop_id'] ?? '')) ?>" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-terra-green hover:text-white text-terra-green border border-terra-green/30 text-xs font-bold transition-all shadow-2xs">
+                            <span>Visit Store</span>
+                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </a>
                     </div>
-
-                    <button type="button" id="buy-now-btn" class="w-full bg-primary text-on-primary py-lg rounded-full font-headline-md text-headline-md hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed" <?= $cartDisabled ? 'disabled' : '' ?>>
-
-                        Buy Now
-
-                    </button>
-
-                </form>
-
-                <div class="flex justify-center gap-lg py-md border-t border-outline-variant/20 mt-md flex-wrap">
-
-                    <?php if (!empty($product['warranty_period'])): ?>
-
-                        <div class="flex items-center gap-xs text-label-sm text-on-surface-variant">
-
-                            <span class="material-symbols-outlined text-[16px] text-primary">verified_user</span>
-                            <?= esc($product['warranty_period']) ?>
-
-                        </div>
-
-                    <?php endif; ?>
-
-                    <?php if (!empty($product['return_policy_days'])): ?>
-
-                        <div class="flex items-center gap-xs text-label-sm text-on-surface-variant">
-
-                            <span class="material-symbols-outlined text-[16px] text-primary">keyboard_return</span>
-                            <?= (int) $product['return_policy_days'] ?>-Day Returns
-
-                        </div>
-
-                    <?php endif; ?>
 
                 </div>
 
@@ -280,141 +252,159 @@
 
     </div>
 
-    <!-- Details Section (Bento Style) -->
-    <section class="mt-xxl grid grid-cols-1 md:grid-cols-3 gap-lg">
+    <!-- Balanced 2-Column Product Overview & Customer Reviews Section -->
+    <section id="reviews" class="mt-8 sm:mt-10 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
 
-        <div class="bg-surface-container-lowest p-xl rounded-2xl border border-outline-variant/20 shadow-sm col-span-1 md:col-span-2">
-
-            <h2 class="text-headline-md font-headline-md mb-lg">About this product</h2>
-
-            <p class="text-body-md text-on-surface-variant leading-relaxed">
-                <?= esc($product['description'] ?? 'No product description available.') ?>
-            </p>
-
-        </div>
-
-        <div class="bg-surface-container-highest p-xl rounded-2xl border border-outline-variant/30 flex flex-col justify-center items-center text-center">
-
-            <div class="mb-md p-md rounded-full bg-white shadow-md">
-
-                <span class="material-symbols-outlined text-[48px] text-primary">storefront</span>
-
+        <!-- Left (5 Cols): Product Specifications & Description -->
+        <div class="lg:col-span-5 bento-card bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-5">
+            <div class="flex items-center gap-2.5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[18px]">description</span>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-extrabold text-slate-900 dark:text-white">Product Overview</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Details & specifications</p>
+                </div>
             </div>
 
-            <h3 class="text-title-lg font-title-lg mb-sm"><?= esc($product['shop_name'] ?? 'RHK Merchant') ?></h3>
+            <?php $cleanDesc = trim((string) ($product['description'] ?? '')); ?>
+            <?php if ($cleanDesc !== ''): ?>
+                <div class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3">
+                    <p><?= nl2br(esc($cleanDesc)) ?></p>
+                </div>
+            <?php endif; ?>
 
-            <p class="text-body-md text-on-surface-variant mb-lg">View this shop's full catalog and other products.</p>
-
-            <a class="text-primary font-bold hover:underline flex items-center gap-xs" href="<?= base_url('shop/' . ($product['shop_slug'] ?? $product['shop_id'] ?? '')) ?>">
-
-                Visit Shop
-                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-
-            </a>
-
+            <!-- Structured Specifications Table (Always informative even if description is brief) -->
+            <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 divide-y divide-slate-200/60 dark:divide-slate-700/60 text-xs">
+                <div class="flex items-center justify-between px-4 py-2.5">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium">Category</span>
+                    <span class="font-semibold text-slate-900 dark:text-white"><?= esc($product['category_name'] ?? 'General Merchandise') ?></span>
+                </div>
+                <?php if (!empty($product['sku'])): ?>
+                    <div class="flex items-center justify-between px-4 py-2.5">
+                        <span class="text-slate-500 dark:text-slate-400 font-medium">Product SKU</span>
+                        <span class="font-mono font-semibold text-slate-900 dark:text-white"><?= esc($product['sku']) ?></span>
+                    </div>
+                <?php endif; ?>
+                <div class="flex items-center justify-between px-4 py-2.5">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium">Merchant</span>
+                    <span class="font-semibold text-slate-900 dark:text-white"><?= esc($product['shop_name'] ?? 'Polomolok Merchant') ?></span>
+                </div>
+                <div class="flex items-center justify-between px-4 py-2.5">
+                    <span class="text-slate-500 dark:text-slate-400 font-medium">Fulfillment</span>
+                    <span class="font-semibold text-slate-900 dark:text-white">Doorstep Delivery / Store Pick-up</span>
+                </div>
+            </div>
         </div>
 
-    </section>
-
-    <!-- Reviews Section -->
-    <section id="reviews" class="mt-xxl">
-        <div class="flex items-center justify-between mb-lg">
-            <h2 class="text-headline-md font-headline-md">Reviews</h2>
-            <span class="text-body-md text-on-surface-variant">
-                <?= (int) ($reviewCount ?? 0) ?> review<?= ((int) ($reviewCount ?? 0)) === 1 ? '' : 's' ?>
-            </span>
-        </div>
-
-        <?php if ($session = session()->get('isLoggedIn')): ?>
-            <div class="bg-surface-container-lowest p-lg rounded-2xl border border-outline-variant/20 mb-xl">
-                <h3 class="text-title-lg font-bold mb-md">
-                    <?= $userReview ? 'Update Your Review' : 'Write a Review' ?>
-                </h3>
-
-                <form action="<?= base_url('reviews/product/save') ?>" method="POST" class="space-y-lg" id="product-review-form">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="product_id" value="<?= esc($product['id']) ?>">
-                    <input type="hidden" name="shop_id" value="<?= esc($product['shop_id'] ?? '') ?>">
-
+        <!-- Right (7 Cols): Customer Reviews -->
+        <div class="lg:col-span-7 space-y-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-terra-amber flex items-center justify-center shrink-0 border border-amber-200/60">
+                        <span class="material-symbols-outlined text-[18px] fill-icon">star</span>
+                    </div>
                     <div>
-                        <label class="block text-label-sm font-semibold text-on-surface mb-sm">Your Rating</label>
-                        <div class="star-rating flex items-center gap-sm" role="radiogroup" aria-label="Select rating">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <input type="radio" name="rating" value="<?= $i ?>" id="star-<?= $i ?>" class="sr-only" <?= ($userReview && (int) $userReview['rating'] === $i) ? 'checked' : '' ?> required>
-                                <label for="star-<?= $i ?>" class="cursor-pointer text-3xl text-outline-variant hover:text-primary transition-colors <?= ($userReview && (int) $userReview['rating'] >= $i) ? 'text-primary fill-icon' : '' ?>" data-star="<?= $i ?>">
-                                    <span class="material-symbols-outlined">star</span>
-                                </label>
-                            <?php endfor; ?>
-                        </div>
+                        <h2 class="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">Customer Reviews</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Verified buyer feedback</p>
                     </div>
-
-                    <div>
-                        <label class="block text-label-sm font-semibold text-on-surface mb-sm" for="review-comment">Your Review (optional)</label>
-                        <textarea name="comment" id="review-comment" rows="4" class="w-full p-md bg-surface-container-lowest border border-outline-variant rounded-xl text-body-md text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Share your experience with this product... (optional)" maxlength="2000"><?= esc($userReview['comment'] ?? '') ?></textarea>
-                        <p class="text-xs text-on-surface-variant/60 mt-xs text-right">Max 2000 characters</p>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit" class="bg-primary text-on-primary px-lg py-md rounded-xl font-semibold hover:bg-primary-container transition-colors">
-                            <?= $userReview ? 'Update Review' : 'Submit Review' ?>
-                        </button>
-                    </div>
-                </form>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">
+                    <?= (int) ($reviewCount ?? 0) ?> review<?= ((int) ($reviewCount ?? 0)) === 1 ? '' : 's' ?>
+                </span>
             </div>
-        <?php else: ?>
-            <div class="bg-surface-container-lowest p-lg rounded-2xl border border-outline-variant/20 mb-xl text-center">
-                <p class="text-body-md text-on-surface-variant mb-md">Please <a href="<?= base_url('login') ?>" class="text-primary font-semibold hover:underline">sign in</a> to write a review.</p>
-            </div>
-        <?php endif; ?>
 
-        <?php if (!empty($reviews)): ?>
-            <div class="space-y-lg" id="reviews-list">
-                <?php foreach ($reviews as $review): ?>
-                    <div class="bg-surface-container-lowest p-lg rounded-2xl border border-outline-variant/20">
-                        <div class="flex items-start gap-md mb-md">
-                            <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-body-md flex-shrink-0">
-                                <?= strtoupper(substr(($review['first_name'] ?? '') . ($review['last_name'] ?? ''), 0, 1)) ?>
+            <?php if ($session = session()->get('isLoggedIn')): ?>
+                <div class="bento-card bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+                    <h3 class="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3">
+                        <?= $userReview ? 'Update Your Review' : 'Write a Review' ?>
+                    </h3>
+
+                    <form action="<?= base_url('reviews/product/save') ?>" method="POST" class="space-y-4" id="product-review-form">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="product_id" value="<?= esc($product['id']) ?>">
+                        <input type="hidden" name="shop_id" value="<?= esc($product['shop_id'] ?? '') ?>">
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Your Rating</label>
+                            <div class="star-rating flex items-center gap-1" role="radiogroup" aria-label="Select rating">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <input type="radio" name="rating" value="<?= $i ?>" id="star-<?= $i ?>" class="sr-only" <?= ($userReview && (int) $userReview['rating'] === $i) ? 'checked' : '' ?> required>
+                                    <label for="star-<?= $i ?>" class="cursor-pointer text-2xl text-slate-300 dark:text-slate-600 hover:text-terra-amber transition-colors <?= ($userReview && (int) $userReview['rating'] >= $i) ? 'text-terra-amber fill-icon' : '' ?>" data-star="<?= $i ?>">
+                                        <span class="material-symbols-outlined">star</span>
+                                    </label>
+                                <?php endfor; ?>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="font-bold text-on-surface truncate"><?= esc(($review['first_name'] ?? '') . ' ' . ($review['last_name'] ?? '')) ?></p>
-                                <div class="flex items-center gap-sm mt-xs">
-                                    <?php for ($i = 1; $i <= 5; $i++): ?>
-                                        <span class="material-symbols-outlined text-[18px] <?= $i <= (int) $review['rating'] ? 'fill-icon text-primary' : 'text-outline-variant' ?>">star</span>
-                                    <?php endfor; ?>
-                                    <span class="text-label-sm text-on-surface-variant ml-sm"><?= date('M d, Y', strtotime($review['created_at'])) ?></span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="review-comment">Your Review (optional)</label>
+                            <textarea name="comment" id="review-comment" rows="3" class="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-terra-green/30 focus:border-terra-green transition-all" placeholder="Share your experience with this product... (optional)" maxlength="2000"><?= esc($userReview['comment'] ?? '') ?></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-slate-400 font-mono">Max 2000 characters</span>
+                            <button type="submit" class="bg-terra-green hover:bg-terra-green-dark text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xs transition-all cursor-pointer">
+                                <?= $userReview ? 'Update Review' : 'Submit Review' ?>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="bento-card bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Please <a href="<?= base_url('login') ?>" class="text-terra-green font-bold hover:underline">sign in</a> to write a review.</p>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($reviews)): ?>
+                <div class="space-y-3.5" id="reviews-list">
+                    <?php foreach ($reviews as $review): ?>
+                        <div class="bento-card bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+                            <div class="flex items-start gap-3 mb-2">
+                                <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs shrink-0 border border-terra-green/20">
+                                    <?= strtoupper(substr(($review['first_name'] ?? '') . ($review['last_name'] ?? ''), 0, 1)) ?>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-xs text-slate-900 dark:text-white truncate"><?= esc(($review['first_name'] ?? '') . ' ' . ($review['last_name'] ?? '')) ?></p>
+                                    <div class="flex items-center gap-1 mt-0.5">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <span class="material-symbols-outlined text-[15px] <?= $i <= (int) $review['rating'] ? 'fill-icon text-terra-amber' : 'text-slate-300 dark:text-slate-600' ?>">star</span>
+                                        <?php endfor; ?>
+                                        <span class="text-[10px] text-slate-400 ml-1 font-mono"><?= date('M d, Y', strtotime($review['created_at'])) ?></span>
+                                    </div>
                                 </div>
                             </div>
+                            <?php if (!empty($review['comment'])): ?>
+                                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed"><?= esc($review['comment']) ?></p>
+                            <?php endif; ?>
                         </div>
-                        <?php if (!empty($review['comment'])): ?>
-                            <p class="text-body-md text-on-surface leading-relaxed"><?= esc($review['comment']) ?></p>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="bg-surface-container-lowest p-xl rounded-2xl border border-outline-variant/20 text-center">
-                <span class="material-symbols-outlined text-4xl text-outline mb-md">rate_review</span>
-                <p class="text-body-md text-on-surface-variant">No reviews yet. Be the first to review this product!</p>
-            </div>
-        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="bento-card bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 text-center shadow-2xs">
+                    <span class="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-600 mb-1">rate_review</span>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">No reviews yet. Be the first to review this product!</p>
+                </div>
+            <?php endif; ?>
+        </div>
     </section>
 
-    <!-- Related Products Section (Shopee / Lazada Style) -->
+    <!-- Related Products Section -->
     <?php if (!empty($relatedProducts)): ?>
-        <section class="mt-2xl pt-xl border-t border-outline-variant/30">
-            <div class="flex items-center justify-between mb-lg">
-                <div class="flex items-center gap-sm">
-                    <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                        <span class="material-symbols-outlined text-2xl">auto_awesome</span>
+        <section class="mt-12 pt-8 border-t border-slate-200/80 dark:border-slate-800">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
                     </div>
                     <div>
-                        <h2 class="text-title-lg md:text-headline-sm font-bold text-on-surface">Related Products</h2>
-                        <p class="text-label-sm md:text-body-sm text-on-surface-variant">Katulad na mga produkto sa parehong kategorya</p>
+                        <h2 class="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">Related Products</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Similar items in this department</p>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-md">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 <?php foreach ($relatedProducts as $rel): ?>
                     <?php
                         $relImg = product_image_url($rel['image_url'] ?? null);
@@ -425,48 +415,48 @@
                         $relRating = round((float) ($rel['rating_average'] ?? 0), 1);
                         $relRatingCount = (int) ($rel['rating_count'] ?? 0);
                     ?>
-                    <div class="group bg-surface-container-lowest border border-outline-variant/30 rounded-xl sm:rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
+                    <div class="bento-card group bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-md hover:border-terra-green/40 transition-all duration-300 flex flex-col justify-between shadow-2xs">
                         <div>
-                            <div class="relative aspect-square overflow-hidden bg-surface-container-low">
-                                <a href="<?= base_url('product/' . $rel['id']) ?>" class="block w-full h-full">
-                                    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="<?= esc($relImg) ?>" alt="<?= esc($rel['name']) ?>" loading="lazy">
+                            <div class="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-850 p-2 flex items-center justify-center">
+                                <a href="<?= base_url('product/' . $rel['id']) ?>" class="block w-full h-full flex items-center justify-center">
+                                    <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc($relImg) ?>" alt="<?= esc($rel['name']) ?>" loading="lazy">
                                 </a>
 
                                 <?php if (!empty($rel['is_bestseller'])): ?>
-                                    <span class="absolute top-1.5 left-1.5 bg-primary-container text-on-primary text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">Bestseller</span>
+                                    <span class="absolute top-1.5 left-1.5 bg-terra-green text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs">Bestseller</span>
                                 <?php elseif ($hasDiscount): ?>
-                                    <span class="absolute top-1.5 left-1.5 bg-error text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">-<?= $discountPct ?>%</span>
+                                    <span class="absolute top-1.5 left-1.5 bg-terra-amber text-slate-950 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs font-mono">-<?= $discountPct ?>%</span>
                                 <?php endif; ?>
                             </div>
 
-                            <div class="p-1.5 sm:p-md">
-                                <a href="<?= base_url('product/' . $rel['id']) ?>" class="text-[11px] sm:text-body-sm font-semibold text-on-surface line-clamp-2 group-hover:text-primary transition-colors leading-snug min-h-[2rem] sm:min-h-[2.5rem]" title="<?= esc($rel['name']) ?>">
+                            <div class="p-2.5 sm:p-3">
+                                <a href="<?= base_url('product/' . $rel['id']) ?>" class="text-[11px] sm:text-xs font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-terra-green transition-colors leading-snug min-h-[2rem]" title="<?= esc($rel['name']) ?>">
                                     <?= esc($rel['name']) ?>
                                 </a>
 
-                                <div class="hidden sm:flex items-center gap-1 mt-xs text-xs text-on-surface-variant">
-                                    <span class="material-symbols-outlined text-[14px] text-amber-500" style="font-variation-settings: 'FILL' 1;">star</span>
-                                    <span class="font-bold text-on-surface"><?= $relRating > 0 ? number_format($relRating, 1) : '5.0' ?></span>
-                                    <span class="text-[11px] text-outline font-normal">(<?= $relRatingCount ?>)</span>
+                                <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-500">
+                                    <span class="material-symbols-outlined text-[13px] text-terra-amber fill-icon">star</span>
+                                    <span class="font-bold text-slate-800 dark:text-slate-200 font-mono"><?= $relRating > 0 ? number_format($relRating, 1) : '5.0' ?></span>
+                                    <span class="font-mono text-slate-400">(<?= $relRatingCount ?>)</span>
                                 </div>
 
-                                <div class="mt-1 sm:mt-sm">
-                                    <div class="flex items-baseline gap-1 flex-wrap">
-                                        <span class="text-xs sm:text-title-sm md:text-title-md font-bold text-primary">₱<?= number_format($relPrice, 2) ?></span>
+                                <div class="mt-1.5">
+                                    <div class="flex items-baseline gap-1 flex-wrap font-mono">
+                                        <span class="text-xs sm:text-sm font-black text-terra-green">₱<?= number_format($relPrice, 2) ?></span>
                                         <?php if ($hasDiscount): ?>
-                                            <span class="text-[9px] sm:text-[11px] text-outline line-through">₱<?= number_format($relCompare, 2) ?></span>
+                                            <span class="text-[9px] sm:text-[10px] text-slate-400 line-through">₱<?= number_format($relCompare, 2) ?></span>
                                         <?php endif; ?>
                                     </div>
                                     <?php if (!empty($rel['shop_name'])): ?>
-                                        <p class="text-[10px] sm:text-[11px] text-on-surface-variant/70 truncate mt-0.5"><?= esc($rel['shop_name']) ?></p>
+                                        <p class="text-[9px] sm:text-[10px] text-slate-400 truncate mt-0.5"><?= esc($rel['shop_name']) ?></p>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="hidden sm:block px-sm pb-sm md:px-md md:pb-md pt-0">
-                            <a href="<?= base_url('product/' . $rel['id']) ?>" class="w-full block text-center py-1.5 px-2 bg-surface-container hover:bg-primary hover:text-on-primary text-primary text-xs font-bold rounded-lg transition-colors">
-                                View Details
+                        <div class="p-2 pt-0">
+                            <a href="<?= base_url('product/' . $rel['id']) ?>" class="w-full block text-center py-1 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-terra-green hover:text-white text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg transition-colors">
+                                View
                             </a>
                         </div>
                     </div>
@@ -496,11 +486,11 @@
                 mainImage.src = this.getAttribute('data-image');
             }
             thumbs.forEach(function (t) {
-                t.classList.remove('border-2', 'border-primary');
-                t.classList.add('border', 'border-outline-variant/30');
+                t.classList.remove('border-2', 'border-terra-green', 'ring-2', 'ring-terra-green/20');
+                t.classList.add('border', 'border-slate-200', 'dark:border-slate-700');
             });
-            this.classList.add('border-2', 'border-primary');
-            this.classList.remove('border-outline-variant/30');
+            this.classList.add('border-2', 'border-terra-green', 'ring-2', 'ring-terra-green/20');
+            this.classList.remove('border-slate-200', 'dark:border-slate-700');
         });
     });
 
@@ -527,16 +517,15 @@
 
     // Variant selection logic
     var hasVariants = <?= !empty($groupedVariants) ? 'true' : 'false' ?>;
-    var defaultGroupPrompt = 'Select an option to continue';
     var variantPills = document.querySelectorAll('.variant-pill');
     var variantInput = document.getElementById('selected-variant-id');
-    var priceDisplay = document.querySelector('.text-display.font-display.text-primary');
+    var priceDisplay = document.querySelector('.text-3xl.sm\\:text-4xl.font-black.text-terra-green');
     var defaultPriceText = priceDisplay ? priceDisplay.textContent : '';
-    var cartBtn = document.getElementById('add-to-cart-btn') || document.querySelector('button[type="submit"].bg-secondary-container');
+    var cartBtn = document.getElementById('add-to-cart-btn');
     var cartBtnText = document.getElementById('cart-btn-text');
-    var buyBtn = document.getElementById('buy-now-btn') || document.querySelector('button[type="submit"].bg-primary');
+    var buyBtn = document.getElementById('buy-now-btn');
     var variantStockText = document.getElementById('variant-stock-text');
-    var purchaseForm = document.getElementById('product-purchase-form') || document.querySelector('form[action*="cart/add"]');
+    var purchaseForm = document.getElementById('product-purchase-form');
 
     variantPills.forEach(function (pill) {
         pill.addEventListener('click', function () {
@@ -551,12 +540,12 @@
 
             // Toggle active styling among sibling pills in same group
             document.querySelectorAll('.variant-pill[data-group="' + group + '"]').forEach(function (sibling) {
-                sibling.classList.remove('ring-2', 'ring-primary', 'border-primary', 'bg-primary/10', 'text-primary');
-                sibling.classList.add('border-outline-variant/50', 'bg-surface-container', 'text-on-surface');
+                sibling.classList.remove('ring-2', 'ring-terra-green/30', 'border-terra-green', 'bg-terra-green/10', 'text-terra-green');
+                sibling.classList.add('border-slate-200', 'dark:border-slate-700', 'bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-slate-200');
             });
 
-            this.classList.remove('border-outline-variant/50', 'bg-surface-container', 'text-on-surface');
-            this.classList.add('ring-2', 'ring-primary', 'border-primary', 'bg-primary/10', 'text-primary');
+            this.classList.remove('border-slate-200', 'dark:border-slate-700', 'bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-slate-200');
+            this.classList.add('ring-2', 'ring-terra-green/30', 'border-terra-green', 'bg-terra-green/10', 'text-terra-green');
 
             // Update selected value text
             var labelSpan = document.getElementById('selected-val-' + groupSlug);
@@ -582,14 +571,12 @@
             if (stock > 0) {
                 if (variantStockText) {
                     variantStockText.textContent = val + ' — ' + stock + ' in stock';
-                    variantStockText.className = 'text-xs font-semibold text-primary';
+                    variantStockText.className = 'text-xs font-semibold text-terra-green';
                 }
                 if (cartBtn) {
                     cartBtn.removeAttribute('disabled');
                     if (cartBtnText) {
                         cartBtnText.textContent = 'Add to Cart';
-                    } else {
-                        cartBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">shopping_cart</span> Add to Cart';
                     }
                 }
                 if (buyBtn) {
@@ -605,14 +592,12 @@
             } else {
                 if (variantStockText) {
                     variantStockText.textContent = val + ' is currently out of stock';
-                    variantStockText.className = 'text-xs font-semibold text-error';
+                    variantStockText.className = 'text-xs font-semibold text-rose-500';
                 }
                 if (cartBtn) {
                     cartBtn.setAttribute('disabled', 'disabled');
                     if (cartBtnText) {
                         cartBtnText.textContent = 'Out of Stock';
-                    } else {
-                        cartBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">remove_shopping_cart</span> Out of Stock';
                     }
                 }
                 if (buyBtn) {
@@ -633,14 +618,14 @@
             if (hasVariants && (!variantInput || !variantInput.value)) {
                 if (variantStockText) {
                     variantStockText.textContent = 'Please select an option to continue.';
-                    variantStockText.className = 'text-xs font-bold text-error';
+                    variantStockText.className = 'text-xs font-bold text-rose-500';
                 }
                 var variantsSection = document.getElementById('variants-section');
                 if (variantsSection) {
                     variantsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    variantsSection.classList.add('ring-2', 'ring-error');
+                    variantsSection.classList.add('ring-2', 'ring-rose-500');
                     setTimeout(function () {
-                        variantsSection.classList.remove('ring-2', 'ring-error');
+                        variantsSection.classList.remove('ring-2', 'ring-rose-500');
                     }, 2500);
                 }
                 return;
@@ -666,31 +651,19 @@
                 e.preventDefault();
                 if (variantStockText) {
                     variantStockText.textContent = 'Please select an option to continue.';
-                    variantStockText.className = 'text-xs font-bold text-error';
+                    variantStockText.className = 'text-xs font-bold text-rose-500';
                 }
                 var variantsSection = document.getElementById('variants-section');
                 if (variantsSection) {
                     variantsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    variantsSection.classList.add('ring-2', 'ring-error');
+                    variantsSection.classList.add('ring-2', 'ring-rose-500');
                     setTimeout(function () {
-                        variantsSection.classList.remove('ring-2', 'ring-error');
+                        variantsSection.classList.remove('ring-2', 'ring-rose-500');
                     }, 2500);
                 }
             }
         });
     }
-
-    document.querySelectorAll('button').forEach(function (button) {
-        button.addEventListener('mousedown', function () {
-            this.classList.add('scale-95');
-        });
-        button.addEventListener('mouseup', function () {
-            this.classList.remove('scale-95');
-        });
-        button.addEventListener('mouseleave', function () {
-            this.classList.remove('scale-95');
-        });
-    });
 
     // Star rating interaction
     var starLabels = document.querySelectorAll('.star-rating label');
@@ -701,11 +674,11 @@
             starLabels.forEach(function (lbl) {
                 var s = parseInt(lbl.getAttribute('data-star'), 10);
                 if (s <= star) {
-                    lbl.classList.add('text-primary', 'fill-icon');
-                    lbl.classList.remove('text-outline-variant');
+                    lbl.classList.add('text-terra-amber', 'fill-icon');
+                    lbl.classList.remove('text-slate-300', 'dark:text-slate-600');
                 } else {
-                    lbl.classList.remove('text-primary', 'fill-icon');
-                    lbl.classList.add('text-outline-variant');
+                    lbl.classList.remove('text-terra-amber', 'fill-icon');
+                    lbl.classList.add('text-slate-300', 'dark:text-slate-600');
                 }
             });
         });
@@ -715,27 +688,26 @@
             starLabels.forEach(function (lbl) {
                 var s = parseInt(lbl.getAttribute('data-star'), 10);
                 if (s <= checkedStar) {
-                    lbl.classList.add('text-primary', 'fill-icon');
-                    lbl.classList.remove('text-outline-variant');
+                    lbl.classList.add('text-terra-amber', 'fill-icon');
+                    lbl.classList.remove('text-slate-300', 'dark:text-slate-600');
                 } else {
-                    lbl.classList.remove('text-primary', 'fill-icon');
-                    lbl.classList.add('text-outline-variant');
+                    lbl.classList.remove('text-terra-amber', 'fill-icon');
+                    lbl.classList.add('text-slate-300', 'dark:text-slate-600');
                 }
             });
         });
     });
     starInputs.forEach(function (input) {
         input.addEventListener('change', function () {
-            // Update visual state on change
             var checkedStar = parseInt(this.value, 10);
             starLabels.forEach(function (lbl) {
                 var s = parseInt(lbl.getAttribute('data-star'), 10);
                 if (s <= checkedStar) {
-                    lbl.classList.add('text-primary', 'fill-icon');
-                    lbl.classList.remove('text-outline-variant');
+                    lbl.classList.add('text-terra-amber', 'fill-icon');
+                    lbl.classList.remove('text-slate-300', 'dark:text-slate-600');
                 } else {
-                    lbl.classList.remove('text-primary', 'fill-icon');
-                    lbl.classList.add('text-outline-variant');
+                    lbl.classList.remove('text-terra-amber', 'fill-icon');
+                    lbl.classList.add('text-slate-300', 'dark:text-slate-600');
                 }
             });
         });

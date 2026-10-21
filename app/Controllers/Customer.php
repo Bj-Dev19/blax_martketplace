@@ -675,15 +675,16 @@ class Customer extends BaseController
 
         $polomolokBarangays = [
             'Bentung', 'Cannery Site', 'Crossing Palkan', 'Glamang', 'Kinilis',
-            'Klinan 6', 'Koronadal Proper', 'Lam-Caliaf', 'Landan', 'Lumakil',
+            'Klinan 6', 'Koronadal Proper', 'Lam-Caliaf', 'Landan', 'Lapu', 'Lumakil',
             'Magsaysay', 'Maligo', 'Pagalungan', 'Palkan', 'Poblacion', 'Polo',
             'Pula Bato', 'Rubber', 'Silway 7', 'Silway 8', 'Sulit', 'Sumbakil',
             'Upper Klinan'
         ];
         $tupiBarangays = [
-            'Acmonan', 'Bololmala', 'Bunao', 'Cebuano', 'Crossing Rubber', 'Dajay',
-            'Kablon', 'Kalkam', 'Linan', 'Lunen', 'Miaso', 'Palian',
-            'Poblacion', 'Polonoling', 'Simbo', 'Tubeng'
+            'Acmonan', 'Bololmala', 'Bunao', 'Cebuano', 'Crossing Rubber',
+            'Juan-Loreto Tamayo', 'Kablon', 'Kalkam', 'Linan', 'Lunen',
+            'Miasong', 'Miaso', 'Palian', 'Poblacion', 'Polonoling', 'Polonuling',
+            'Simbo', 'Tubeng'
         ];
         $validBarangays = array_unique(array_merge($polomolokBarangays, $tupiBarangays));
 
@@ -932,16 +933,31 @@ class Customer extends BaseController
             ->orderBy('placed_at', 'DESC')
             ->findAll();
 
+        // Active printing requests status snapshot
+        $activePrinting = (new \App\Models\PrintingRequestModel())
+            ->select('id, request_number, status, progress_percent, file_name, created_at')
+            ->where('customer_id', $userId)
+            ->whereIn('status', ['new', 'in_production', 'ready_for_pickup', 'ready_for_delivery'])
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+
+        $headerStats = (new \App\Models\UserModel())->getCustomerHeaderStats($userId);
+        $recentNotifs = $notifModel->getRecent($userId, 6);
+
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
-                'success'       => true,
-                'unread_count'  => $unreadCount,
-                'max_notif_id'  => $maxNotifId,
-                'new_notifs'    => $newNotifs,
-                'has_new'       => !empty($newNotifs),
-                'active_orders' => $activeOrders,
-                'timestamp'     => date('Y-m-d H:i:s'),
+                'success'             => true,
+                'unread_count'        => $unreadCount,
+                'cart_count'          => (int) ($headerStats['cart_count'] ?? 0),
+                'active_orders_count' => (int) ($headerStats['active_orders_count'] ?? count($activeOrders)),
+                'max_notif_id'        => $maxNotifId,
+                'new_notifs'          => $newNotifs,
+                'notifications'       => $recentNotifs,
+                'has_new'             => !empty($newNotifs),
+                'active_orders'       => $activeOrders,
+                'active_printing'     => $activePrinting,
+                'timestamp'           => date('Y-m-d H:i:s'),
             ]);
     }
 

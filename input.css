@@ -133,6 +133,81 @@ body {
     }
 }
 
+/* ── Bento Grid + Clean Minimalist Hybrid Primitives ──────────────── */
+.bento-card {
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card:hover {
+    border-color: rgba(0, 62, 168, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+}
+
+.bento-card-spotlight {
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.bento-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+
+.bento-pill-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.875rem;
+    background: #f8fafc;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transition: all 0.2s ease;
+}
+
+.bento-pill-stat:hover {
+    background: #ffffff;
+    border-color: rgba(0, 62, 168, 0.25);
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+}
+
+html.dark .bento-card,
+html.dark .bento-card-spotlight {
+    background: #151f32 !important;
+    border-color: rgba(36, 50, 76, 0.8) !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .bento-card:hover {
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .bento-pill-stat {
+    background: #1e293b !important;
+    border-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+html.dark .bento-pill-stat:hover {
+    background: #24324c !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
 /* Responsive utilities */
 .mobile-nav-open {
     overflow: hidden;
@@ -909,4 +984,69 @@ html.dark .placeholder\:text-slate-400::placeholder {
 
 html.dark .placeholder\:text-gray-400::placeholder {
     color: #6b7280 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* TERRA COLOR SYSTEM & BENTO HYBRID TOKENS                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+    --terra-green: #4A943E;
+    --terra-green-dark: #3B7732;
+    --terra-green-light: #EAF4E8;
+    --terra-earth: #6E3511;
+    --terra-earth-dark: #54280C;
+    --terra-earth-light: #F7EFEB;
+    --terra-amber: #F4AE52;
+    --terra-amber-dark: #D6933A;
+    --terra-amber-light: #FEF7ED;
+}
+
+.text-terra-green { color: #4A943E; }
+.bg-terra-green { background-color: #4A943E; }
+.border-terra-green { border-color: #4A943E; }
+
+.text-terra-earth { color: #6E3511; }
+.bg-terra-earth { background-color: #6E3511; }
+.border-terra-earth { border-color: #6E3511; }
+
+.text-terra-amber { color: #F4AE52; }
+.bg-terra-amber { background-color: #F4AE52; }
+.border-terra-amber { border-color: #F4AE52; }
+
+/* Bento card tactile hover */
+.bento-card-interactive {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.bento-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: rgba(74, 148, 62, 0.4);
+}
+
+/* Terra Auth Typography & Atmospheric Glow Utilities */
+.font-headline, .font-serif {
+    font-family: 'Literata', Georgia, serif;
+}
+.font-body {
+    font-family: 'Nunito Sans', 'Plus Jakarta Sans', sans-serif;
+}
+.glow-blur {
+    filter: blur(80px);
+}
+.glass-card-dark {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.glass-card-dark:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Hero card balanced scrim gradient */
+.hero-scrim-gradient {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.88) 40%, rgba(255, 255, 255, 0.35) 68%, rgba(255, 255, 255, 0) 90%);
+}
+html.dark .hero-scrim-gradient {
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.90) 40%, rgba(15, 23, 42, 0.40) 68%, rgba(15, 23, 42, 0) 90%);
 }

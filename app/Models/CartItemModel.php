@@ -29,7 +29,7 @@ class CartItemModel extends Model
     public function getCartItemsWithProducts(int $cartId)
     {
         return $this->db->table('cart_items ci')
-            ->select('ci.*, p.name as product_name, COALESCE(ci.unit_price, p.price) as price, p.shop_id, COALESCE(pv.stock_quantity, p.stock_quantity) as stock_quantity, s.shop_name, s.offers_delivery, s.offers_pickup, pi.image_url')
+            ->select('ci.*, p.name as product_name, COALESCE(ci.unit_price, p.price) as price, p.shop_id, COALESCE(pv.stock_quantity, p.stock_quantity) as stock_quantity, s.shop_name, s.offers_delivery, s.offers_pickup, s.latitude as shop_latitude, s.longitude as shop_longitude, s.barangay as shop_barangay, s.city as shop_city, s.address_line as shop_address_line, pi.image_url')
             ->join('products p', 'p.id = ci.product_id', 'left')
             ->join('shops s', 's.id = p.shop_id', 'left')
             ->join('product_variants pv', 'pv.id = ci.variant_id', 'left')

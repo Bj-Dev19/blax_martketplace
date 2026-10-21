@@ -28,21 +28,21 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
 
 <div class="space-y-md">
     <!-- TOP: Sleek POS Command Bar -->
-    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-3 sm:px-4 sm:py-3 shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl <?= $isCombinedPickup ? 'bg-purple-100 text-purple-700' : ($isPrintingPickup ? 'bg-primary-container text-on-primary-container' : ($isStorePickup ? 'bg-secondary-container text-on-secondary-container' : 'bg-primary-container text-on-primary-container')) ?> flex items-center justify-center shrink-0 shadow-sm">
-                <span class="material-symbols-outlined text-xl"><?= $isCombinedPickup ? 'shopping_cart_checkout' : ($isPrintingPickup ? 'print' : ($isStorePickup ? 'storefront' : 'point_of_sale')) ?></span>
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-3.5 sm:px-5 sm:py-4 shadow-sm">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl <?= $isCombinedPickup ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300' : ($isPrintingPickup ? 'bg-terra-earth/10 dark:bg-terra-earth/20 text-terra-earth dark:text-terra-amber' : ($isStorePickup ? 'bg-terra-green/10 dark:bg-terra-green/20 text-terra-green' : 'bg-terra-green/10 dark:bg-terra-green/20 text-terra-green')) ?> flex items-center justify-center shrink-0 shadow-sm border border-current/20">
+                <span class="material-symbols-outlined text-2xl"><?= $isCombinedPickup ? 'shopping_cart_checkout' : ($isPrintingPickup ? 'print' : ($isStorePickup ? 'storefront' : 'point_of_sale')) ?></span>
             </div>
             <div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <h1 class="text-title-md font-extrabold text-on-surface">
+                    <h1 class="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
                         Point of Sale (POS)
                     </h1>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $isCombinedPickup ? 'bg-purple-100 text-purple-800' : ($isPrintingPickup ? 'bg-primary/15 text-primary' : ($isStorePickup ? 'bg-secondary/15 text-secondary' : 'bg-primary/15 text-primary')) ?>">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <?= $isCombinedPickup ? 'bg-purple-100 text-purple-800 border border-purple-300' : ($isPrintingPickup ? 'bg-terra-earth/15 text-terra-earth dark:text-terra-amber border border-terra-earth/30' : ($isStorePickup ? 'bg-terra-green/15 text-terra-green border border-terra-green/30' : 'bg-terra-green/15 text-terra-green border border-terra-green/30')) ?>">
                         <?= $isCombinedPickup ? 'Combined Pick-up POS' : ($isPrintingPickup ? 'Printing Pick-up POS' : ($isStorePickup ? 'Store Pick-up POS' : 'Walk-in Counter POS')) ?>
                     </span>
                 </div>
-                <p class="text-[11px] text-on-surface-variant font-medium hidden sm:block">
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
                     <?= $isCombinedPickup
                         ? 'Combined fulfillment: process product order and printing request in a single checkout without double-charging.'
                         : ($isPrintingPickup
@@ -57,16 +57,16 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
         <!-- Mode Buttons: Primary 3-Action Touch Group + Secondary Actions -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full xl:w-auto">
             <!-- Segmented Primary Action Group: min-h-[48px], 22-24px icons -->
-            <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 p-1 bg-surface-container-low/80 border border-outline-variant/30 rounded-2xl shadow-inner">
+            <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl shadow-inner">
                 <!-- 1. Select Ready for Pick-up -->
                 <button type="button" 
                         onclick="openPickupSelectorModal()" 
-                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial <?= $isStorePickup ? 'bg-secondary text-on-secondary shadow-md ring-2 ring-secondary/30' : 'bg-surface-container-lowest hover:bg-surface-container text-on-surface border border-outline-variant/20 shadow-sm' ?>"
+                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial <?= $isStorePickup ? 'bg-terra-earth text-white shadow-md ring-2 ring-terra-earth/30' : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs' ?>"
                         title="Select ready-for-pickup product order">
-                    <span class="material-symbols-outlined text-[22px] sm:text-[24px] <?= $isStorePickup ? '' : 'text-secondary' ?>">shopping_bag</span>
+                    <span class="material-symbols-outlined text-[22px] sm:text-[24px] <?= $isStorePickup ? 'text-white' : 'text-terra-earth dark:text-terra-amber' ?>">shopping_bag</span>
                     <span>Ready Pick-up</span>
                     <?php if (!empty($pickupOrders)): ?>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-extrabold <?= $isStorePickup ? 'bg-on-secondary/20 text-on-secondary' : 'bg-secondary/15 text-secondary' ?>">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-mono font-extrabold <?= $isStorePickup ? 'bg-white/20 text-white' : 'bg-terra-earth/15 text-terra-earth dark:text-terra-amber' ?>">
                             <?= count($pickupOrders) ?>
                         </span>
                     <?php endif; ?>
@@ -75,12 +75,12 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                 <!-- 2. Printing Ready for Pick-up -->
                 <button type="button" 
                         onclick="openPrintingSelectorModal()" 
-                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial <?= $isPrintingPickup ? 'bg-primary text-on-primary shadow-md ring-2 ring-primary/30' : 'bg-surface-container-lowest hover:bg-surface-container text-on-surface border border-outline-variant/20 shadow-sm' ?>"
+                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial <?= $isPrintingPickup ? 'bg-terra-green text-white shadow-md ring-2 ring-terra-green/30' : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs' ?>"
                         title="Select ready-for-pickup printing request">
-                    <span class="material-symbols-outlined text-[22px] sm:text-[24px] <?= $isPrintingPickup ? '' : 'text-primary' ?>">print</span>
+                    <span class="material-symbols-outlined text-[22px] sm:text-[24px] <?= $isPrintingPickup ? 'text-white' : 'text-terra-green' ?>">print</span>
                     <span>Ready Printing</span>
                     <?php if (!empty($printingPickupRequests)): ?>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-extrabold <?= $isPrintingPickup ? 'bg-on-primary/20 text-on-primary' : 'bg-primary/15 text-primary' ?>">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-mono font-extrabold <?= $isPrintingPickup ? 'bg-white/20 text-white' : 'bg-terra-green/15 text-terra-green' ?>">
                             <?= count($printingPickupRequests) ?>
                         </span>
                     <?php endif; ?>
@@ -89,9 +89,9 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                 <!-- 3. Scan Customer QR -->
                 <button type="button" 
                         onclick="openQrScannerModal()" 
-                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial bg-surface-container-lowest hover:bg-secondary-container/40 text-secondary border border-secondary/30 shadow-sm"
+                        class="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all flex-1 sm:flex-initial bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-xs"
                         title="Scan customer pickup QR code">
-                    <span class="material-symbols-outlined text-[22px] sm:text-[24px]">qr_code_scanner</span>
+                    <span class="material-symbols-outlined text-[22px] sm:text-[24px] text-terra-amber">qr_code_scanner</span>
                     <span>Scan QR</span>
                 </button>
             </div>
@@ -99,13 +99,13 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
             <!-- Secondary Links: New Walk-in & Back to Orders -->
             <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <a href="<?= base_url('tenant/pos') ?>" 
-                   class="h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all <?= (!$isStorePickup && !$isPrintingPickup) ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm' : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant' ?>">
+                   class="h-10 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all <?= (!$isStorePickup && !$isPrintingPickup) ? 'bg-terra-green/15 text-terra-green border border-terra-green/30 shadow-xs' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300' ?>">
                     <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
                     <span>New Walk-in</span>
                 </a>
 
                 <a href="<?= base_url('tenant/orders') ?>" 
-                   class="h-10 px-3 rounded-xl border border-outline-variant/30 hover:bg-surface-container text-xs font-semibold text-on-surface-variant flex items-center gap-1 transition-all">
+                   class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 transition-all">
                     <span class="material-symbols-outlined text-[18px]">arrow_back</span>
                     <span>Orders</span>
                 </a>
@@ -454,35 +454,35 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
         
         <!-- Left Side: Product Search, Category Chips & Product Cards Grid (7 cols on lg, 8 cols on xl) -->
         <div class="lg:col-span-7 xl:col-span-8 space-y-3">
-            <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-3.5 sm:p-4 shadow-xs space-y-3">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
                 
                 <!-- Search Header & Shortcuts Bar -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <div class="flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-primary text-[18px]">manage_search</span>
-                        <h2 class="text-xs sm:text-sm font-bold text-on-surface">Find Products</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-terra-green text-[20px]">manage_search</span>
+                        <h2 class="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white">Find Products</h2>
                     </div>
-                    <span class="text-[11px] text-outline hidden sm:inline-block">Search by name, brand, or SKU</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline-block">Search by name, brand, or SKU</span>
                 </div>
 
                 <div class="relative">
                     <div class="relative flex items-center">
-                        <span class="material-symbols-outlined absolute left-3.5 text-outline text-[20px] pointer-events-none">search</span>
+                        <span class="material-symbols-outlined absolute left-3.5 text-slate-400 text-[20px] pointer-events-none">search</span>
                         <input type="text" 
                                id="posProductSearch" 
                                placeholder="Search products by name, brand, or SKU... (Press '/' to search)" 
                                autocomplete="off"
-                               class="w-full pl-11 pr-20 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-body-md text-on-surface placeholder:text-outline/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                               class="w-full pl-11 pr-20 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-terra-green focus:border-terra-green transition-all">
                         <div class="absolute right-3 flex items-center gap-1">
-                            <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold text-outline bg-surface-container border border-outline-variant/40 rounded shadow-2xs">/</kbd>
-                            <button type="button" id="posClearSearch" class="hidden text-outline hover:text-on-surface p-1 rounded-lg hover:bg-surface-container">
+                            <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md shadow-2xs">/</kbd>
+                            <button type="button" id="posClearSearch" class="hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                                 <span class="material-symbols-outlined text-[18px]">close</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Live Results Dropdown -->
-                    <div id="posSearchResults" class="hidden absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-xl z-40 max-h-80 overflow-y-auto divide-y divide-outline-variant/20 custom-scrollbar">
+                    <div id="posSearchResults" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-40 max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 custom-scrollbar">
                         <!-- Populated by JS -->
                     </div>
                 </div>
@@ -490,13 +490,13 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                 <!-- Category Filter Chips -->
                 <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 custom-scrollbar text-xs">
                     <button type="button" 
-                            class="pos-cat-chip px-3 py-1.5 rounded-full font-bold transition-all shrink-0 bg-primary text-on-primary shadow-xs" 
+                            class="pos-cat-chip px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-terra-green text-white shadow-xs" 
                             data-category="">
                         All Categories
                     </button>
                     <?php foreach ($categories as $cat): ?>
                         <button type="button" 
-                                class="pos-cat-chip px-3 py-1.5 rounded-full font-medium transition-all shrink-0 bg-surface-container-low text-on-surface-variant hover:bg-surface-container border border-outline-variant/30" 
+                                class="pos-cat-chip px-3.5 py-1.5 rounded-full font-medium transition-all shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700" 
                                 data-category="<?= (int) $cat['id'] ?>">
                             <?= esc($cat['name']) ?>
                         </button>
@@ -504,21 +504,21 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                 </div>
 
                 <!-- Product Catalog Header & Quick Grid -->
-                <div class="pt-2 border-t border-outline-variant/20">
-                    <div class="flex items-center justify-between mb-2">
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-2.5">
                         <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-[18px] text-primary">grid_view</span>
-                            <h3 class="text-label-sm font-bold text-on-surface uppercase tracking-wider">Product Catalog</h3>
-                            <span id="posActiveCategoryText" class="text-xs text-outline font-medium hidden sm:inline-block">• All Products</span>
+                            <span class="material-symbols-outlined text-[18px] text-terra-green">grid_view</span>
+                            <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Product Catalog</h3>
+                            <span id="posActiveCategoryText" class="text-xs text-slate-400 dark:text-slate-500 font-medium hidden sm:inline-block">• All Products</span>
                         </div>
-                        <span id="posCatalogHint" class="text-xs text-outline">Click card to add</span>
+                        <span id="posCatalogHint" class="text-xs text-slate-400 font-medium">Click card to add to cart</span>
                     </div>
 
                     <!-- Modern Product Cards Grid -->
                     <div id="posQuickCatalog" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[calc(100vh-270px)] min-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
                         <!-- Populated dynamically via JS product cards -->
-                        <div class="col-span-full py-xl text-center text-on-surface-variant/70 flex flex-col items-center gap-xs">
-                            <span class="material-symbols-outlined text-3xl animate-spin text-primary">progress_activity</span>
+                        <div class="col-span-full py-16 text-center text-slate-400 flex flex-col items-center gap-2">
+                            <span class="material-symbols-outlined text-3xl animate-spin text-terra-green">progress_activity</span>
                             <span class="text-xs font-medium">Loading store products...</span>
                         </div>
                     </div>
@@ -811,43 +811,43 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                             </div>
                         </div>
                     <?php else: ?>
-                        <div class="flex justify-between items-center text-xs text-on-surface-variant">
+                        <div class="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
                             <span>Subtotal:</span>
                             <span class="font-mono font-medium" id="posWalkinSubtotal">₱0.00</span>
                         </div>
-                        <div class="p-3 rounded-xl bg-primary/10 border border-primary/20">
-                            <span class="text-xs font-bold text-primary block mb-1">Total Amount Due:</span>
+                        <div class="p-4 rounded-2xl bg-terra-green/10 border border-terra-green/20">
+                            <span class="text-xs font-bold text-terra-green block mb-1">Total Amount Due:</span>
                             <div class="flex items-baseline justify-between">
-                                <span class="text-xs text-on-surface-variant font-medium">Due Now</span>
-                                <span class="font-mono text-2xl font-black text-primary" id="posAmountDueNow">₱0.00</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Due Now</span>
+                                <span class="font-display text-2xl sm:text-3xl font-black text-terra-green font-mono" id="posAmountDueNow">₱0.00</span>
                             </div>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <!-- Payment Method Selector -->
-                <div class="pt-2 border-t border-outline-variant/20 space-y-2">
-                    <label class="text-[11px] font-bold text-on-surface uppercase tracking-wider block">
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <label class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                         Payment Method
                     </label>
                     <div class="grid grid-cols-3 gap-1.5">
                         <label class="cursor-pointer">
                             <input type="radio" name="pos_payment_method" value="cash" class="peer sr-only" checked>
-                            <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-outline-variant/40 bg-surface-container-low text-xs font-bold text-on-surface transition-all peer-checked:bg-primary peer-checked:text-on-primary peer-checked:border-primary shadow-xs">
+                            <span class="flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs">
                                 <span class="material-symbols-outlined text-[16px]">payments</span>
                                 Cash
                             </span>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="pos_payment_method" value="gcash" class="peer sr-only">
-                            <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-outline-variant/40 bg-surface-container-low text-xs font-bold text-on-surface transition-all peer-checked:bg-primary peer-checked:text-on-primary peer-checked:border-primary shadow-xs">
+                            <span class="flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs">
                                 <span class="material-symbols-outlined text-[16px]">account_balance_wallet</span>
                                 GCash
                             </span>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="pos_payment_method" value="card" class="peer sr-only">
-                            <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-outline-variant/40 bg-surface-container-low text-xs font-bold text-on-surface transition-all peer-checked:bg-primary peer-checked:text-on-primary peer-checked:border-primary shadow-xs">
+                            <span class="flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs">
                                 <span class="material-symbols-outlined text-[16px]">credit_card</span>
                                 Card
                             </span>
@@ -855,34 +855,34 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                     </div>
 
                     <!-- Cash Calculation Container -->
-                    <div id="posCashCalculationContainer" class="p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl space-y-2 transition-all">
+                    <div id="posCashCalculationContainer" class="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-2.5 transition-all">
                         <div class="flex items-center justify-between gap-2">
-                            <label for="posCashTendered" class="text-xs font-bold text-on-surface shrink-0">Cash Tendered (₱):</label>
-                            <input type="number" id="posCashTendered" step="any" min="0" placeholder="0.00" class="w-28 sm:w-32 py-1.5 px-2 text-right font-mono font-bold text-sm bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary">
+                            <label for="posCashTendered" class="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">Cash Tendered (₱):</label>
+                            <input type="number" id="posCashTendered" step="any" min="0" placeholder="0.00" class="w-28 sm:w-32 py-1.5 px-2.5 text-right font-mono font-bold text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-terra-green">
                         </div>
 
                         <!-- Quick Cash Denominations -->
                         <div class="flex flex-wrap items-center gap-1 justify-end">
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="exact">Exact</button>
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="20">+20</button>
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="50">+50</button>
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="100">+100</button>
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="500">+500</button>
-                            <button type="button" class="pos-denom-btn px-2 py-1 text-[11px] font-semibold bg-surface-container-lowest border border-outline-variant/40 rounded-md hover:bg-surface-container active:scale-95 transition-all" data-val="1000">+1000</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="exact">Exact</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="20">+20</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="50">+50</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="100">+100</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="500">+500</button>
+                            <button type="button" class="pos-denom-btn px-2.5 py-1 text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-terra-green hover:text-terra-green active:scale-95 transition-all" data-val="1000">+1000</button>
                         </div>
 
-                        <div class="flex justify-between items-center text-xs font-bold border-t border-outline-variant/20 pt-1.5">
-                            <span class="text-on-surface-variant">Change Due:</span>
-                            <span id="posChangeDueText" class="font-mono text-sm font-bold text-green-700">₱0.00</span>
+                        <div class="flex justify-between items-center text-xs font-bold border-t border-slate-200 dark:border-slate-700 pt-2">
+                            <span class="text-slate-500 dark:text-slate-400">Change Due:</span>
+                            <span id="posChangeDueText" class="font-mono text-base font-bold text-terra-green">₱0.00</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Error Notice Container -->
-                <div id="posErrorMessage" class="hidden p-2.5 bg-error-container/30 border border-error/20 text-on-error-container rounded-xl text-xs font-medium"></div>
+                <div id="posErrorMessage" class="hidden p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 rounded-xl text-xs font-medium"></div>
 
                 <!-- Complete Button -->
-                <button type="button" id="posSubmitBtn" class="w-full min-h-[48px] py-3 bg-primary text-on-primary rounded-xl font-button text-sm font-bold shadow-md hover:shadow-lg hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                <button type="button" id="posSubmitBtn" class="w-full min-h-[50px] py-3.5 bg-terra-green hover:bg-terra-green-dark text-white rounded-2xl font-display text-sm font-extrabold shadow-lg shadow-terra-green/20 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <span class="material-symbols-outlined text-[20px]">check_circle</span>
                     <span id="posSubmitBtnLabel"><?= $isPrintingPickup ? 'Complete Printing Pick-up' : ($isStorePickup ? 'Complete Store Pick-up' : 'Complete Walk-in Sale') ?></span>
                 </button>

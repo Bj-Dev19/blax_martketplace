@@ -46,9 +46,9 @@
 
 </head>
 
-<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col relative pb-16 md:pb-0 w-full max-w-full overflow-x-hidden">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased min-h-screen flex flex-col relative pb-16 md:pb-0 w-full max-w-full overflow-x-clip font-sans transition-colors">
 
-    <div class="flex-grow flex flex-col w-full max-w-full overflow-x-hidden">
+    <div class="flex-grow flex flex-col w-full max-w-full overflow-x-clip">
 
         <?= view('components/announcement_bar', ['cms' => $cmsGlobal]) ?>
 
@@ -66,31 +66,31 @@
     </div>
 
     <!-- Mobile Bottom Sticky Navigation (Guests & Users) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around transition-colors">
         
         <!-- 1. Home -->
-        <a href="<?= base_url('/') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-colors <?= $activeNav === 'home' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' ?>">
-            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'home' ? 'text-primary scale-105' : '' ?> transition-transform">home</span>
+        <a href="<?= base_url('/') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-all <?= $activeNav === 'home' ? 'text-terra-green font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-terra-green' ?>">
+            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'home' ? 'text-terra-green scale-110' : '' ?> transition-transform">home</span>
             <span class="text-[10px] tracking-tight leading-none mt-1">Home</span>
         </a>
 
         <!-- 2. Categories -->
-        <a href="<?= base_url('categories') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-colors <?= $activeNav === 'categories' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' ?>">
-            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'categories' ? 'text-primary scale-105' : '' ?> transition-transform">grid_view</span>
+        <a href="<?= base_url('categories') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-all <?= $activeNav === 'categories' ? 'text-terra-green font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-terra-green' ?>">
+            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'categories' ? 'text-terra-green scale-110' : '' ?> transition-transform">grid_view</span>
             <span class="text-[10px] tracking-tight leading-none mt-1">Categories</span>
         </a>
 
         <!-- 3. Printing Services (Rush/Featured) -->
-        <a href="<?= base_url('printing-services') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center relative transition-colors <?= $activeNav === 'printing' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' ?>">
-            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'printing' ? 'text-primary scale-105' : '' ?> transition-transform">print</span>
+        <a href="<?= base_url('printing-services') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center relative transition-all <?= $activeNav === 'printing' ? 'text-terra-green font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-terra-green' ?>">
+            <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'printing' ? 'text-terra-green scale-110' : '' ?> transition-transform">print</span>
             <span class="text-[10px] tracking-tight leading-none mt-1">Printing</span>
         </a>
 
         <!-- 4. Cart -->
-        <a href="<?= base_url('cart') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center relative transition-colors <?= $activeNav === 'cart' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' ?>">
+        <a href="<?= base_url('cart') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center relative transition-all <?= $activeNav === 'cart' ? 'text-terra-green font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-terra-green' ?>">
             <div class="relative inline-flex items-center justify-center">
-                <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'cart' ? 'text-primary scale-105' : '' ?> transition-transform">shopping_cart</span>
-                <span id="mobile-bottom-cart-badge" class="<?= ($cartCount > 0) ? '' : 'hidden' ?> absolute -top-1 -right-2.5 bg-error text-on-error text-[9px] font-bold rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center leading-none shadow-xs">
+                <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'cart' ? 'text-terra-green scale-110' : '' ?> transition-transform">shopping_cart</span>
+                <span id="mobile-bottom-cart-badge" class="<?= ($cartCount > 0) ? '' : 'hidden' ?> absolute -top-1 -right-2.5 bg-terra-green text-white text-[9px] font-bold font-mono rounded-full min-w-[15px] h-[15px] px-1 flex items-center justify-center leading-none shadow-2xs">
                     <?= $cartCount ?>
                 </span>
             </div>
@@ -99,16 +99,16 @@
 
         <!-- 5. Guest Sign In / Logged in Profile -->
         <?php if ($isLogged): ?>
-            <a href="<?= base_url('customer/profile') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-colors <?= $activeNav === 'profile' ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' ?>">
-                <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'profile' ? 'text-primary scale-105' : '' ?> transition-transform">account_circle</span>
+            <a href="<?= base_url('customer/profile') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center transition-all <?= $activeNav === 'profile' ? 'text-terra-green font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-terra-green' ?>">
+                <span class="material-symbols-outlined text-[22px] <?= $activeNav === 'profile' ? 'text-terra-green scale-110' : '' ?> transition-transform">account_circle</span>
                 <span class="text-[10px] tracking-tight leading-none mt-1">Account</span>
             </a>
         <?php else: ?>
             <a href="<?= base_url('login') ?>" class="flex flex-col items-center justify-center min-w-[56px] py-1 text-center group transition-colors">
-                <div class="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-2xs">
-                    <span class="material-symbols-outlined text-[16px]">login</span>
+                <div class="w-6 h-6 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center group-hover:bg-terra-green group-hover:text-white transition-all shadow-2xs">
+                    <span class="material-symbols-outlined text-[15px]">login</span>
                 </div>
-                <span class="text-[10px] font-bold text-primary tracking-tight leading-none mt-1">Sign In</span>
+                <span class="text-[10px] font-bold text-terra-green tracking-tight leading-none mt-1">Sign In</span>
             </a>
         <?php endif; ?>
 
@@ -355,9 +355,59 @@ document.addEventListener('DOMContentLoaded', () => {
     <?php if ($isLogged): ?>
     let lastNotifId = <?= !empty($recentNotifs[0]['id']) ? (int)$recentNotifs[0]['id'] : 0 ?>;
     let knownOrderStatuses = {};
+    let knownPrintStatuses = {};
     let isInitialCustomerPoll = true;
+    let customerPollTimer = null;
+
+    function updateCustomerBadges(unreadCount, cartCount, activeOrdersCount) {
+        // Notification bell badge
+        const notifBadge = document.getElementById('notif-badge');
+        if (notifBadge && typeof unreadCount !== 'undefined') {
+            const count = parseInt(unreadCount, 10) || 0;
+            if (count > 0) {
+                notifBadge.textContent = count > 99 ? '99+' : count;
+                notifBadge.classList.remove('hidden');
+            } else {
+                notifBadge.classList.add('hidden');
+            }
+        }
+
+        // Cart count badges (desktop header & mobile sticky bar)
+        if (typeof cartCount !== 'undefined') {
+            const cartCountNum = parseInt(cartCount, 10) || 0;
+            const desktopCart = document.getElementById('cart-count-badge');
+            const mobileCart = document.getElementById('mobile-bottom-cart-badge');
+            [desktopCart, mobileCart].forEach(b => {
+                if (b) {
+                    if (cartCountNum > 0) {
+                        b.textContent = cartCountNum;
+                        b.classList.remove('hidden');
+                    } else {
+                        b.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // Active orders badge
+        if (typeof activeOrdersCount !== 'undefined') {
+            const activeOrdersBadge = document.getElementById('header-active-orders-badge');
+            if (activeOrdersBadge) {
+                const count = parseInt(activeOrdersCount, 10) || 0;
+                if (count > 0) {
+                    activeOrdersBadge.textContent = count;
+                    activeOrdersBadge.classList.remove('hidden');
+                } else {
+                    activeOrdersBadge.classList.add('hidden');
+                }
+            }
+        }
+    }
 
     function pollCustomerRealtime() {
+        // Skip background polling if tab is inactive/hidden to save resources
+        if (document.visibilityState === 'hidden') return;
+
         let url = '<?= base_url('customer/realtime/check') ?>';
         if (lastNotifId > 0) url += '?last_notif_id=' + lastNotifId;
 
@@ -369,10 +419,19 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => {
                 if (!res || !res.success) return;
 
+                // Sync header badges
+                updateCustomerBadges(res.unread_count, res.cart_count, res.active_orders_count);
+
+                // Broadcast live payload to open views (orders.php, printing.php)
+                window.dispatchEvent(new CustomEvent('blax:customer-realtime', { detail: res }));
+
                 if (isInitialCustomerPoll) {
                     lastNotifId = res.max_notif_id || lastNotifId;
                     if (Array.isArray(res.active_orders)) {
                         res.active_orders.forEach(o => { knownOrderStatuses[o.id] = o.status; });
+                    }
+                    if (Array.isArray(res.active_printing)) {
+                        res.active_printing.forEach(p => { knownPrintStatuses[p.id] = p.status; });
                     }
                     isInitialCustomerPoll = false;
                     return;
@@ -419,11 +478,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
+
+                // Check printing status transitions
+                if (Array.isArray(res.active_printing)) {
+                    res.active_printing.forEach(p => {
+                        const prev = knownPrintStatuses[p.id];
+                        if (prev && prev !== p.status) {
+                            knownPrintStatuses[p.id] = p.status;
+                            const printStatusNames = {
+                                'in_production': 'is currently printing in production',
+                                'ready_for_pickup': 'is ready for pick-up at the counter',
+                                'ready_for_delivery': 'has been packed and dispatched for delivery',
+                                'completed': 'has been completed'
+                            };
+                            const pStatusText = printStatusNames[p.status] || `status updated to ${p.status}`;
+                            window.showToast({
+                                type: 'printing',
+                                title: `Printing #${p.request_number}`,
+                                message: `${p.file_name || 'Document'} ${pStatusText}!`,
+                                url: '<?= base_url('customer/printing') ?>'
+                            });
+                        } else {
+                            knownPrintStatuses[p.id] = p.status;
+                        }
+                    });
+                }
             })
             .catch(() => {});
     }
 
-    setInterval(pollCustomerRealtime, 6000);
+    customerPollTimer = setInterval(pollCustomerRealtime, 6000);
+
+    // Instant sync when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            pollCustomerRealtime();
+        }
+    });
     <?php endif; ?>
 })();
 </script>

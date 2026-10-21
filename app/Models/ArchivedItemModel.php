@@ -67,76 +67,98 @@ class ArchivedItemModel extends Model
      * Records are NEVER deleted; they are logged to archived_items and
      * remain in the shop's archive history indefinitely.
      *
+     * Performance-optimized for Railway: uses a 15-minute cache throttle
+     * and single-query LEFT JOIN + insertBatch to eliminate 400+ N+1 queries.
+     *
      * @return array{archived_orders: int, archived_printing: int}
      */
-    public function autoArchiveCompletedItems(int $shopId, int $days = 3): array
+    public function autoArchiveCompletedItems(int $shopId, int $days = 3, bool $force = false): array
     {
+        $cacheKey = "blax_auto_archive_shop_{$shopId}";
+        if (!$force) {
+            try {
+                if (cache($cacheKey)) {
+                    return ['archived_orders' => 0, 'archived_printing' => 0];
+                }
+            } catch (\Throwable $e) {}
+        }
+
         $db = $this->db;
         $cutoff = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+        $now = date('Y-m-d H:i:s');
+        $userId = (int) (session()->get('user_id') ?? 0) ?: null;
 
-        // 1. Completed / Delivered orders older than 3 days
-        $ordersToArchive = $db->table('orders')
-            ->select('id, shop_id, order_number, status, completed_at, placed_at')
-            ->where('shop_id', $shopId)
-            ->whereIn('status', ['completed', 'delivered'])
+        // 1. Completed / Delivered orders older than 3 days that are NOT yet archived
+        // Single LEFT JOIN query — 0 N+1 queries
+        $ordersToArchive = $db->table('orders o')
+            ->select('o.id, o.order_number')
+            ->join('archived_items ai', "ai.shop_id = o.shop_id AND ai.item_type = 'order' AND ai.item_id = o.id", 'left')
+            ->where('o.shop_id', $shopId)
+            ->whereIn('o.status', ['completed', 'delivered'])
             ->groupStart()
-                ->where('completed_at IS NOT NULL AND completed_at <=', $cutoff)
-                ->orWhere('completed_at IS NULL AND placed_at <=', $cutoff)
+                ->where('o.completed_at IS NOT NULL AND o.completed_at <=', $cutoff)
+                ->orWhere('o.completed_at IS NULL AND o.placed_at <=', $cutoff)
             ->groupEnd()
+            ->where('ai.id IS NULL')
             ->get()->getResultArray();
 
         $archivedOrders = 0;
-        foreach ($ordersToArchive as $ord) {
-            $exists = $this->where('shop_id', $shopId)
-                ->where('item_type', 'order')
-                ->where('item_id', (int) $ord['id'])
-                ->first();
-
-            if (!$exists) {
+        if (!empty($ordersToArchive)) {
+            $batchOrders = [];
+            foreach ($ordersToArchive as $ord) {
                 $label = !empty($ord['order_number']) ? ('#' . ltrim($ord['order_number'], '#')) : ('#ORD-' . $ord['id']);
-                $this->insert([
+                $batchOrders[] = [
                     'shop_id'     => $shopId,
                     'item_type'   => 'order',
                     'item_id'     => (int) $ord['id'],
                     'item_label'  => $label,
-                    'archived_by' => (int) (session()->get('user_id') ?? 0) ?: null,
-                    'archived_at' => date('Y-m-d H:i:s'),
-                ]);
-                $archivedOrders++;
+                    'archived_by' => $userId,
+                    'archived_at' => $now,
+                ];
+            }
+            if (!empty($batchOrders)) {
+                $this->insertBatch($batchOrders);
+                $archivedOrders = count($batchOrders);
             }
         }
 
-        // 2. Completed printing requests older than 3 days
-        $printToArchive = $db->table('printing_requests')
-            ->select('id, shop_id, request_number, status, completed_at, created_at')
-            ->where('shop_id', $shopId)
-            ->where('status', 'completed')
+        // 2. Completed printing requests older than 3 days that are NOT yet archived
+        $printToArchive = $db->table('printing_requests pr')
+            ->select('pr.id, pr.request_number')
+            ->join('archived_items ai', "ai.shop_id = pr.shop_id AND ai.item_type = 'printing_request' AND ai.item_id = pr.id", 'left')
+            ->where('pr.shop_id', $shopId)
+            ->where('pr.status', 'completed')
             ->groupStart()
-                ->where('completed_at IS NOT NULL AND completed_at <=', $cutoff)
-                ->orWhere('completed_at IS NULL AND created_at <=', $cutoff)
+                ->where('pr.completed_at IS NOT NULL AND pr.completed_at <=', $cutoff)
+                ->orWhere('pr.completed_at IS NULL AND pr.created_at <=', $cutoff)
             ->groupEnd()
+            ->where('ai.id IS NULL')
             ->get()->getResultArray();
 
         $archivedPrint = 0;
-        foreach ($printToArchive as $pr) {
-            $exists = $this->where('shop_id', $shopId)
-                ->where('item_type', 'printing_request')
-                ->where('item_id', (int) $pr['id'])
-                ->first();
-
-            if (!$exists) {
+        if (!empty($printToArchive)) {
+            $batchPrint = [];
+            foreach ($printToArchive as $pr) {
                 $label = !empty($pr['request_number']) ? ('#' . ltrim($pr['request_number'], '#')) : ('#PR-' . $pr['id']);
-                $this->insert([
+                $batchPrint[] = [
                     'shop_id'     => $shopId,
                     'item_type'   => 'printing_request',
                     'item_id'     => (int) $pr['id'],
                     'item_label'  => $label,
-                    'archived_by' => (int) (session()->get('user_id') ?? 0) ?: null,
-                    'archived_at' => date('Y-m-d H:i:s'),
-                ]);
-                $archivedPrint++;
+                    'archived_by' => $userId,
+                    'archived_at' => $now,
+                ];
+            }
+            if (!empty($batchPrint)) {
+                $this->insertBatch($batchPrint);
+                $archivedPrint = count($batchPrint);
             }
         }
+
+        // Cache throttle for 15 minutes (900 seconds)
+        try {
+            cache()->save($cacheKey, 1, 900);
+        } catch (\Throwable $e) {}
 
         return [
             'archived_orders'   => $archivedOrders,

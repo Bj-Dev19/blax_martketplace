@@ -1,71 +1,101 @@
 <?= $this->extend('layouts/admin') ?>
 <?= $this->section('content') ?>
 
-<div class="space-y-xl">
+<div class="space-y-6">
 
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <!-- Header Bento Banner -->
+    <div class="rounded-3xl bg-surface-container-lowest p-6 border border-outline-variant/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-headline-md font-bold text-on-surface">Live Fleet Tracking</h1>
-            <p class="text-body-md text-on-surface-variant">Real-time bird's-eye oversight of all shop courier deliveries across Polomolok & Tupi.</p>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-terra-green/10 text-terra-green border border-terra-green/20">
+                    Logistics Telemetry
+                </span>
+                <span class="text-xs text-on-surface-variant font-mono">
+                    Polomolok &amp; Tupi Grid
+                </span>
+            </div>
+            <h1 class="text-2xl lg:text-3xl font-black text-on-surface font-display tracking-tight">
+                Live Fleet Tracking
+            </h1>
+            <p class="text-xs text-on-surface-variant mt-1 max-w-xl">
+                Real-time bird's-eye oversight of all merchant couriers, in-transit orders, and dispatch routes across Polomolok &amp; Tupi.
+            </p>
         </div>
-        <div class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-xl border border-outline-variant/40 shadow-xs">
-            <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
-            <span class="text-xs font-bold text-on-surface">Live Fleet Feed</span>
-            <span class="text-outline text-xs">&bull;</span>
-            <span id="lastSyncLabel" class="text-xs text-on-surface-variant font-mono">Syncing...</span>
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-2xl border border-outline-variant/30 shadow-2xs">
+                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+                <span class="text-xs font-bold text-on-surface">Live Fleet Feed</span>
+                <span class="text-outline text-xs">&bull;</span>
+                <span id="lastSyncLabel" class="text-xs text-on-surface-variant font-mono">Syncing...</span>
+            </div>
+            <button type="button" onclick="refreshFleetPins()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/30 text-xs font-bold text-on-surface transition-all active:scale-95" title="Force sync fleet telemetry">
+                <span class="material-symbols-outlined text-[16px]">sync</span>
+                <span>Sync</span>
+            </button>
         </div>
     </div>
 
     <!-- Operational KPI Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-md">
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-primary/10 text-primary rounded-xl">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- KPI 1: Active Couriers -->
+        <div class="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/30 shadow-xs hover:border-terra-green/30 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start mb-2">
+                <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center">
                     <span class="material-symbols-outlined text-[20px]">two_wheeler</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Fleet</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-terra-green bg-terra-green/10 px-2.5 py-0.5 rounded-full border border-terra-green/20">Fleet</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Active Couriers</h3>
-            <p id="kpi-total-active" class="text-headline-md font-extrabold text-on-surface mt-xs font-mono"><?= number_format((int) ($kpis['total_active'] ?? count($pins ?? []))) ?></p>
+            <div class="mt-2">
+                <h3 class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">Active Couriers</h3>
+                <p id="kpi-total-active" class="text-3xl font-black text-on-surface mt-1 font-display font-mono tracking-tight"><?= number_format((int) ($kpis['total_active'] ?? count($pins ?? []))) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-purple-500/10 text-purple-600 rounded-xl">
+        <!-- KPI 2: In Transit -->
+        <div class="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/30 shadow-xs hover:border-purple-500/30 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start mb-2">
+                <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
                     <span class="material-symbols-outlined text-[20px]">navigation</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-500/10 px-2 py-0.5 rounded-full">Moving</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">Moving</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">In Transit</h3>
-            <p id="kpi-in-transit" class="text-headline-md font-extrabold text-purple-700 mt-xs font-mono"><?= number_format((int) ($kpis['in_transit'] ?? 0)) ?></p>
+            <div class="mt-2">
+                <h3 class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">In Transit</h3>
+                <p id="kpi-in-transit" class="text-3xl font-black text-purple-600 dark:text-purple-400 mt-1 font-display font-mono tracking-tight"><?= number_format((int) ($kpis['in_transit'] ?? 0)) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-blue-500/10 text-blue-600 rounded-xl">
+        <!-- KPI 3: Shipped -->
+        <div class="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/30 shadow-xs hover:border-blue-500/30 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start mb-2">
+                <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
                     <span class="material-symbols-outlined text-[20px]">local_shipping</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-500/10 px-2 py-0.5 rounded-full">Dispatched</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">Dispatched</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Shipped</h3>
-            <p id="kpi-shipped" class="text-headline-md font-extrabold text-blue-700 mt-xs font-mono"><?= number_format((int) ($kpis['shipped'] ?? 0)) ?></p>
+            <div class="mt-2">
+                <h3 class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">Shipped</h3>
+                <p id="kpi-shipped" class="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1 font-display font-mono tracking-tight"><?= number_format((int) ($kpis['shipped'] ?? 0)) ?></p>
+            </div>
         </div>
 
-        <div class="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant/30 shadow-2xs">
-            <div class="flex justify-between items-start mb-sm">
-                <div class="p-2 bg-amber-500/10 text-amber-600 rounded-xl">
+        <!-- KPI 4: Active Stores -->
+        <div class="bg-surface-container-lowest p-5 rounded-3xl border border-outline-variant/30 shadow-xs hover:border-terra-amber/30 transition-all flex flex-col justify-between">
+            <div class="flex justify-between items-start mb-2">
+                <div class="w-10 h-10 rounded-2xl bg-terra-amber/15 text-terra-amber flex items-center justify-center">
                     <span class="material-symbols-outlined text-[20px]">storefront</span>
                 </div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-500/10 px-2 py-0.5 rounded-full">Hubs</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">Hubs</span>
             </div>
-            <h3 class="text-xs text-on-surface-variant font-medium">Active Stores</h3>
-            <p id="kpi-active-shops" class="text-headline-md font-extrabold text-amber-700 mt-xs font-mono"><?= number_format((int) ($kpis['active_shops'] ?? count($groupedShops ?? []))) ?></p>
+            <div class="mt-2">
+                <h3 class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">Active Stores</h3>
+                <p id="kpi-active-shops" class="text-3xl font-black text-terra-amber mt-1 font-display font-mono tracking-tight"><?= number_format((int) ($kpis['active_shops'] ?? count($groupedShops ?? []))) ?></p>
+            </div>
         </div>
     </div>
 
     <!-- Live Fleet Map Container -->
-    <div class="relative rounded-2xl overflow-hidden border border-outline-variant/30 bg-surface-container shadow-sm" style="min-height: 540px;">
+    <div class="relative rounded-3xl overflow-hidden border border-outline-variant/30 bg-surface-container shadow-xs" style="min-height: 540px;">
         <div id="fleet-map" class="w-full h-full" style="min-height: 540px;"></div>
 
         <!-- Floating Satellite / Roadmap View Toggle Button (Top Right) -->
@@ -73,69 +103,67 @@
             <button type="button" 
                     id="btn-admin-map-type" 
                     onclick="toggleAdminMapType()"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container-lowest/90 backdrop-blur-md border border-outline-variant/40 hover:bg-surface-container-high text-xs font-bold text-on-surface shadow-md transition-all active:scale-95 cursor-pointer">
-                <span id="adminMapTypeIcon" class="material-symbols-outlined text-[18px] text-primary">satellite_alt</span>
+                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-container-lowest/90 backdrop-blur-md border border-outline-variant/40 hover:bg-surface-container-high text-xs font-bold text-on-surface shadow-md transition-all active:scale-95 cursor-pointer">
+                <span id="adminMapTypeIcon" class="material-symbols-outlined text-[18px] text-terra-green">satellite_alt</span>
                 <span id="adminMapTypeText">Satellite</span>
             </button>
         </div>
 
         <!-- Live Fleet Legend Overlay Card (Bottom Left) -->
-        <div class="absolute bottom-4 left-4 z-10 bg-surface-container-lowest/90 backdrop-blur-md p-3.5 rounded-xl border border-outline-variant/30 shadow-md flex flex-col gap-2 max-w-xs text-xs pointer-events-auto">
-            <div class="flex items-center gap-2 border-b border-outline-variant/20 pb-1.5">
-                <span class="material-symbols-outlined text-primary text-[18px]">map</span>
-                <span class="font-bold text-on-surface">Fleet Map Legend</span>
+        <div class="absolute bottom-4 left-4 z-10 bg-surface-container-lowest/90 backdrop-blur-md p-4 rounded-2xl border border-outline-variant/30 shadow-md flex flex-col gap-2.5 max-w-xs text-xs pointer-events-auto">
+            <div class="flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+                <span class="material-symbols-outlined text-terra-green text-[18px]">map</span>
+                <span class="font-bold text-on-surface font-display">Fleet Map Legend</span>
             </div>
-            <div class="flex flex-col gap-1.5 text-on-surface-variant">
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-purple-600 border border-white shadow-2xs flex-shrink-0"></span>
-                    <span class="font-medium text-on-surface">In Transit (Moving Courier)</span>
+            <div class="flex flex-col gap-2 text-on-surface-variant">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white shadow-2xs shrink-0"></span>
+                    <span class="font-medium text-on-surface text-[11px]">In Transit (Moving Courier)</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-2xs flex-shrink-0"></span>
-                    <span class="font-medium text-on-surface">Shipped (Dispatched Order)</span>
+                <div class="flex items-center gap-2.5">
+                    <span class="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white shadow-2xs shrink-0"></span>
+                    <span class="font-medium text-on-surface text-[11px]">Shipped (Dispatched Order)</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping flex-shrink-0"></span>
-                    <span class="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">Active Realtime GPS Feed</span>
+                <div class="flex items-center gap-2.5 pt-0.5 border-t border-outline-variant/15">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
+                    <span class="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">Active Realtime GPS Feed</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Active Deliveries Grouped by Storefront -->
-    <div class="space-y-md">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-title-lg font-bold text-on-surface">Active Deliveries by Storefront</h2>
-                <p class="text-xs text-on-surface-variant">Store owners deliver packages directly to customers across Polomolok & Tupi.</p>
-            </div>
+    <div class="space-y-4">
+        <div>
+            <h2 class="text-xl font-black text-on-surface font-display">Active Deliveries by Storefront</h2>
+            <p class="text-xs text-on-surface-variant mt-0.5">Store owners deliver packages directly to customers across Polomolok &amp; Tupi.</p>
         </div>
 
         <div id="grouped-shops-container">
             <?php if (!empty($groupedShops)): ?>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <?php foreach ($groupedShops as $shop): ?>
-                        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xs overflow-hidden flex flex-col transition-all hover:border-primary/30">
+                        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl shadow-xs overflow-hidden flex flex-col transition-all hover:border-terra-green/30">
                             <!-- Shop Card Header -->
-                            <div class="p-md border-b border-outline-variant/20 bg-surface-container-low/40 flex items-center justify-between gap-sm">
-                                <div class="flex items-center gap-sm min-w-0">
-                                    <div class="w-10 h-10 rounded-xl bg-surface-container-high border border-outline-variant/30 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
+                            <div class="p-5 border-b border-outline-variant/20 bg-surface-container-low/40 flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-11 h-11 rounded-2xl bg-surface-container-high border border-outline-variant/30 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
                                         <?php 
                                         $rawShopLogo = trim((string)($shop['shop_logo'] ?? ''));
                                         $resolvedShopLogo = $rawShopLogo !== '' ? logo_url($rawShopLogo) : '';
                                         ?>
                                         <?php if (!empty($resolvedShopLogo)): ?>
-                                            <img src="<?= esc($resolvedShopLogo) ?>" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-primary text-xl\'>storefront</span>';" />
+                                            <img src="<?= esc($resolvedShopLogo) ?>" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-terra-green text-xl\'>storefront</span>';" />
                                         <?php else: ?>
-                                            <span class="material-symbols-outlined text-primary text-xl">storefront</span>
+                                            <span class="material-symbols-outlined text-terra-green text-xl">storefront</span>
                                         <?php endif; ?>
                                     </div>
                                     <div class="min-w-0">
-                                        <h3 class="text-sm font-bold text-on-surface truncate"><?= esc($shop['shop_name']) ?></h3>
-                                        <p class="text-[11px] text-on-surface-variant">Merchant Partner</p>
+                                        <h3 class="text-sm font-bold text-on-surface truncate group-hover:text-terra-green"><?= esc($shop['shop_name']) ?></h3>
+                                        <p class="text-[11px] text-on-surface-variant font-medium">Merchant Partner</p>
                                     </div>
                                 </div>
-                                <span class="shrink-0 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 text-xs font-bold rounded-full">
+                                <span class="shrink-0 px-3 py-1 bg-terra-green/10 text-terra-green border border-terra-green/20 text-xs font-bold rounded-full font-mono">
                                     <?= count($shop['deliveries']) ?> Active
                                 </span>
                             </div>
@@ -143,10 +171,10 @@
                             <!-- Deliveries List -->
                             <div class="divide-y divide-outline-variant/10 flex-1">
                                 <?php foreach ($shop['deliveries'] as $d): ?>
-                                    <div class="p-md space-y-2 hover:bg-surface-container-low/30 transition-colors">
+                                    <div class="p-4 space-y-2 hover:bg-surface-container-low/30 transition-colors">
                                         <div class="flex items-center justify-between gap-2">
-                                            <span class="font-mono font-bold text-xs text-primary">#<?= esc($d['tracking_id'] ?? ('TRK-' . $d['id'])) ?></span>
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full <?= $d['status'] === 'in_transit' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200' ?>">
+                                            <span class="font-mono font-bold text-xs text-terra-green">#<?= esc($d['tracking_id'] ?? ('TRK-' . $d['id'])) ?></span>
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full <?= $d['status'] === 'in_transit' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20' : 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20' ?>">
                                                 <span class="w-1.5 h-1.5 rounded-full <?= $d['status'] === 'in_transit' ? 'bg-purple-600' : 'bg-blue-600' ?>"></span>
                                                 <span><?= $d['status'] === 'in_transit' ? 'In Transit' : 'Shipped' ?></span>
                                             </span>
@@ -156,19 +184,19 @@
                                             <p class="font-semibold text-on-surface">
                                                 <?= esc(trim(($d['first_name'] ?? '') . ' ' . ($d['last_name'] ?? 'Customer Recipient'))) ?>
                                             </p>
-                                            <p class="text-[11px] text-on-surface-variant truncate max-w-full">
+                                            <p class="text-[11px] text-on-surface-variant truncate max-w-full mt-0.5">
                                                 <?= esc($d['destination_address'] ?? 'Polomolok') ?>
                                             </p>
                                         </div>
 
-                                        <div class="flex items-center justify-between pt-1 text-[11px] text-outline">
+                                        <div class="flex items-center justify-between pt-1 text-[11px] text-outline font-mono">
                                             <span>
                                                 Updated: <?= !empty($d['location_updated_at']) ? date('g:i A', strtotime($d['location_updated_at'])) : 'Recently' ?>
                                             </span>
                                             <button type="button" 
                                                     onclick="focusDeliveryPin(<?= (int)$d['id'] ?>)" 
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-surface-container border border-outline-variant/40 hover:bg-primary hover:text-white hover:border-primary transition-all">
-                                                <span class="material-symbols-outlined text-[13px]">my_location</span>
+                                                    class="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold bg-surface-container border border-outline-variant/40 hover:bg-terra-green hover:text-white hover:border-terra-green transition-all shadow-2xs active:scale-95">
+                                                <span class="material-symbols-outlined text-[14px]">my_location</span>
                                                 <span>Locate</span>
                                             </button>
                                         </div>
@@ -180,13 +208,13 @@
                 </div>
             <?php else: ?>
                 <!-- Honest Empty State -->
-                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-12 text-center shadow-xs">
-                    <div class="w-16 h-16 rounded-full bg-surface-container-high mx-auto flex items-center justify-center text-outline mb-3">
-                        <span class="material-symbols-outlined text-3xl text-primary/70">two_wheeler</span>
+                <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 p-14 text-center shadow-xs">
+                    <div class="w-16 h-16 rounded-2xl bg-surface-container mx-auto flex items-center justify-center text-outline mb-3">
+                        <span class="material-symbols-outlined text-3xl text-terra-green">two_wheeler</span>
                     </div>
-                    <h3 class="text-base font-bold text-on-surface">No Active Deliveries on the Road</h3>
+                    <h3 class="text-base font-bold text-on-surface font-display">No Active Deliveries on the Road</h3>
                     <p class="text-xs text-on-surface-variant max-w-md mx-auto mt-1">
-                        There are currently no active deliveries in transit across Polomolok & Tupi. Deliveries will appear here automatically in real time when shop owners open "View Live Route & Map".
+                        There are currently no active deliveries in transit across Polomolok &amp; Tupi. Deliveries will appear here automatically in real time when shop owners open "View Live Route &amp; Map".
                     </p>
                 </div>
             <?php endif; ?>
@@ -211,7 +239,7 @@
                     <p class="text-xs text-amber-700 dark:text-amber-300/80 max-w-md mt-1">
                         The Google Cloud project (<strong>300493013944</strong>) has not yet activated the <strong>Maps JavaScript API</strong> or the API Key needs permissions.
                     </p>
-                    <a href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com" target="_blank" class="mt-3 inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition-colors">
+                    <a href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com" target="_blank" class="mt-3 inline-flex items-center gap-1 px-3.5 py-2 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors">
                         <span>Enable Maps JavaScript API</span>
                         <span class="material-symbols-outlined text-[14px]">open_in_new</span>
                     </a>
@@ -367,7 +395,7 @@
                 <div style="font-weight:800;color:#0f172a;font-size:13px;display:flex;align-items:center;">
                     #${p.tracking_id || ''} ${demoTag}
                 </div>
-                <div style="font-size:11px;color:#2563eb;font-weight:700;margin-top:2px;">
+                <div style="font-size:11px;color:#4A943E;font-weight:700;margin-top:2px;">
                     🏪 ${p.shop_name || 'Shop Partner'}
                 </div>
                 <div style="font-size:11px;color:#334155;margin-top:2px;">
@@ -438,7 +466,7 @@
             }
         });
 
-        // Remove markers that are no longer active (or finished / expired)
+        // Remove markers that are no longer active
         for (const [id, entry] of activeMarkers.entries()) {
             if (!currentIds.has(id)) {
                 if (entry.marker) {
@@ -563,13 +591,13 @@
 
         if (!groupedShops || groupedShops.length === 0) {
             container.innerHTML = `
-                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-12 text-center shadow-xs">
-                    <div class="w-16 h-16 rounded-full bg-surface-container-high mx-auto flex items-center justify-center text-outline mb-3">
-                        <span class="material-symbols-outlined text-3xl text-primary/70">two_wheeler</span>
+                <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 p-14 text-center shadow-xs">
+                    <div class="w-16 h-16 rounded-2xl bg-surface-container mx-auto flex items-center justify-center text-outline mb-3">
+                        <span class="material-symbols-outlined text-3xl text-terra-green">two_wheeler</span>
                     </div>
-                    <h3 class="text-base font-bold text-on-surface">No Active Deliveries on the Road</h3>
+                    <h3 class="text-base font-bold text-on-surface font-display">No Active Deliveries on the Road</h3>
                     <p class="text-xs text-on-surface-variant max-w-md mx-auto mt-1">
-                        There are currently no active deliveries in transit across Polomolok & Tupi. Deliveries will appear here automatically in real time when shop owners open "View Live Route & Map".
+                        There are currently no active deliveries in transit across Polomolok &amp; Tupi. Deliveries will appear here automatically in real time when shop owners open "View Live Route &amp; Map".
                     </p>
                 </div>
             `;
@@ -589,13 +617,13 @@
             }
 
             const shopLogo = logoSrc 
-                ? `<img src="${encodeURI(logoSrc)}" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\\'material-symbols-outlined text-primary text-xl\\\'>storefront</span>';" />`
-                : `<span class="material-symbols-outlined text-primary text-xl">storefront</span>`;
+                ? `<img src="${encodeURI(logoSrc)}" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\\'material-symbols-outlined text-terra-green text-xl\\\'>storefront</span>';" />`
+                : `<span class="material-symbols-outlined text-terra-green text-xl">storefront</span>`;
 
             let deliveriesHtml = '';
             (shop.deliveries || []).forEach(d => {
                 const isTransit = d.status === 'in_transit';
-                const statusBadgeClass = isTransit ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200';
+                const statusBadgeClass = isTransit ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20' : 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20';
                 const statusDotClass = isTransit ? 'bg-purple-600' : 'bg-blue-600';
                 const statusLabel = isTransit ? 'In Transit' : 'Shipped';
                 const custName = escapeHtml(([d.first_name, d.last_name].filter(Boolean).join(' ')) || 'Customer Recipient');
@@ -603,24 +631,24 @@
                 const updatedTime = d.location_updated_at ? new Date(d.location_updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently';
 
                 deliveriesHtml += `
-                    <div class="p-md space-y-2 hover:bg-surface-container-low/30 transition-colors">
+                    <div class="p-4 space-y-2 hover:bg-surface-container-low/30 transition-colors">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="font-mono font-bold text-xs text-primary">#${escapeHtml(d.tracking_id || ('TRK-' + d.id))}</span>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${statusBadgeClass}">
+                            <span class="font-mono font-bold text-xs text-terra-green">#${escapeHtml(d.tracking_id || ('TRK-' + d.id))}</span>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${statusBadgeClass}">
                                 <span class="w-1.5 h-1.5 rounded-full ${statusDotClass}"></span>
                                 <span>${statusLabel}</span>
                             </span>
                         </div>
                         <div class="text-xs text-on-surface">
                             <p class="font-semibold text-on-surface">${custName}</p>
-                            <p class="text-[11px] text-on-surface-variant truncate max-w-full">${destAddr}</p>
+                            <p class="text-[11px] text-on-surface-variant truncate max-w-full mt-0.5">${destAddr}</p>
                         </div>
-                        <div class="flex items-center justify-between pt-1 text-[11px] text-outline">
+                        <div class="flex items-center justify-between pt-1 text-[11px] text-outline font-mono">
                             <span>Updated: ${updatedTime}</span>
                             <button type="button" 
                                     onclick="focusDeliveryPin(${d.id})" 
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-surface-container border border-outline-variant/40 hover:bg-primary hover:text-white hover:border-primary transition-all">
-                                <span class="material-symbols-outlined text-[13px]">my_location</span>
+                                    class="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold bg-surface-container border border-outline-variant/40 hover:bg-terra-green hover:text-white hover:border-terra-green transition-all shadow-2xs active:scale-95">
+                                <span class="material-symbols-outlined text-[14px]">my_location</span>
                                 <span>Locate</span>
                             </button>
                         </div>
@@ -629,18 +657,18 @@
             });
 
             html += `
-                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xs overflow-hidden flex flex-col transition-all hover:border-primary/30">
-                    <div class="p-md border-b border-outline-variant/20 bg-surface-container-low/40 flex items-center justify-between gap-sm">
-                        <div class="flex items-center gap-sm min-w-0">
-                            <div class="w-10 h-10 rounded-xl bg-surface-container-high border border-outline-variant/30 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl shadow-xs overflow-hidden flex flex-col transition-all hover:border-terra-green/30">
+                    <div class="p-5 border-b border-outline-variant/20 bg-surface-container-low/40 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-11 h-11 rounded-2xl bg-surface-container-high border border-outline-variant/30 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
                                 ${shopLogo}
                             </div>
                             <div class="min-w-0">
-                                <h3 class="text-sm font-bold text-on-surface truncate">${escapeHtml(shop.shop_name)}</h3>
-                                <p class="text-[11px] text-on-surface-variant">Merchant Partner</p>
+                                <h3 class="text-sm font-bold text-on-surface truncate group-hover:text-terra-green">${escapeHtml(shop.shop_name)}</h3>
+                                <p class="text-[11px] text-on-surface-variant font-medium">Merchant Partner</p>
                             </div>
                         </div>
-                        <span class="shrink-0 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 text-xs font-bold rounded-full">
+                        <span class="shrink-0 px-3 py-1 bg-terra-green/10 text-terra-green border border-terra-green/20 text-xs font-bold rounded-full font-mono">
                             ${shop.deliveries ? shop.deliveries.length : 0} Active
                         </span>
                     </div>
@@ -706,3 +734,4 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=<?= esc(env('GOOGLE_MAPS_API_KEY')) ?>&libraries=marker,geometry&loading=async&callback=initAdminMap" async defer></script>
 
 <?= $this->endSection() ?>
+

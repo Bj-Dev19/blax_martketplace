@@ -20,130 +20,231 @@
     $activeNav = $activeNav ?? $resolved[0];
     $pageTitle = $title ?? $resolved[1];
     $shopName  = $shop['shop_name'] ?? 'Blax Admin';
-    $fullscreenLayout = !empty($fullscreenLayout) && ($activeNav === 'pos');
+    $isPos     = ($activeNav === 'pos');
+    $fullscreenLayout = $isPos || (!empty($fullscreenLayout) && $fullscreenLayout === true);
+
+    $tenantUserId = (int) session()->get('user_id');
+    $unread_count = 0;
+    $notifications = [];
+    if ($tenantUserId > 0) {
+        $notifModel = new \App\Models\NotificationModel();
+        $unread_count = $notifModel->getUnreadCount($tenantUserId);
+        $notifications = $notifModel->getRecent($tenantUserId, 8);
+    }
 ?>
 
-<!DOCTYPE html><html class="light" lang="en"><head>
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <?= view('components/head', ['title' => $shopName . ' | Merchant Hub • Blax']) ?>
+    <style>
+        /* Desktop Collapsible Mini-Sidebar Transitions */
+        #tenant-sidebar {
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #tenant-main-content {
+            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-    <?= view('components/head', ['title' => $shopName . ' | Blax Admin']) ?>
+        /* Zero FOUC & Collapsed States on Desktop (md: 768px+) */
+        @media (min-width: 768px) {
+            html.tenant-sidebar-init-collapsed #tenant-sidebar,
+            #tenant-sidebar.sidebar-collapsed {
+                width: 5rem !important; /* 80px */
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
 
+            html.tenant-sidebar-init-collapsed #tenant-main-content,
+            #tenant-main-content.sidebar-collapsed-main {
+                margin-left: 5rem !important; /* 80px */
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-text,
+            #tenant-sidebar.sidebar-collapsed .sidebar-text {
+                display: none !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-section-divider,
+            #tenant-sidebar.sidebar-collapsed .sidebar-section-divider {
+                display: block !important;
+                border-top: 1px solid rgba(148, 163, 184, 0.2);
+                margin: 0.65rem 0.25rem;
+            }
+
+            html.tenant-sidebar-init-collapsed .nav-item,
+            #tenant-sidebar.sidebar-collapsed .nav-item {
+                justify-content: center !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .nav-item .material-symbols-outlined,
+            #tenant-sidebar.sidebar-collapsed .nav-item .material-symbols-outlined {
+                font-size: 22px !important;
+                margin: 0 !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-brand-box,
+            #tenant-sidebar.sidebar-collapsed .sidebar-brand-box {
+                justify-content: center !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-profile-card,
+            #tenant-sidebar.sidebar-collapsed .sidebar-profile-card {
+                justify-content: center !important;
+                padding: 0.5rem !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-profile-actions,
+            #tenant-sidebar.sidebar-collapsed .sidebar-profile-actions {
+                display: none !important;
+            }
+
+            html.tenant-sidebar-init-collapsed .sidebar-collapsed-signout,
+            #tenant-sidebar.sidebar-collapsed .sidebar-collapsed-signout {
+                display: flex !important;
+            }
+        }
+    </style>
+    <script>
+        (function() {
+            const isPos = <?= json_encode($isPos) ?>;
+            const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
+            const isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+            if (isCollapsed) {
+                document.documentElement.classList.add('tenant-sidebar-init-collapsed');
+            }
+        })();
+    </script>
 </head>
 
-<body class="bg-surface text-on-surface">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-terra-green selection:text-white">
 
     <div class="flex h-screen overflow-hidden">
 
         <div id="tenant-sidebar-overlay" class="sidebar-overlay"></div>
 
         <!-- SideNavBar -->
-        <aside id="tenant-sidebar" class="bg-surface-container-lowest flex-col h-full py-md px-3 z-40 border-r border-outline-variant/30 shadow-sm w-64 fixed left-0 h-screen <?= $fullscreenLayout ? 'hidden' : 'hidden md:flex' ?> transition-transform duration-300">
+        <aside id="tenant-sidebar" class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl flex-col h-full py-4 px-3.5 z-40 border-r border-slate-200/80 dark:border-slate-800/80 shadow-sm w-64 fixed left-0 h-screen hidden md:flex transition-transform duration-300">
 
             <!-- Brand Identity & Store Card -->
-            <div class="px-2 mb-md flex items-center justify-between">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary via-blue-600 to-indigo-500 text-white flex items-center justify-center font-black shadow-md shadow-primary/20 shrink-0">
+            <div class="px-2 mb-5 flex items-center justify-between sidebar-brand-box gap-2">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-terra-green via-terra-green-dark to-terra-earth text-white flex items-center justify-center font-black shadow-lg shadow-terra-green/20 shrink-0 ring-2 ring-white/20" title="<?= esc($shopName) ?>">
                         <span class="material-symbols-outlined text-[22px]">storefront</span>
                     </div>
-                    <div class="min-w-0">
+                    <div class="min-w-0 sidebar-text">
                         <div class="flex items-center gap-1.5">
-                            <span class="text-base font-bold text-on-surface tracking-tight">Blax</span>
-                            <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">Merchant</span>
+                            <span class="text-base font-display font-extrabold text-slate-900 dark:text-white tracking-tight">Blax</span>
+                            <span class="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-terra-green/10 text-terra-green dark:bg-terra-green/20 dark:text-terra-green-light border border-terra-green/20">Merchant</span>
                         </div>
-                        <p class="text-[11px] text-on-surface-variant/70 truncate" title="<?= esc($shopName) ?>"><?= esc($shopName) ?></p>
+                        <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate" title="<?= esc($shopName) ?>"><?= esc($shopName) ?></p>
                     </div>
                 </div>
-                <button id="tenant-sidebar-close" type="button" class="<?= $fullscreenLayout ? '' : 'md:hidden' ?> text-on-surface-variant hover:text-on-surface p-1.5 rounded-lg hover:bg-surface-container transition-colors cursor-pointer relative z-50" aria-label="Close navigation" onclick="const s=document.getElementById('tenant-sidebar');if(s){s.classList.remove('mobile-open','flex','z-50');s.classList.add('hidden');}const o=document.getElementById('tenant-sidebar-overlay');if(o){o.classList.remove('active');}document.body.classList.remove('mobile-nav-open');">
+
+                <!-- Desktop Collapse / Expand Toggle Button -->
+                <button id="tenant-sidebar-collapse-toggle" type="button" onclick="toggleTenantSidebar()" class="hidden md:flex p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs items-center justify-center shrink-0" title="Collapse / Expand navigation (Icon Rail Mode)">
+                    <span id="tenant-sidebar-collapse-icon" class="material-symbols-outlined text-[19px]">chevron_left</span>
+                </button>
+
+                <!-- Mobile Close Button -->
+                <button id="tenant-sidebar-close" type="button" class="md:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative z-50" aria-label="Close navigation" onclick="const s=document.getElementById('tenant-sidebar');if(s){s.classList.remove('mobile-open','flex','z-50');s.classList.add('hidden');}const o=document.getElementById('tenant-sidebar-overlay');if(o){o.classList.remove('active');}document.body.classList.remove('mobile-nav-open');">
                     <span class="material-symbols-outlined text-[20px] pointer-events-none">close</span>
                 </button>
             </div>
 
-            <!-- Grouped Navigation (Polaris / Linear Style) -->
+            <!-- Grouped Navigation -->
             <nav class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
 
                 <!-- 1. OPERATIONS -->
                 <div>
-                    <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-3 mb-1.5">Operations</p>
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-1.5 sidebar-text">Operations</p>
+                    <div class="sidebar-section-divider hidden"></div>
                     <div class="space-y-0.5">
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'dashboard' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/dashboard') ?>">
-                            <?php if ($activeNav === 'dashboard'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'dashboard' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">dashboard</span>
-                            <span class="truncate">Dashboard</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'dashboard' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/dashboard') ?>" title="Dashboard">
+                            <?php if ($activeNav === 'dashboard'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'dashboard' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">dashboard</span>
+                            <span class="truncate sidebar-text">Dashboard</span>
                         </a>
 
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'pos' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/pos') ?>">
-                            <?php if ($activeNav === 'pos'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'pos' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">point_of_sale</span>
-                            <span class="truncate">Point of Sale (POS)</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'pos' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/pos') ?>" title="Point of Sale (POS)">
+                            <?php if ($activeNav === 'pos'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'pos' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">point_of_sale</span>
+                            <span class="truncate sidebar-text">Point of Sale (POS)</span>
                         </a>
 
-                        <a class="group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'orders' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/orders') ?>">
-                            <?php if ($activeNav === 'orders'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
+                        <a class="nav-item group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'orders' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/orders') ?>" title="Orders">
+                            <?php if ($activeNav === 'orders'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
                             <div class="flex items-center gap-3 min-w-0">
-                                <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'orders' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">shopping_bag</span>
-                                <span class="truncate">Orders</span>
+                                <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'orders' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">shopping_bag</span>
+                                <span class="truncate sidebar-text">Orders</span>
                             </div>
                         </a>
 
-                        <a class="group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'printing' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/printing') ?>">
-                            <?php if ($activeNav === 'printing'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
+                        <a class="nav-item group relative flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'printing' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/printing') ?>" title="Printing Requests">
+                            <?php if ($activeNav === 'printing'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
                             <div class="flex items-center gap-3 min-w-0">
-                                <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'printing' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">print</span>
-                                <span class="truncate">Printing Requests</span>
+                                <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'printing' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">print</span>
+                                <span class="truncate sidebar-text">Printing Requests</span>
                             </div>
                         </a>
 
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'delivery' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/deliveries') ?>">
-                            <?php if ($activeNav === 'delivery'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'delivery' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">local_shipping</span>
-                            <span class="truncate">Delivery</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'delivery' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/deliveries') ?>" title="Delivery Dispatch">
+                            <?php if ($activeNav === 'delivery'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'delivery' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">local_shipping</span>
+                            <span class="truncate sidebar-text">Delivery Dispatch</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- 2. CATALOG & STOCK -->
                 <div>
-                    <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-3 mb-1.5">Catalog &amp; Stock</p>
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-1.5 sidebar-text">Catalog &amp; Stock</p>
+                    <div class="sidebar-section-divider hidden"></div>
                     <div class="space-y-0.5">
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'inventory' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/inventory') ?>">
-                            <?php if ($activeNav === 'inventory'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'inventory' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">inventory_2</span>
-                            <span class="truncate">Inventory</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'inventory' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/inventory') ?>" title="Inventory">
+                            <?php if ($activeNav === 'inventory'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'inventory' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">inventory_2</span>
+                            <span class="truncate sidebar-text">Inventory</span>
                         </a>
 
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'archive' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/archive') ?>">
-                            <?php if ($activeNav === 'archive'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'archive' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">archive</span>
-                            <span class="truncate">Archive</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'archive' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/archive') ?>" title="Archive">
+                            <?php if ($activeNav === 'archive'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'archive' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">archive</span>
+                            <span class="truncate sidebar-text">Archive</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- 3. FINANCE & INSIGHTS -->
                 <div>
-                    <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-3 mb-1.5">Finance &amp; Insights</p>
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-1.5 sidebar-text">Finance &amp; Insights</p>
+                    <div class="sidebar-section-divider hidden"></div>
                     <div class="space-y-0.5">
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'analytics' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/analytics') ?>">
-                            <?php if ($activeNav === 'analytics'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'analytics' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">leaderboard</span>
-                            <span class="truncate">Analytics</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'analytics' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/analytics') ?>" title="Analytics">
+                            <?php if ($activeNav === 'analytics'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'analytics' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">leaderboard</span>
+                            <span class="truncate sidebar-text">Analytics</span>
                         </a>
 
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'withdrawals' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/withdrawals') ?>">
-                            <?php if ($activeNav === 'withdrawals'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'withdrawals' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">payments</span>
-                            <span class="truncate">Transfer &amp; Payouts</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'withdrawals' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/withdrawals') ?>" title="Transfer & Payouts">
+                            <?php if ($activeNav === 'withdrawals'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'withdrawals' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">payments</span>
+                            <span class="truncate sidebar-text">Transfer &amp; Payouts</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- 4. PREFERENCES -->
                 <div>
-                    <p class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-3 mb-1.5">Preferences</p>
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-1.5 sidebar-text">Preferences</p>
+                    <div class="sidebar-section-divider hidden"></div>
                     <div class="space-y-0.5">
-                        <a class="group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'settings' ? 'bg-primary/10 text-primary font-bold shadow-2xs' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 font-medium' ?>" href="<?= base_url('tenant/settings') ?>">
-                            <?php if ($activeNav === 'settings'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary"></span><?php endif; ?>
-                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'settings' ? 'fill-icon text-primary' : 'text-on-surface-variant group-hover:text-primary transition-colors' ?>">settings</span>
-                            <span class="truncate">Store Settings</span>
+                        <a class="nav-item group relative flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all <?= $activeNav === 'settings' ? 'bg-terra-green/10 text-terra-green font-bold dark:bg-terra-green/20 dark:text-terra-green-light shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 font-medium' ?>" href="<?= base_url('tenant/settings') ?>" title="Store Settings">
+                            <?php if ($activeNav === 'settings'): ?><span class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-terra-green"></span><?php endif; ?>
+                            <span class="material-symbols-outlined text-[19px] shrink-0 <?= $activeNav === 'settings' ? 'text-terra-green' : 'text-slate-400 group-hover:text-terra-green transition-colors' ?>">settings</span>
+                            <span class="truncate sidebar-text">Store Settings</span>
                         </a>
                     </div>
                 </div>
@@ -151,37 +252,44 @@
             </nav>
 
             <!-- Bottom Merchant Profile Card -->
-            <div class="mt-auto pt-3 border-t border-outline-variant/20 space-y-2">
-                <a href="<?= base_url('tenant/settings') ?>" class="flex items-center gap-2.5 p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/30 transition-all group shadow-2xs">
-                    <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-primary/20">
+            <div class="mt-auto pt-3.5 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2">
+                <a href="<?= base_url('tenant/settings') ?>" class="sidebar-profile-card flex items-center gap-2.5 p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all group shadow-2xs" title="<?= esc($shopName) ?> Settings">
+                    <div class="w-8 h-8 rounded-xl bg-terra-green/10 dark:bg-terra-green/20 text-terra-green flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-terra-green/20">
                         <?php if (!empty($shop['logo_url'])): ?>
                             <img src="<?= esc(logo_url($shop['logo_url'])) ?>" alt="<?= esc($shopName) ?>" class="w-full h-full object-cover">
                         <?php else: ?>
                             <span><?= esc(strtoupper(substr($shopName, 0, 2))) ?></span>
                         <?php endif; ?>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors"><?= esc($shopName) ?></p>
-                        <p class="text-[10px] text-on-surface-variant/70 truncate flex items-center gap-1">
+                    <div class="min-w-0 flex-1 sidebar-text">
+                        <p class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-terra-green transition-colors"><?= esc($shopName) ?></p>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate flex items-center gap-1 font-medium">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Verified Merchant
                         </p>
                     </div>
-                    <span class="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-transform group-hover:translate-x-0.5">chevron_right</span>
+                    <span class="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-terra-green transition-transform group-hover:translate-x-0.5 sidebar-text">chevron_right</span>
                 </a>
 
-                <div class="flex items-center justify-between px-1">
+                <div class="flex items-center justify-between px-1 sidebar-profile-actions">
                     <?php $storeSlug = $shop['slug'] ?? ''; ?>
                     <?php if (!empty($storeSlug)): ?>
-                        <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1">
+                        <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-terra-green hover:text-terra-green-dark hover:underline flex items-center gap-1 transition-colors">
                             <span>Live Store</span>
                             <span class="material-symbols-outlined text-[13px]">open_in_new</span>
                         </a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
-                    <a class="flex items-center gap-1 text-[11px] font-semibold text-error hover:underline transition-colors" href="<?= base_url('logout') ?>">
+                    <a class="flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 hover:underline transition-colors" href="<?= base_url('logout') ?>">
                         <span class="material-symbols-outlined text-[15px]">logout</span>
                         <span>Sign Out</span>
+                    </a>
+                </div>
+
+                <!-- Collapsed Icon-Only Sign Out Shortcut -->
+                <div class="hidden sidebar-collapsed-signout items-center justify-center pt-1">
+                    <a href="<?= base_url('logout') ?>" class="w-9 h-9 rounded-xl flex items-center justify-center text-rose-500 hover:bg-rose-500/10 dark:hover:bg-rose-950/30 transition-colors" title="Sign Out">
+                        <span class="material-symbols-outlined text-[19px]">logout</span>
                     </a>
                 </div>
             </div>
@@ -189,98 +297,105 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 <?= $fullscreenLayout ? 'ml-0' : 'ml-0 md:ml-64' ?> overflow-y-auto bg-surface relative">
+        <main id="tenant-main-content" class="flex-1 ml-0 md:ml-64 overflow-y-auto bg-slate-50 dark:bg-slate-950 relative min-h-screen">
 
-            <header class="sticky top-0 z-30 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30 px-4 md:px-8 py-2.5 flex justify-between items-center transition-all">
+            <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 md:px-8 py-3 flex justify-between items-center transition-all">
 
-                <!-- Left: Mobile Toggle & Breadcrumbs -->
-                <div class="flex items-center gap-3">
-                    <button id="sidebar-toggle" type="button" class="<?= $fullscreenLayout ? '' : 'md:hidden' ?> p-2 text-on-surface-variant hover:bg-surface-container rounded-xl transition-colors" aria-label="Toggle sidebar">
+                <!-- Left: Mobile Toggle, Desktop Toggle & Breadcrumbs -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button id="sidebar-toggle" type="button" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" aria-label="Toggle mobile sidebar">
                         <span class="material-symbols-outlined text-[20px]">menu</span>
                     </button>
 
+                    <button type="button" onclick="toggleTenantSidebar()" class="hidden md:flex p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer" title="Toggle Sidebar">
+                        <span class="material-symbols-outlined text-[20px]">dock_to_left</span>
+                    </button>
+
                     <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1.5 text-xs text-on-surface-variant/70">
-                            <span class="font-medium hidden sm:inline">Store</span>
-                            <span class="text-[10px] text-outline-variant hidden sm:inline">/</span>
-                            <span class="font-bold text-on-surface text-sm sm:text-base tracking-tight"><?= esc($pageTitle) ?></span>
+                        <div class="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+                            <span class="font-medium hidden sm:inline">Merchant Hub</span>
+                            <span class="text-[10px] text-slate-300 dark:text-slate-600 hidden sm:inline">/</span>
+                            <span class="font-display font-bold text-slate-900 dark:text-white text-sm sm:text-base tracking-tight"><?= esc($pageTitle) ?></span>
                         </div>
-                        <span class="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 ml-2">
+                        <span class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 ml-2">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live
+                            Live Store
                         </span>
                     </div>
                 </div>
 
                 <!-- Right: Quick Preview, Notification Bell & Profile -->
                 <div class="flex items-center gap-2.5 sm:gap-3.5">
-                    <?php $storeSlug = $shop['slug'] ?? ''; ?>
                     <?php if (!empty($storeSlug)): ?>
-                        <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest hover:bg-surface-container text-xs font-semibold text-on-surface transition-all shadow-2xs group" title="Preview public storefront in new tab">
-                            <span class="material-symbols-outlined text-[15px] text-primary group-hover:scale-110 transition-transform">open_in_new</span>
+                        <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all shadow-2xs group" title="Preview public storefront in new tab">
+                            <span class="material-symbols-outlined text-[15px] text-terra-green group-hover:scale-110 transition-transform">open_in_new</span>
                             <span>View Store</span>
                         </a>
                     <?php endif; ?>
 
                     <!-- Theme Switcher -->
-                    <button type="button" class="theme-toggle-btn text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container rounded-xl relative transition-colors" title="Toggle dark / light theme" aria-label="Toggle theme">
+                    <button type="button" class="theme-toggle-btn text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl relative transition-colors" title="Toggle dark / light theme" aria-label="Toggle theme">
                         <span class="material-symbols-outlined theme-toggle-icon text-[22px]">dark_mode</span>
                     </button>
 
                     <!-- Notification Bell -->
                     <div class="relative">
-                        <button id="notif-toggle" type="button" class="text-on-surface-variant hover:text-on-surface p-2 hover:bg-surface-container rounded-xl relative transition-colors" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                        <button id="notif-toggle" type="button" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl relative transition-colors cursor-pointer" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
                             <span class="material-symbols-outlined text-[22px]">notifications</span>
-                            <?php if (($unread_count ?? 0) > 0): ?>
-                                <span class="absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 bg-error text-on-error text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-surface-container-lowest animate-pulse"><?= (int) $unread_count ?></span>
-                            <?php endif; ?>
+                            <span id="notif-badge" class="<?= ($unread_count > 0) ? '' : 'hidden' ?> absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 bg-terra-amber text-slate-950 text-[9px] font-mono font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 animate-pulse">
+                                <?= (int) $unread_count ?>
+                            </span>
                         </button>
 
-                        <div id="notif-panel" class="hidden absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                            <div class="px-md py-sm border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low/40">
+                        <div id="notif-panel" class="hidden absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
                                 <div class="flex items-center gap-1.5">
-                                    <p class="text-xs font-bold text-on-surface">Notifications</p>
-                                    <?php if (($unread_count ?? 0) > 0): ?>
-                                        <span class="text-[10px] font-semibold text-primary px-1.5 py-0.5 rounded-md bg-primary/10"><?= (int) $unread_count ?> unread</span>
-                                    <?php endif; ?>
+                                    <p class="text-xs font-bold text-slate-900 dark:text-white">Notifications</p>
+                                    <span id="notif-unread-pill" class="<?= ($unread_count > 0) ? '' : 'hidden' ?> text-[10px] font-bold text-terra-green px-1.5 py-0.5 rounded-md bg-terra-green/10 dark:bg-terra-green/20">
+                                        <?= (int) $unread_count ?> unread
+                                    </span>
                                 </div>
-                                <?php if (!empty($notifications)): ?>
-                                    <form method="post" action="<?= base_url('tenant/notifications/mark-read') ?>" class="inline">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="text-[11px] font-semibold text-primary hover:underline">Mark all read</button>
-                                    </form>
-                                <?php endif; ?>
+                                <form id="notif-mark-all-form" method="post" action="<?= base_url('tenant/notifications/mark-read') ?>" class="inline <?= ($unread_count > 0 || !empty($notifications)) ? '' : 'hidden' ?>">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" id="notif-mark-all-btn" class="text-[11px] font-bold text-terra-green hover:underline cursor-pointer">Mark all read</button>
+                                </form>
                             </div>
 
-                            <div class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-outline-variant/10 text-xs">
+                            <div id="notif-items-container" class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                                 <?php if (!empty($notifications)): ?>
                                     <?php
                                         $notifIcons = [
                                             'new_order'             => 'shopping_bag',
+                                            'order'                 => 'shopping_bag',
+                                            'order_status'          => 'local_shipping',
+                                            'order_shipped'         => 'local_shipping',
                                             'low_stock'             => 'inventory_2',
                                             'new_printing_request'  => 'print',
-                                            'order_shipped'         => 'local_shipping',
+                                            'printing'              => 'print',
                                             'printing_ready'        => 'print',
                                             'payout'                => 'payments',
+                                            'compliance'            => 'flag',
+                                            'merchant_verification' => 'verified',
+                                            'customer_registration' => 'person_add',
                                         ];
                                     ?>
-                                    <?php foreach (array_slice($notifications, 0, 6) as $n): ?>
-                                        <a href="<?= base_url('notifications/click/' . (int)$n['id']) ?>" class="flex items-start gap-2.5 px-3 py-2.5 hover:bg-surface-container-low transition-colors block <?= empty($n['is_read']) ? 'bg-primary/5' : 'opacity-65 hover:opacity-100' ?>">
-                                            <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                                    <?php foreach (array_slice($notifications, 0, 8) as $n): ?>
+                                        <a href="<?= base_url('notifications/click/' . (int)$n['id']) ?>" class="flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors block <?= empty($n['is_read']) ? 'bg-terra-green/5 dark:bg-terra-green/10 font-medium' : 'opacity-70 hover:opacity-100' ?>">
+                                            <div class="w-7 h-7 rounded-lg bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0 mt-0.5">
                                                 <span class="material-symbols-outlined text-[16px]"><?= esc($notifIcons[$n['type']] ?? 'notifications') ?></span>
                                             </div>
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex items-center justify-between gap-1">
-                                                    <p class="font-bold text-on-surface truncate text-xs"><?= esc($n['title']) ?></p>
-                                                    <span class="text-[9px] text-on-surface-variant/60 shrink-0 font-normal"><?= date('M d, H:i', strtotime($n['created_at'])) ?></span>
+                                                    <p class="font-bold text-slate-800 dark:text-slate-200 truncate text-xs"><?= esc($n['title']) ?></p>
+                                                    <span class="text-[9px] font-mono text-slate-400 shrink-0"><?= date('M d, H:i', strtotime($n['created_at'])) ?></span>
                                                 </div>
-                                                <p class="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5 leading-snug"><?= esc($n['message']) ?></p>
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug"><?= esc($n['message']) ?></p>
                                             </div>
                                         </a>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <div class="px-md py-lg text-center text-xs text-on-surface-variant/70">
-                                        <span class="material-symbols-outlined text-2xl text-outline mb-1 block">notifications_off</span>
+                                    <div class="px-4 py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                                        <span class="material-symbols-outlined text-2xl text-slate-300 dark:text-slate-600 mb-1 block">notifications_off</span>
                                         No new notifications.
                                     </div>
                                 <?php endif; ?>
@@ -298,39 +413,39 @@
                                 $tenantAvatarUrl = logo_url(session()->get('profile_image_url'));
                             }
                         ?>
-                        <button id="tenant-profile-toggle" type="button" class="profile-dropdown-toggle flex items-center gap-2 p-1 rounded-xl hover:bg-surface-container transition-all group" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
-                            <div class="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-primary/30 transition-all">
+                        <button id="tenant-profile-toggle" type="button" class="profile-dropdown-toggle flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+                            <div class="w-8 h-8 rounded-full bg-terra-green/10 dark:bg-terra-green/20 border border-terra-green/30 flex items-center justify-center text-terra-green font-bold text-xs overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-terra-green/30 transition-all">
                                 <?php if ($tenantAvatarUrl !== ''): ?>
                                     <img src="<?= esc($tenantAvatarUrl) ?>" class="w-full h-full object-cover" alt="<?= esc($shopName) ?>">
                                 <?php else: ?>
                                     <span><?= esc(strtoupper(substr($shopName, 0, 2))) ?></span>
                                 <?php endif; ?>
                             </div>
-                            <span class="material-symbols-outlined text-[16px] text-outline group-hover:text-on-surface transition-transform group-hover:translate-y-0.5 hidden sm:inline">expand_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform group-hover:translate-y-0.5 hidden sm:inline">expand_more</span>
                         </button>
 
-                        <div id="tenant-profile-dropdown" class="dropdown-menu absolute right-0 top-full mt-2 min-w-[240px] w-max max-w-[calc(100vw-1.5rem)] bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 p-2 z-50 origin-top-right">
-                            <div class="px-3 py-2 border-b border-outline-variant/15 mb-1.5">
-                                <p class="text-xs font-bold text-on-surface truncate"><?= esc($shopName) ?></p>
-                                <p class="text-[10px] text-on-surface-variant truncate"><?= esc(session()->get('user_email') ?? 'Merchant') ?></p>
+                        <div id="tenant-profile-dropdown" class="dropdown-menu absolute right-0 top-full mt-2 min-w-[240px] w-max max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50 origin-top-right">
+                            <div class="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-1.5">
+                                <p class="text-xs font-bold text-slate-900 dark:text-white truncate"><?= esc($shopName) ?></p>
+                                <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate"><?= esc(session()->get('user_email') ?? 'Merchant') ?></p>
                             </div>
-                            <a href="<?= base_url('tenant/settings') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-on-surface hover:bg-surface-container-low rounded-xl transition-colors <?= $activeNav === 'settings' ? 'bg-primary/10 text-primary font-bold' : '' ?>">
-                                <span class="material-symbols-outlined text-[17px] text-primary">settings</span>
+                            <a href="<?= base_url('tenant/settings') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors <?= $activeNav === 'settings' ? 'bg-terra-green/10 text-terra-green font-bold' : '' ?>">
+                                <span class="material-symbols-outlined text-[17px] text-terra-green">settings</span>
                                 <span>Store Settings</span>
                             </a>
-                            <a href="<?= base_url('tenant/withdrawals') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-on-surface hover:bg-surface-container-low rounded-xl transition-colors <?= $activeNav === 'withdrawals' ? 'bg-primary/10 text-primary font-bold' : '' ?>">
+                            <a href="<?= base_url('tenant/withdrawals') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors <?= $activeNav === 'withdrawals' ? 'bg-terra-green/10 text-terra-green font-bold' : '' ?>">
                                 <span class="material-symbols-outlined text-[17px] text-emerald-600">payments</span>
                                 <span>Transfer &amp; Payouts</span>
                             </a>
                             <?php if (!empty($storeSlug)): ?>
-                                <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3 py-2 text-xs text-on-surface hover:bg-surface-container-low rounded-xl transition-colors">
-                                    <span class="material-symbols-outlined text-[17px] text-blue-500">storefront</span>
+                                <a href="<?= base_url('shop/' . esc($storeSlug)) ?>" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                    <span class="material-symbols-outlined text-[17px] text-terra-earth">storefront</span>
                                     <span>Public Storefront ↗</span>
                                 </a>
                             <?php endif; ?>
-                            <div class="my-1.5 border-t border-outline-variant/15"></div>
-                            <a href="<?= base_url('logout') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-error hover:bg-error-container/20 rounded-xl transition-colors font-medium">
-                                <span class="material-symbols-outlined text-[17px] text-error">logout</span>
+                            <div class="my-1.5 border-t border-slate-100 dark:border-slate-800"></div>
+                            <a href="<?= base_url('logout') ?>" class="flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors font-medium">
+                                <span class="material-symbols-outlined text-[17px] text-rose-500">logout</span>
                                 <span>Log Out</span>
                             </a>
                         </div>
@@ -339,7 +454,7 @@
 
             </header>
 
-            <div class="<?= $fullscreenLayout ? 'p-2 sm:p-3 md:p-4 w-full' : 'p-4 md:p-gutter max-w-container-max mx-auto space-y-xl w-full' ?>">
+            <div class="<?= $fullscreenLayout ? 'p-2 sm:p-3 md:p-4 w-full' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 w-full' ?>">
 
                 <?= $this->renderSection('content') ?>
 
@@ -351,10 +466,73 @@
 
     <?= $this->renderSection('scripts') ?>
 
-
-
     <!-- Real-time Order & Printing Notification Toast Container -->
     <div id="blax-tenant-toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full"></div>
+
+    <script>
+    function toggleTenantSidebar() {
+        const sidebar = document.getElementById('tenant-sidebar');
+        const main = document.getElementById('tenant-main-content');
+        const icon = document.getElementById('tenant-sidebar-collapse-icon');
+        if (!sidebar || !main) return;
+
+        // Clean up early FOUC class
+        document.documentElement.classList.remove('tenant-sidebar-init-collapsed');
+
+        const willCollapse = !sidebar.classList.contains('sidebar-collapsed');
+
+        if (willCollapse) {
+            sidebar.classList.add('sidebar-collapsed');
+            main.classList.add('sidebar-collapsed-main');
+            if (icon) icon.textContent = 'chevron_right';
+            localStorage.setItem('blax_tenant_sidebar_collapsed', 'true');
+        } else {
+            sidebar.classList.remove('sidebar-collapsed');
+            main.classList.remove('sidebar-collapsed-main');
+            if (icon) icon.textContent = 'chevron_left';
+            localStorage.setItem('blax_tenant_sidebar_collapsed', 'false');
+        }
+    }
+
+    // Sync state on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+        const isPos = <?= json_encode($isPos) ?>;
+        const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
+        const isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+
+        const sidebar = document.getElementById('tenant-sidebar');
+        const main = document.getElementById('tenant-main-content');
+        const icon = document.getElementById('tenant-sidebar-collapse-icon');
+
+        if (isCollapsed) {
+            if (sidebar) sidebar.classList.add('sidebar-collapsed');
+            if (main) main.classList.add('sidebar-collapsed-main');
+            if (icon) icon.textContent = 'chevron_right';
+        } else {
+            if (sidebar) sidebar.classList.remove('sidebar-collapsed');
+            if (main) main.classList.remove('sidebar-collapsed-main');
+            if (icon) icon.textContent = 'chevron_left';
+        }
+
+        // Mobile drawer toggle bindings
+        const mobileToggle = document.getElementById('sidebar-toggle');
+        const overlay = document.getElementById('tenant-sidebar-overlay');
+        if (mobileToggle && sidebar && overlay) {
+            mobileToggle.addEventListener('click', () => {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex', 'z-50', 'mobile-open');
+                overlay.classList.add('active');
+                document.body.classList.add('mobile-nav-open');
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-open', 'flex', 'z-50');
+                sidebar.classList.add('hidden');
+                overlay.classList.remove('active');
+                document.body.classList.remove('mobile-nav-open');
+            });
+        }
+    });
+    </script>
 
     <script>
     (function() {
@@ -413,18 +591,18 @@
 
         function showRealtimeToast(type, data) {
             const container = getTenantToastContainer();
-            if (!container) return;
+            if (!container || !data) return;
 
             const toast = document.createElement('div');
-            toast.className = 'pointer-events-auto bg-surface-container-lowest border border-outline-variant/40 rounded-2xl p-4 shadow-xl flex items-start gap-3 transform translate-y-[-10px] opacity-0 transition-all duration-300';
+            toast.className = 'pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-start gap-3 transform translate-y-[-10px] opacity-0 transition-all duration-300';
             
             const isOrder = type === 'order';
             const icon = isOrder ? 'shopping_bag' : 'print';
-            const iconBg = isOrder ? 'bg-primary/10 text-primary' : 'bg-purple-500/10 text-purple-600';
-            const title = isOrder ? `New Order #${data.order_number}` : `New Print #${data.request_number}`;
+            const iconBg = isOrder ? 'bg-terra-green/10 text-terra-green border border-terra-green/20' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20';
+            const title = isOrder ? `New Order #${data.order_number || data.id}` : `New Print #${data.request_number || data.id}`;
             const sub = isOrder 
-                ? `${data.customer_name} • ₱${data.total_amount_fmt} (${data.is_pickup ? 'Pick-up' : 'Delivery'})`
-                : `${data.customer_name} • ${data.service_name} (₱${data.total_amount_fmt})`;
+                ? `${data.customer_name || 'Customer'} • ₱${data.total_amount_fmt || '0.00'} (${data.is_pickup ? 'Pick-up' : 'Delivery'})`
+                : `${data.customer_name || 'Customer'} • ${data.service_name || 'Printing'} (₱${data.total_amount_fmt || '0.00'})`;
             const linkUrl = isOrder ? '<?= base_url('tenant/orders') ?>' : '<?= base_url('tenant/printing') ?>';
 
             toast.innerHTML = `
@@ -433,18 +611,18 @@
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-1">
-                        <span class="text-xs font-bold text-on-surface truncate">${title}</span>
-                        <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Just Now</span>
+                        <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${title}</span>
+                        <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full border border-emerald-500/20">Just Now</span>
                     </div>
-                    <p class="text-xs text-on-surface-variant mt-0.5 truncate">${sub}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${sub}</p>
                     <div class="flex items-center gap-2 mt-2">
-                        <a href="${linkUrl}" class="text-[11px] font-bold text-primary hover:underline flex items-center gap-0.5">
+                        <a href="${linkUrl}" class="text-[11px] font-bold text-terra-green hover:underline flex items-center gap-0.5">
                             <span>Open in Queue</span>
                             <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
                         </a>
                     </div>
                 </div>
-                <button type="button" class="text-on-surface-variant/60 hover:text-on-surface p-1 -mr-1 text-xs" onclick="this.closest('div.pointer-events-auto').remove()">
+                <button type="button" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 -mr-1 text-xs cursor-pointer" onclick="this.closest('div.pointer-events-auto').remove()">
                     <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>
             `;
@@ -452,247 +630,247 @@
             container.appendChild(toast);
             requestAnimationFrame(() => {
                 toast.classList.remove('translate-y-[-10px]', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
             });
 
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-x-full');
-                setTimeout(() => toast.remove(), 350);
-            }, 7000);
-        }
-
-        function checkRealtime() {
-            let url = '<?= base_url('tenant/realtime/check') ?>';
-            const params = [];
-            if (lastOrderId !== null) params.push('last_order_id=' + lastOrderId);
-            if (lastPrintingId !== null) params.push('last_printing_id=' + lastPrintingId);
-            params.push('_t=' + Date.now());
-            if (params.length > 0) url += '?' + params.join('&');
-
-            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => {
-                    if (!r.ok) return null;
-                    return r.json();
-                })
-                .then(res => {
-                    if (!res || !res.success) return;
-
-                    if (isInitial) {
-                        lastOrderId = res.max_order_id || 0;
-                        lastPrintingId = res.max_printing_id || 0;
-                        isInitial = false;
-                        return;
-                    }
-
-                    if (res.max_order_id) lastOrderId = Math.max(lastOrderId || 0, res.max_order_id);
-                    if (res.max_printing_id) lastPrintingId = Math.max(lastPrintingId || 0, res.max_printing_id);
-
-                    // 1. Live Notification Count & List Sync
-                    if (typeof res.unread_count === 'number') {
-                        updateTenantNotifBadge(res.unread_count, res.notifications);
-                    }
-
-                    // 2. New orders
-                    if (res.has_new_orders && Array.isArray(res.new_orders) && res.new_orders.length > 0) {
-                        playChime();
-                        console.info('[Blax Realtime] Incoming new orders:', res.new_orders);
-                        res.new_orders.forEach(ord => {
-                            showRealtimeToast('order', ord);
-                            window.dispatchEvent(new CustomEvent('blax:new-order', { detail: ord }));
-                        });
-                        if (res.summary) {
-                            window.dispatchEvent(new CustomEvent('blax:summary-update', { detail: res.summary }));
-                            window.dispatchEvent(new CustomEvent('blax:order-summary-update', { detail: res.summary }));
-                        }
-                    }
-
-                    // 3. New printing requests
-                    if (res.has_new_printing && Array.isArray(res.new_printing) && res.new_printing.length > 0) {
-                        playChime();
-                        console.info('[Blax Realtime] Incoming new printing requests:', res.new_printing);
-                        res.new_printing.forEach(pr => {
-                            showRealtimeToast('printing', pr);
-                            window.dispatchEvent(new CustomEvent('blax:new-printing', { detail: pr }));
-                        });
-                        if (res.printing_summary) {
-                            window.dispatchEvent(new CustomEvent('blax:printing-summary-update', { detail: res.printing_summary }));
-                            window.dispatchEvent(new CustomEvent('blax:summary-update', { detail: res.printing_summary }));
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.debug('Tenant realtime poll skipped:', err);
-                });
-        }
-
-        function updateTenantNotifBadge(count, notifs) {
-            const toggleBtn = document.getElementById('notif-toggle');
-            if (!toggleBtn) return;
-
-            let badge = toggleBtn.querySelector('span.bg-error');
-            if (count > 0) {
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = 'absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 bg-error text-on-error text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-surface-container-lowest animate-pulse';
-                    toggleBtn.appendChild(badge);
-                }
-                badge.textContent = count;
-            } else if (badge) {
-                badge.remove();
-            }
-
-            const headerUnread = document.querySelector('#notif-panel .bg-primary\\/10');
-            if (headerUnread) {
-                if (count > 0) {
-                    headerUnread.textContent = count + ' unread';
-                    headerUnread.classList.remove('hidden');
-                } else {
-                    headerUnread.classList.add('hidden');
-                }
-            }
-        }
-
-        // AJAX Mark All Read handler
-        document.addEventListener('DOMContentLoaded', function() {
-            const markAllForm = document.querySelector('#notif-panel form');
-            if (markAllForm) {
-                markAllForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    fetch(markAllForm.action, {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data && data.success) {
-                            updateTenantNotifBadge(0);
-                            document.querySelectorAll('#notif-panel a.bg-primary\\/5').forEach(el => {
-                                el.classList.remove('bg-primary/5');
-                                el.classList.add('opacity-65');
-                            });
-                            const btn = markAllForm.querySelector('button');
-                            if (btn) btn.textContent = 'All read ✓';
-                        }
-                    })
-                    .catch(() => {
-                        markAllForm.submit(); // fallback to normal submit if fetch fails
-                    });
-                });
-            }
-
-            // Click listener on individual notification items for instant visual read feedback
-            document.querySelectorAll('#notif-panel a').forEach(item => {
-                item.addEventListener('click', function() {
-                    this.classList.remove('bg-primary/5');
-                    this.classList.add('opacity-65');
-                    const badge = document.querySelector('#notif-toggle span.bg-error');
-                    if (badge) {
-                        const current = parseInt(badge.textContent || '0', 10);
-                        if (current > 1) {
-                            badge.textContent = current - 1;
-                        } else {
-                            badge.remove();
-                        }
-                    }
-                });
-            });
-        });
-
-        // Start polling loop every 3 seconds for instant real-time ingestion
-        checkRealtime();
-        pollTimer = setInterval(checkRealtime, 3000);
-
-        // Universal showToast helper for tenant pages
-        window.showToast = function(opts) {
-            if (typeof opts === 'string') opts = { message: opts, type: 'info' };
-            const type = opts.type || 'info';
-            const title = opts.title || (type === 'success' ? 'Success' : (type === 'error' ? 'Notice' : 'Notification'));
-            const message = opts.message || '';
-            const url = opts.url || '';
-            const icon = opts.icon || (
-                type === 'success' ? 'check_circle' :
-                type === 'error' ? 'error' :
-                type === 'warning' ? 'warning' :
-                type === 'order' ? 'shopping_bag' :
-                type === 'delivery' ? 'two_wheeler' :
-                type === 'printing' ? 'print' : 'notifications'
-            );
-
-            const container = getTenantToastContainer();
-            if (!container) return;
-
-            const toast = document.createElement('div');
-            toast.className = 'pointer-events-auto bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant/40 rounded-2xl p-3.5 shadow-xl flex items-start gap-3 transform translate-y-[-10px] opacity-0 transition-all duration-300';
-            
-            const colorMap = {
-                success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-                error: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-                warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-                order: 'bg-primary/10 text-primary border-primary/20',
-                printing: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-                info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-            };
-            const badgeStyle = colorMap[type] || colorMap.info;
-
-            let actionHtml = '';
-            if (url) {
-                actionHtml = `
-                    <a href="${url}" class="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1.5">
-                        <span>View Details</span>
-                        <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
-                    </a>
-                `;
-            }
-
-            toast.innerHTML = `
-                <div class="w-8 h-8 rounded-xl ${badgeStyle} border flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                    <span class="material-symbols-outlined text-[18px]">${icon}</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h4 class="text-xs font-bold text-on-surface leading-tight">${title}</h4>
-                    <p class="text-xs text-on-surface-variant mt-0.5 leading-snug break-words">${message}</p>
-                    ${actionHtml}
-                </div>
-                <button type="button" class="text-on-surface-variant/60 hover:text-on-surface p-1 -mr-1 rounded-lg transition-colors" onclick="this.closest('div.pointer-events-auto').remove()">
-                    <span class="material-symbols-outlined text-[16px]">close</span>
-                </button>
-            `;
-
-            container.appendChild(toast);
             playChime();
 
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-[-10px]', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
-            });
-
-            const duration = opts.duration || 6000;
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-x-full');
-                setTimeout(() => toast.remove(), 350);
-            }, duration);
-        };
+                setTimeout(() => toast.remove(), 400);
+            }, 6500);
+        }
+
+        function updateNotificationsUI(unreadCount, notifs) {
+            const count = parseInt(unreadCount, 10) || 0;
+            const badge = document.getElementById('notif-badge');
+            const pill = document.getElementById('notif-unread-pill');
+            const form = document.getElementById('notif-mark-all-form');
+            const container = document.getElementById('notif-items-container');
+
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            if (pill) {
+                if (count > 0) {
+                    pill.textContent = `${count} unread`;
+                    pill.classList.remove('hidden');
+                } else {
+                    pill.classList.add('hidden');
+                }
+            }
+
+            if (form) {
+                if (count > 0 || (Array.isArray(notifs) && notifs.length > 0)) {
+                    form.classList.remove('hidden');
+                } else {
+                    form.classList.add('hidden');
+                }
+            }
+
+            if (container && Array.isArray(notifs)) {
+                if (notifs.length === 0) {
+                    container.innerHTML = `
+                        <div class="px-4 py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                            <span class="material-symbols-outlined text-2xl text-slate-300 dark:text-slate-600 mb-1 block">notifications_off</span>
+                            No new notifications.
+                        </div>
+                    `;
+                } else {
+                    const iconMap = {
+                        'new_order': 'shopping_bag',
+                        'order': 'shopping_bag',
+                        'order_status': 'local_shipping',
+                        'order_shipped': 'local_shipping',
+                        'low_stock': 'inventory_2',
+                        'new_printing_request': 'print',
+                        'printing': 'print',
+                        'printing_ready': 'print',
+                        'payout': 'payments',
+                        'compliance': 'flag',
+                        'merchant_verification': 'verified',
+                        'customer_registration': 'person_add'
+                    };
+
+                    const escapeHtml = (str) => {
+                        if (!str) return '';
+                        return String(str).replace(/[&<>"']/g, (m) => ({
+                            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+                        }[m]));
+                    };
+
+                    const formatDate = (dateStr) => {
+                        try {
+                            const d = new Date(dateStr);
+                            if (isNaN(d.getTime())) return dateStr;
+                            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
+                                   d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        } catch (e) {
+                            return dateStr;
+                        }
+                    };
+
+                    container.innerHTML = notifs.slice(0, 8).map(n => {
+                        const icon = iconMap[n.type] || 'notifications';
+                        const isRead = n.is_read == 1 || n.is_read === true;
+                        const bgClass = !isRead ? 'bg-terra-green/5 dark:bg-terra-green/10 font-medium' : 'opacity-70 hover:opacity-100';
+                        const clickUrl = `<?= base_url('notifications/click') ?>/${encodeURIComponent(n.id)}`;
+
+                        return `
+                            <a href="${clickUrl}" class="flex items-start gap-2.5 px-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors block ${bgClass}">
+                                <div class="w-7 h-7 rounded-lg bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0 mt-0.5">
+                                    <span class="material-symbols-outlined text-[16px]">${icon}</span>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <p class="font-bold text-slate-800 dark:text-slate-200 truncate text-xs">${escapeHtml(n.title)}</p>
+                                        <span class="text-[9px] font-mono text-slate-400 shrink-0">${formatDate(n.created_at)}</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">${escapeHtml(n.message)}</p>
+                                </div>
+                            </a>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        window.updateTenantNotifications = updateNotificationsUI;
+
+        async function pollTenantUpdates() {
+            if (document.visibilityState === 'hidden') return;
+            try {
+                let url = '<?= base_url('tenant/realtime/check') ?>';
+                if (!isInitial && lastOrderId !== null && lastPrintingId !== null) {
+                    url += `?last_order_id=${encodeURIComponent(lastOrderId)}&last_printing_id=${encodeURIComponent(lastPrintingId)}`;
+                }
+
+                const res = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data || !data.success) return;
+
+                if (isInitial) {
+                    lastOrderId = data.max_order_id || 0;
+                    lastPrintingId = data.max_printing_id || 0;
+                    isInitial = false;
+                    if (typeof data.unread_count !== 'undefined') {
+                        updateNotificationsUI(data.unread_count, data.notifications);
+                    }
+                    return;
+                }
+
+                // Process new incoming orders
+                if (Array.isArray(data.new_orders) && data.new_orders.length > 0) {
+                    data.new_orders.forEach(order => {
+                        showRealtimeToast('order', order);
+                        window.dispatchEvent(new CustomEvent('blax:new-order', { detail: order }));
+                    });
+                }
+                if (data.max_order_id) {
+                    lastOrderId = Math.max(lastOrderId, data.max_order_id);
+                }
+
+                // Process new incoming printing requests
+                if (Array.isArray(data.new_printing) && data.new_printing.length > 0) {
+                    data.new_printing.forEach(printReq => {
+                        showRealtimeToast('printing', printReq);
+                        window.dispatchEvent(new CustomEvent('blax:new-printing', { detail: printReq }));
+                    });
+                }
+                if (data.max_printing_id) {
+                    lastPrintingId = Math.max(lastPrintingId, data.max_printing_id);
+                }
+
+                // Dispatch summary updates if available
+                if (data.summary) {
+                    window.dispatchEvent(new CustomEvent('blax:summary-update', { detail: data.summary }));
+                }
+                if (data.printing_summary) {
+                    window.dispatchEvent(new CustomEvent('blax:printing-summary-update', { detail: data.printing_summary }));
+                }
+                if (data.inventory_summary) {
+                    window.dispatchEvent(new CustomEvent('blax:inventory-summary-update', { detail: data.inventory_summary }));
+                }
+
+                // Live update notifications dropdown & bell badge
+                if (typeof data.unread_count !== 'undefined') {
+                    updateNotificationsUI(data.unread_count, data.notifications);
+                }
+            } catch(e) {
+                console.debug('Tenant realtime poll failed:', e);
+            }
+        }
+
+        // Start polling: initial check after 1.5s, then every 7s
+        pollTimer = setInterval(pollTenantUpdates, 7000);
+        setTimeout(pollTenantUpdates, 1500);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                pollTenantUpdates();
+            }
+        });
+
+        // Mark All As Read AJAX handling
+        document.addEventListener('DOMContentLoaded', () => {
+            const markAllForm = document.getElementById('notif-mark-all-form');
+            if (markAllForm) {
+                markAllForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const btn = document.getElementById('notif-mark-all-btn');
+                    if (btn) btn.disabled = true;
+                    try {
+                        const formData = new FormData(markAllForm);
+                        const res = await fetch(markAllForm.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        if (res.ok) {
+                            updateNotificationsUI(0);
+                            const container = document.getElementById('notif-items-container');
+                            if (container) {
+                                container.querySelectorAll('a').forEach(el => {
+                                    el.classList.remove('bg-terra-green/5', 'dark:bg-terra-green/10', 'font-medium');
+                                    el.classList.add('opacity-70');
+                                });
+                            }
+                        } else {
+                            markAllForm.submit();
+                        }
+                    } catch(err) {
+                        markAllForm.submit();
+                    } finally {
+                        if (btn) btn.disabled = false;
+                    }
+                });
+            }
+        });
 
         // Flashdata auto-triggers
         <?php if (session()->getFlashdata('success')): ?>
-            window.showToast({
-                type: 'success',
-                title: 'Action Completed',
-                message: <?= json_encode((string)session()->getFlashdata('success')) ?>
-            });
+            if (typeof window.showToast === 'function') {
+                window.showToast(<?= json_encode((string)session()->getFlashdata('success')) ?>, 'success');
+            }
         <?php endif; ?>
 
         <?php if (session()->getFlashdata('error')): ?>
-            window.showToast({
-                type: 'error',
-                title: 'Notice',
-                message: <?= json_encode((string)session()->getFlashdata('error')) ?>
-            });
+            if (typeof window.showToast === 'function') {
+                window.showToast(<?= json_encode((string)session()->getFlashdata('error')) ?>, 'error');
+            }
         <?php endif; ?>
     })();
     </script>
-
-</body></html>
+</body>
+</html>

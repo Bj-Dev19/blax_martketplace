@@ -13,45 +13,45 @@
     $hasCoords = !empty($shop['latitude']) && !empty($shop['longitude']);
 ?>
 
-<div class="flex-1 space-y-6 max-w-7xl mx-auto">
+<div class="flex-1 space-y-6 max-w-7xl mx-auto pb-12">
 
     <!-- Flash Alerts -->
     <?php if (session()->getFlashdata('success')): ?>
-        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium flex items-center gap-3 shadow-2xs animate-in fade-in duration-200">
-            <span class="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
+        <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm font-medium flex items-center gap-2.5 shadow-2xs">
+            <span class="material-symbols-outlined text-[20px] text-terra-green">check_circle</span>
             <span><?= esc(session()->getFlashdata('success')) ?></span>
         </div>
     <?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?>
-        <div class="p-4 rounded-2xl bg-error-container/40 border border-error/20 text-on-error-container text-sm font-medium flex items-center gap-3 shadow-2xs animate-in fade-in duration-200">
-            <span class="material-symbols-outlined text-[20px] text-error">error</span>
+        <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-sm font-medium flex items-center gap-2.5 shadow-2xs">
+            <span class="material-symbols-outlined text-[20px] text-rose-600">error</span>
             <span><?= esc(session()->getFlashdata('error')) ?></span>
         </div>
     <?php endif; ?>
 
     <!-- Header & Storefront Status Banner -->
-    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 soft-shadow p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2.5">
-                <span class="p-2 rounded-xl bg-primary/10 text-primary">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center">
                     <span class="material-symbols-outlined text-[24px]">storefront</span>
                 </span>
                 <div>
-                    <h2 class="text-headline-sm font-bold text-on-surface">Store Settings</h2>
-                    <p class="text-body-sm text-on-surface-variant">Manage your shop profile, payout destination, operating hours, and store preferences.</p>
+                    <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-display">Store Settings</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-sans">Manage your shop profile, payout destination, operating hours, and store preferences.</p>
                 </div>
             </div>
         </div>
 
         <!-- Quick Storefront Link & Status Badge -->
         <div class="flex items-center gap-3 shrink-0 flex-wrap">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/30 text-xs">
-                <span class="w-2 h-2 rounded-full <?= ($shop['status'] ?? '') === 'active' ? 'bg-emerald-500' : 'bg-amber-500' ?>"></span>
-                <span class="font-bold text-on-surface capitalize"><?= esc($shop['status'] ?? 'Active') ?> Merchant</span>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                <span class="w-2 h-2 rounded-full <?= ($shop['status'] ?? '') === 'active' ? 'bg-terra-green animate-pulse' : 'bg-amber-500' ?>"></span>
+                <span class="font-bold text-slate-800 dark:text-slate-200 capitalize font-sans"><?= esc($shop['status'] ?? 'Active') ?> Merchant</span>
             </div>
 
             <?php if (!empty($shopSlug)): ?>
-                <a href="<?= base_url('shop/' . $shopSlug) ?>" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 transition-all shadow-2xs">
+                <a href="<?= base_url('shop/' . $shopSlug) ?>" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-terra-green text-white hover:bg-terra-green/90 transition-all shadow-2xs active:scale-95">
                     <span>View Public Storefront</span>
                     <span class="material-symbols-outlined text-[16px]">open_in_new</span>
                 </a>
@@ -60,22 +60,22 @@
     </div>
 
     <!-- Responsive Sub-Navigation Tabs -->
-    <nav class="flex items-center gap-2 border-b border-outline-variant/30 pb-px overflow-x-auto" aria-label="Settings Tabs">
-        <button type="button" onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-primary text-primary">
+    <nav class="flex items-center gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-px overflow-x-auto no-scrollbar" aria-label="Settings Tabs">
+        <button type="button" onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-terra-green text-terra-green cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">store</span>
             <span>Shop Profile</span>
         </button>
-        <button type="button" onclick="switchSettingsTab('payment')" id="tab-btn-payment" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline-variant">
+        <button type="button" onclick="switchSettingsTab('payment')" id="tab-btn-payment" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
             <span>GCash Payouts</span>
         </button>
-        <button type="button" onclick="switchSettingsTab('hours')" id="tab-btn-hours" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline-variant">
+        <button type="button" onclick="switchSettingsTab('hours')" id="tab-btn-hours" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">schedule</span>
             <span>Operating Hours</span>
         </button>
-        <button type="button" onclick="switchSettingsTab('preferences')" id="tab-btn-preferences" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline-variant">
+        <button type="button" onclick="switchSettingsTab('preferences')" id="tab-btn-preferences" class="settings-tab-btn inline-flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold transition-all whitespace-nowrap border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">tune</span>
-            <span>Services & Alerts</span>
+            <span>Services &amp; Alerts</span>
         </button>
     </nav>
 
@@ -83,24 +83,24 @@
     <!-- TAB 1: SHOP PROFILE                                                    -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <div id="tab-panel-profile" class="settings-tab-panel space-y-6">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 soft-shadow p-6 md:p-8 space-y-8">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 md:p-8 space-y-8">
             
             <!-- Section Header -->
-            <div class="flex items-start justify-between border-b border-outline-variant/20 pb-4">
+            <div class="flex items-start justify-between border-b border-slate-200/80 dark:border-slate-800 pb-4">
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface">Store Identity & Branding</h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Customize your brand logo, merchant name, and physical location in Polomolok.</p>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">Store Identity &amp; Branding</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Customize your brand logo, merchant name, and physical location in Polomolok.</p>
                 </div>
             </div>
 
             <!-- Logo Upload Card -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-5 rounded-2xl bg-surface-container-low/50 border border-outline-variant/20">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
                 <!-- Avatar with Preview -->
-                <div class="relative w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center bg-primary-container/20 border-2 border-outline-variant/40 shrink-0 shadow-2xs group">
+                <div class="relative w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center bg-terra-green/10 border-2 border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs group">
                     <img id="logoPreviewImg" src="<?= !empty($logoUrl) ? esc(logo_url($logoUrl)) : '' ?>" alt="Logo" class="w-full h-full object-cover <?= empty($logoUrl) ? 'hidden' : '' ?>">
-                    <span id="logoInitialsSpan" class="text-headline-md font-bold text-primary <?= !empty($logoUrl) ? 'hidden' : '' ?>"><?= esc($initials) ?></span>
+                    <span id="logoInitialsSpan" class="text-2xl font-black text-terra-green font-display <?= !empty($logoUrl) ? 'hidden' : '' ?>"><?= esc($initials) ?></span>
                     
-                    <button type="button" onclick="document.getElementById('logoInput').click()" class="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold gap-1 cursor-pointer" title="Change logo">
+                    <button type="button" onclick="document.getElementById('logoInput').click()" class="absolute inset-0 bg-slate-950/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold gap-1 cursor-pointer" title="Change logo">
                         <span class="material-symbols-outlined text-[20px]">photo_camera</span>
                         <span>Change</span>
                     </button>
@@ -108,15 +108,15 @@
 
                 <div class="space-y-2 flex-1">
                     <div>
-                        <h4 class="text-sm font-bold text-on-surface">Shop Brand Logo</h4>
-                        <p class="text-xs text-on-surface-variant mt-0.5">Displays across the storefront, product catalog, search results, and printed receipts.</p>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white font-display">Shop Brand Logo</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Displays across the storefront, product catalog, search results, and printed receipts.</p>
                     </div>
 
                     <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-[11px] font-mono text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md border border-outline-variant/30">
+                        <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                             Square 1:1 • Min 300×300px • Max 2MB
                         </span>
-                        <span class="text-[11px] text-on-surface-variant">JPG, PNG, WEBP, GIF</span>
+                        <span class="text-[11px] text-slate-400">JPG, PNG, WEBP, GIF</span>
                     </div>
 
                     <!-- Hidden Logo Form for Direct Upload -->
@@ -126,11 +126,11 @@
                     </form>
 
                     <div class="pt-1 flex items-center gap-2">
-                        <button type="button" onclick="document.getElementById('logoInput').click()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold transition-colors text-xs border border-outline-variant/30 shadow-2xs">
-                            <span class="material-symbols-outlined text-[16px] text-primary">upload</span>
+                        <button type="button" onclick="document.getElementById('logoInput').click()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition-colors text-xs border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px] text-terra-green">upload</span>
                             <span>Upload New Logo</span>
                         </button>
-                        <span id="logoUploadHint" class="text-xs text-on-surface-variant hidden"></span>
+                        <span id="logoUploadHint" class="text-xs text-slate-500 hidden"></span>
                     </div>
                 </div>
             </div>
@@ -144,42 +144,42 @@
 
                 <!-- Shop Name -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-on-surface uppercase tracking-wider block" for="shop_name">
-                        Shop Name <span class="text-error">*</span>
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block font-sans" for="shop_name">
+                        Shop Name <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <span class="material-symbols-outlined text-[18px]">storefront</span>
                         </span>
-                        <input type="text" name="shop_name" id="shop_name" value="<?= esc($shop['shop_name'] ?? '') ?>" placeholder="e.g. RHK General Merchandise" class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all" required>
+                        <input type="text" name="shop_name" id="shop_name" value="<?= esc($shop['shop_name'] ?? '') ?>" placeholder="e.g. RHK General Merchandise" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white" required>
                     </div>
                 </div>
 
                 <!-- Shop Description -->
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-on-surface uppercase tracking-wider block" for="description">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block font-sans" for="description">
                             Shop Bio / Description
                         </label>
-                        <span id="charCount" class="text-[11px] text-on-surface-variant font-mono">0 / 500</span>
+                        <span id="charCount" class="text-[11px] text-slate-400 font-mono">0 / 500</span>
                     </div>
-                    <textarea name="description" id="description" rows="3" maxlength="500" placeholder="Briefly describe your products, specialties, and customer policy..." class="w-full p-3.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all leading-relaxed"><?= esc($shop['description'] ?? '') ?></textarea>
+                    <textarea name="description" id="description" rows="3" maxlength="500" placeholder="Briefly describe your products, specialties, and customer policy..." class="w-full p-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all leading-relaxed text-slate-900 dark:text-white"><?= esc($shop['description'] ?? '') ?></textarea>
                 </div>
 
                 <!-- Physical Address Card -->
                 <div class="space-y-4 pt-2">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-bold text-on-surface">Store Location in Polomolok</h4>
-                            <p class="text-xs text-on-surface-variant">Accurate address coordinates enable doorstep deliveries and store pick-up routing.</p>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white font-display">Store Location in Polomolok</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 font-sans">Accurate address coordinates enable doorstep deliveries and store pick-up routing.</p>
                         </div>
                         <?php if ($hasCoords): ?>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20" title="Latitude: <?= esc($shop['latitude']) ?>, Longitude: <?= esc($shop['longitude']) ?>">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20" title="Latitude: <?= esc($shop['latitude']) ?>, Longitude: <?= esc($shop['longitude']) ?>">
                                 <span class="material-symbols-outlined text-[14px]">pin_drop</span>
                                 <span>GPS Synced</span>
                             </span>
                         <?php else: ?>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-700 border border-amber-500/20">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                                 <span class="material-symbols-outlined text-[14px]">location_searching</span>
                                 <span>Pending Geocode</span>
                             </span>
@@ -189,33 +189,33 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Street Address -->
                         <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block" for="street">
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-sans" for="street">
                                 Street Address / Bldg / Purok
                             </label>
                             <div id="shop-autocomplete-wrapper" class="hidden mb-2"></div>
                             <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     <span class="material-symbols-outlined text-[18px]">location_city</span>
                                 </span>
-                                <input type="text" name="street" id="street" value="<?= esc($shop['street'] ?? '') ?>" placeholder="House No., Street Name, Purok / Bldg" class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                                <input type="text" name="street" id="street" value="<?= esc($shop['street'] ?? '') ?>" placeholder="House No., Street Name, Purok / Bldg" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                             </div>
                         </div>
 
                         <!-- Barangay -->
                         <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block" for="barangay">
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-sans" for="barangay">
                                 Barangay (Polomolok)
                             </label>
                             <div class="relative">
-                                <select name="barangay" id="barangay" class="w-full px-3.5 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                                <select name="barangay" id="barangay" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                                     <option value="">-- Select Barangay --</option>
                                     <?php
                                     $validBarangays = [
                                         'Bentung', 'Cannery Site', 'Crossing Palkan', 'Glamang', 'Kinilis',
-                                        'Klinan 6', 'Koronadal Proper', 'Lam-Caliaf', 'Landan', 'Lumakil',
-                                        'Maligo', 'Palkan', 'Poblacion', 'Polo', 'Pula Bato', 'Rubber',
-                                        'Silway 7', 'Silway 8', 'Sulit', 'Sumbakil', 'Upper Klinan',
-                                        'Pagalungan', 'Magsaysay'
+                                        'Klinan 6', 'Koronadal Proper', 'Lam-Caliaf', 'Landan', 'Lapu', 'Lumakil',
+                                        'Magsaysay', 'Maligo', 'Pagalungan', 'Palkan', 'Poblacion', 'Polo',
+                                        'Pula Bato', 'Rubber', 'Silway 7', 'Silway 8', 'Sulit', 'Sumbakil',
+                                        'Upper Klinan'
                                     ];
                                     $curBrgy = $shop['barangay'] ?? '';
                                     foreach ($validBarangays as $b): ?>
@@ -231,21 +231,21 @@
 
                     <!-- Full Address Line -->
                     <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider block" for="address_line">
+                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-sans" for="address_line">
                             Address Line (Full Formatted Address)
                         </label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <span class="material-symbols-outlined text-[18px]">map</span>
                             </span>
-                            <input type="text" name="address_line" id="address_line" value="<?= esc($shop['address_line'] ?? '') ?>" placeholder="e.g. Poblacion, Polomolok, South Cotabato" class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                            <input type="text" name="address_line" id="address_line" value="<?= esc($shop['address_line'] ?? '') ?>" placeholder="e.g. Poblacion, Polomolok, South Cotabato" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                         </div>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
-                <div class="pt-4 border-t border-outline-variant/20 flex items-center justify-end">
-                    <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 text-xs">
+                <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-end">
+                    <button type="submit" class="px-6 py-2.5 bg-terra-green text-white rounded-xl font-bold hover:bg-terra-green/90 transition-all shadow-xs flex items-center gap-2 text-xs cursor-pointer active:scale-95">
                         <span class="material-symbols-outlined text-[18px]">save</span>
                         <span>Save Store Profile</span>
                     </button>
@@ -258,27 +258,27 @@
     <!-- TAB 2: GCASH PAYOUTS                                                   -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <div id="tab-panel-payment" class="settings-tab-panel hidden space-y-6">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 soft-shadow p-6 md:p-8 space-y-6 max-w-2xl">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 md:p-8 space-y-6 max-w-2xl">
             
-            <div class="flex items-start justify-between border-b border-outline-variant/20 pb-4">
+            <div class="flex items-start justify-between border-b border-slate-200/80 dark:border-slate-800 pb-4">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <span class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
                             <span class="material-symbols-outlined text-[18px]">payments</span>
                         </span>
-                        <h3 class="text-title-md font-bold text-on-surface">GCash Disbursement Destination</h3>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">GCash Disbursement Destination</h3>
                     </div>
-                    <p class="text-xs text-on-surface-variant mt-1">Configure the registered GCash account where your marketplace earnings will be deposited.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">Configure the registered GCash account where your marketplace earnings will be deposited.</p>
                 </div>
             </div>
 
             <!-- Payout Advisory Card -->
-            <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-on-surface space-y-1.5">
-                <div class="flex items-center gap-2 font-bold text-blue-800">
+            <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
+                <div class="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-300">
                     <span class="material-symbols-outlined text-[18px]">verified_user</span>
                     <span>GCash KYC Verification Notice</span>
                 </div>
-                <p class="text-blue-900/80 leading-relaxed text-[11px]">
+                <p class="text-blue-900/80 dark:text-blue-300/80 leading-relaxed text-[11px] font-sans">
                     Ensure your GCash account name exactly matches the name registered with GCash to prevent transfer delays or bank reversals. Payouts are reviewed and disbursed by the admin team.
                 </p>
             </div>
@@ -289,56 +289,56 @@
 
                 <!-- GCash Number -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-on-surface uppercase tracking-wider block" for="gcash_number">
-                        GCash Mobile Number <span class="text-error">*</span>
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block font-sans" for="gcash_number">
+                        GCash Mobile Number <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <span class="material-symbols-outlined text-[18px]">phone_iphone</span>
                         </span>
-                        <input type="text" name="gcash_number" id="gcash_number" value="<?= esc($shop['gcash_number'] ?? '') ?>" placeholder="09171234567" maxlength="13" required class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-mono font-semibold focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                        <input type="text" name="gcash_number" id="gcash_number" value="<?= esc($shop['gcash_number'] ?? '') ?>" placeholder="09171234567" maxlength="13" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-semibold focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                     </div>
-                    <p class="text-[11px] text-on-surface-variant">Format: 11-digit Philippine mobile number starting with 09.</p>
+                    <p class="text-[11px] text-slate-400 font-sans">Format: 11-digit Philippine mobile number starting with 09.</p>
                 </div>
 
                 <!-- Confirm GCash Number -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-on-surface uppercase tracking-wider block" for="confirm_gcash_number">
-                        Confirm GCash Mobile Number <span class="text-error">*</span>
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block font-sans" for="confirm_gcash_number">
+                        Confirm GCash Mobile Number <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <span class="material-symbols-outlined text-[18px]">verified</span>
                         </span>
-                        <input type="text" name="confirm_gcash_number" id="confirm_gcash_number" value="<?= esc($shop['gcash_number'] ?? '') ?>" placeholder="Re-enter 09XXXXXXXXX" maxlength="13" required class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-mono font-semibold focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                        <input type="text" name="confirm_gcash_number" id="confirm_gcash_number" value="<?= esc($shop['gcash_number'] ?? '') ?>" placeholder="Re-enter 09XXXXXXXXX" maxlength="13" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-semibold focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                     </div>
-                    <p class="text-[11px] text-on-surface-variant">Must exactly match the GCash mobile number entered above.</p>
+                    <p class="text-[11px] text-slate-400 font-sans">Must exactly match the GCash mobile number entered above.</p>
                 </div>
 
                 <!-- Account Name -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-bold text-on-surface uppercase tracking-wider block" for="gcash_account_name">
-                        GCash Registered Account Name <span class="text-error">*</span>
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block font-sans" for="gcash_account_name">
+                        GCash Registered Account Name <span class="text-rose-500">*</span>
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                             <span class="material-symbols-outlined text-[18px]">person</span>
                         </span>
-                        <input type="text" name="gcash_account_name" id="gcash_account_name" value="<?= esc($shop['gcash_account_name'] ?? '') ?>" placeholder="e.g. Juan Dela Cruz / RHK Merchandise" maxlength="100" required class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                        <input type="text" name="gcash_account_name" id="gcash_account_name" value="<?= esc($shop['gcash_account_name'] ?? '') ?>" placeholder="e.g. Juan Dela Cruz / RHK Merchandise" maxlength="100" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-terra-green/30 focus:outline-none transition-all text-slate-900 dark:text-white">
                     </div>
-                    <p class="text-[11px] text-on-surface-variant">The full name registered with your verified GCash mobile wallet.</p>
+                    <p class="text-[11px] text-slate-400 font-sans">The full name registered with your verified GCash mobile wallet.</p>
                 </div>
 
                 <!-- Ownership Declaration Checkbox -->
-                <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-start gap-3">
-                    <input type="checkbox" name="gcash_confirm_ownership" id="gcash_confirm_ownership" value="1" required class="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant cursor-pointer">
-                    <label for="gcash_confirm_ownership" class="text-xs text-on-surface leading-snug cursor-pointer select-none font-medium">
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3">
+                    <input type="checkbox" name="gcash_confirm_ownership" id="gcash_confirm_ownership" value="1" required class="mt-0.5 w-4 h-4 rounded text-terra-green focus:ring-terra-green border-slate-300 dark:border-slate-600 cursor-pointer">
+                    <label for="gcash_confirm_ownership" class="text-xs text-slate-700 dark:text-slate-300 leading-snug cursor-pointer select-none font-medium">
                         I confirm that the GCash account information I provided is correct and belongs to me/my business.
                     </label>
                 </div>
 
-                <div class="pt-3 border-t border-outline-variant/20 flex justify-end">
-                    <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all shadow-sm flex items-center gap-2 text-xs">
+                <div class="pt-3 border-t border-slate-200/80 dark:border-slate-800 flex justify-end">
+                    <button type="submit" class="px-6 py-2.5 bg-terra-green text-white rounded-xl font-bold hover:bg-terra-green/90 transition-all shadow-xs flex items-center gap-2 text-xs cursor-pointer active:scale-95">
                         <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
                         <span>Save Payment Details</span>
                     </button>
@@ -351,15 +351,15 @@
     <!-- TAB 3: OPERATING HOURS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <div id="tab-panel-hours" class="settings-tab-panel hidden space-y-6">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 soft-shadow p-6 md:p-8 space-y-6 max-w-3xl">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 md:p-8 space-y-6 max-w-3xl">
             
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/20 pb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-4">
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface">Store Operating Hours</h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Let customers know when your counter is open for orders and pickups.</p>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">Store Operating Hours</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Let customers know when your counter is open for orders and pickups.</p>
                 </div>
-                <div class="flex items-center gap-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full font-semibold shrink-0">
-                    <span class="material-symbols-outlined text-[16px]">sync</span>
+                <div class="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full font-semibold shrink-0">
+                    <span class="material-symbols-outlined text-[16px] text-terra-green">sync</span>
                     <span id="hoursFeedback">Auto-saved when changed</span>
                 </div>
             </div>
@@ -368,67 +368,67 @@
             <div class="space-y-4">
                 
                 <!-- Monday to Friday -->
-                <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 space-y-3">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">M-F</span>
+                            <span class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs font-mono">M-F</span>
                             <div>
-                                <h4 class="text-xs font-bold text-on-surface">Monday – Friday (Weekdays)</h4>
-                                <p class="text-[11px] text-on-surface-variant">Core business days</p>
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white font-display">Monday – Friday (Weekdays)</h4>
+                                <p class="text-[11px] text-slate-400 font-sans">Core business days</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 pt-1">
                         <div>
-                            <label class="text-[11px] font-bold text-on-surface-variant block mb-1" for="open_mf">Opening Time</label>
-                            <input type="time" id="open_mf" value="<?= esc($mfOpen) ?>" class="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+                            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 font-sans" for="open_mf">Opening Time</label>
+                            <input type="time" id="open_mf" value="<?= esc($mfOpen) ?>" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-terra-green/30 focus:outline-none text-slate-900 dark:text-white">
                         </div>
                         <div>
-                            <label class="text-[11px] font-bold text-on-surface-variant block mb-1" for="close_mf">Closing Time</label>
-                            <input type="time" id="close_mf" value="<?= esc($mfClose) ?>" class="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+                            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 font-sans" for="close_mf">Closing Time</label>
+                            <input type="time" id="close_mf" value="<?= esc($mfClose) ?>" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-terra-green/30 focus:outline-none text-slate-900 dark:text-white">
                         </div>
                     </div>
                 </div>
 
                 <!-- Saturday -->
-                <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 space-y-3">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">SAT</span>
+                            <span class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs font-mono">SAT</span>
                             <div>
-                                <h4 class="text-xs font-bold text-on-surface">Saturday (Weekend)</h4>
-                                <p class="text-[11px] text-on-surface-variant">Half-day or weekend schedule</p>
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white font-display">Saturday (Weekend)</h4>
+                                <p class="text-[11px] text-slate-400 font-sans">Half-day or weekend schedule</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 pt-1">
                         <div>
-                            <label class="text-[11px] font-bold text-on-surface-variant block mb-1" for="open_6">Opening Time</label>
-                            <input type="time" id="open_6" value="<?= esc($satOpen) ?>" class="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+                            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 font-sans" for="open_6">Opening Time</label>
+                            <input type="time" id="open_6" value="<?= esc($satOpen) ?>" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-terra-green/30 focus:outline-none text-slate-900 dark:text-white">
                         </div>
                         <div>
-                            <label class="text-[11px] font-bold text-on-surface-variant block mb-1" for="close_6">Closing Time</label>
-                            <input type="time" id="close_6" value="<?= esc($satClose) ?>" class="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+                            <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1 font-sans" for="close_6">Closing Time</label>
+                            <input type="time" id="close_6" value="<?= esc($satClose) ?>" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-terra-green/30 focus:outline-none text-slate-900 dark:text-white">
                         </div>
                     </div>
                 </div>
 
                 <!-- Sunday -->
-                <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 flex items-center justify-between">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="w-8 h-8 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center font-bold text-xs">SUN</span>
+                        <span class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs font-mono">SUN</span>
                         <div>
-                            <h4 class="text-xs font-bold text-on-surface">Sunday</h4>
-                            <p class="text-[11px] text-on-surface-variant">Weekly store closure or holiday</p>
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white font-display">Sunday</h4>
+                            <p class="text-[11px] text-slate-400 font-sans">Weekly store closure or holiday</p>
                         </div>
                     </div>
 
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="closed_0" <?= $sunClosed ? 'checked' : '' ?> class="sr-only peer">
-                        <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
-                        <span class="ml-3 text-xs font-bold text-on-surface-variant">Closed on Sunday</span>
+                        <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                        <span class="ml-3 text-xs font-bold text-slate-600 dark:text-slate-300 font-sans">Closed on Sunday</span>
                     </label>
                 </div>
 
@@ -440,71 +440,71 @@
     <!-- TAB 4: SERVICES & ALERTS                                               -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <div id="tab-panel-preferences" class="settings-tab-panel hidden space-y-6">
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 soft-shadow p-6 md:p-8 space-y-8 max-w-3xl">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-6 md:p-8 space-y-8 max-w-3xl">
             
-            <div class="flex items-start justify-between border-b border-outline-variant/20 pb-4">
+            <div class="flex items-start justify-between border-b border-slate-200/80 dark:border-slate-800 pb-4">
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface">Store Services & Notification Preferences</h3>
-                    <p class="text-xs text-on-surface-variant mt-0.5">Toggle optional services like document printing and configure automatic merchant alerts.</p>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">Store Services &amp; Notification Preferences</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Toggle optional services like document printing and configure automatic merchant alerts.</p>
                 </div>
             </div>
 
             <!-- Service Offerings -->
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Service Modules</h4>
-                    <span id="servicesFeedback" class="text-xs text-emerald-700 font-semibold"></span>
+                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-sans">Service Modules</h4>
+                    <span id="servicesFeedback" class="text-xs text-emerald-700 dark:text-emerald-400 font-semibold"></span>
                 </div>
 
                 <div class="space-y-3">
                     <!-- Printing Service Toggle -->
-                    <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 flex items-center justify-between gap-4 transition-all hover:bg-surface-container-low">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-4 transition-all hover:bg-slate-100/70 dark:hover:bg-slate-800">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[20px] text-primary">print</span>
-                                <span class="font-bold text-sm text-on-surface">Document &amp; Photo Printing Services</span>
+                                <span class="material-symbols-outlined text-[20px] text-terra-green">print</span>
+                                <span class="font-bold text-sm text-slate-900 dark:text-white font-display">Document &amp; Photo Printing Services</span>
                             </div>
-                            <p class="text-xs text-on-surface-variant leading-relaxed">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
                                 Allows customers in Polomolok to submit custom printing requests (PDF, DOCX, photos) directly to your store counter.
                             </p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="service_offers_printing" data-module="offers_printing" <?= !empty($shop['offers_printing']) ? 'checked' : '' ?> class="sr-only peer">
-                            <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
                         </label>
                     </div>
 
                     <!-- Doorstep Delivery Service Toggle -->
-                    <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 flex items-center justify-between gap-4 transition-all hover:bg-surface-container-low">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-4 transition-all hover:bg-slate-100/70 dark:hover:bg-slate-800">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[20px] text-[#007DFE]">local_shipping</span>
-                                <span class="font-bold text-sm text-on-surface">Doorstep Delivery Services</span>
+                                <span class="material-symbols-outlined text-[20px] text-sky-600">local_shipping</span>
+                                <span class="font-bold text-sm text-slate-900 dark:text-white font-display">Doorstep Delivery Services</span>
                             </div>
-                            <p class="text-xs text-on-surface-variant leading-relaxed">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
                                 Allows customers in Polomolok to request direct doorstep delivery (COD &amp; Online) straight to their residence or business address.
                             </p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="service_offers_delivery" data-module="offers_delivery" <?= (isset($shop['offers_delivery']) && (int)$shop['offers_delivery'] === 0) ? '' : 'checked' ?> class="sr-only peer">
-                            <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
                         </label>
                     </div>
 
                     <!-- Store Pick-up Service Toggle -->
-                    <div class="p-4 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 flex items-center justify-between gap-4 transition-all hover:bg-surface-container-low">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-4 transition-all hover:bg-slate-100/70 dark:hover:bg-slate-800">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-[20px] text-secondary">storefront</span>
-                                <span class="font-bold text-sm text-on-surface">Store Pick-up Services</span>
+                                <span class="material-symbols-outlined text-[20px] text-terra-earth dark:text-amber-500">storefront</span>
+                                <span class="font-bold text-sm text-slate-900 dark:text-white font-display">Store Pick-up Services</span>
                             </div>
-                            <p class="text-xs text-on-surface-variant leading-relaxed">
+                            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-sans">
                                 Allows customers to place orders online and personally claim packages at your physical counter with verified pick-up passes.
                             </p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="service_offers_pickup" data-module="offers_pickup" <?= (isset($shop['offers_pickup']) && (int)$shop['offers_pickup'] === 0) ? '' : 'checked' ?> class="sr-only peer">
-                            <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
                         </label>
                     </div>
                 </div>
@@ -513,33 +513,33 @@
             <!-- Merchant Notification Alerts -->
             <div class="space-y-4 pt-2">
                 <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Merchant Notifications</h4>
-                    <span id="notifFeedback" class="text-xs text-emerald-700 font-semibold"></span>
+                    <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-sans">Merchant Notifications</h4>
+                    <span id="notifFeedback" class="text-xs text-emerald-700 dark:text-emerald-400 font-semibold"></span>
                 </div>
 
-                <div class="divide-y divide-outline-variant/20 rounded-2xl bg-surface-container-low/50 border border-outline-variant/30 overflow-hidden">
+                <div class="divide-y divide-slate-100 dark:divide-slate-800 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 overflow-hidden">
                     
                     <!-- New Orders -->
                     <div class="p-4 flex items-center justify-between gap-4">
                         <div class="space-y-0.5">
-                            <p class="font-bold text-xs text-on-surface">New Order Notifications</p>
-                            <p class="text-[11px] text-on-surface-variant">Receive in-app alerts and notifications whenever a customer places an order.</p>
+                            <p class="font-bold text-xs text-slate-900 dark:text-white">New Order Notifications</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Receive in-app alerts and notifications whenever a customer places an order.</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="pref_new_orders" <?= !empty($notifPrefs['new_orders']) ? 'checked' : '' ?> class="sr-only peer">
-                            <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
                         </label>
                     </div>
 
                     <!-- Low Stock Alerts -->
                     <div class="p-4 flex items-center justify-between gap-4">
                         <div class="space-y-0.5">
-                            <p class="font-bold text-xs text-on-surface">Low Stock Inventory Warnings</p>
-                            <p class="text-[11px] text-on-surface-variant">Alert me when any product stock count drops to 5 units or below.</p>
+                            <p class="font-bold text-xs text-slate-900 dark:text-white">Low Stock Inventory Warnings</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Alert me when any product stock count drops to 5 units or below.</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="pref_low_stock" <?= !empty($notifPrefs['low_stock']) ? 'checked' : '' ?> class="sr-only peer">
-                            <div class="w-11 h-6 bg-surface-container-highest border border-outline-variant/50 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
+                            <div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full peer peer-checked:bg-terra-green transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:after:translate-x-5 peer-checked:after:border-white"></div>
                         </label>
                     </div>
 
@@ -555,7 +555,7 @@
 <form id="settingsCsrfForm" class="hidden"><?= csrf_field() ?></form>
 
 <!-- Toast Notification -->
-<div id="settingsToast" class="hidden fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-xs font-bold text-on-primary transition-all duration-300 transform"></div>
+<div id="settingsToast" class="hidden fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-xs font-bold text-white transition-all duration-300 transform"></div>
 
 <?= $this->endSection() ?>
 
@@ -576,14 +576,14 @@
             if (t === tabName) {
                 if (panel) panel.classList.remove('hidden');
                 if (btn) {
-                    btn.classList.remove('border-transparent', 'text-on-surface-variant');
-                    btn.classList.add('border-primary', 'text-primary');
+                    btn.classList.remove('border-transparent', 'text-slate-500');
+                    btn.classList.add('border-terra-green', 'text-terra-green');
                 }
             } else {
                 if (panel) panel.classList.add('hidden');
                 if (btn) {
-                    btn.classList.remove('border-primary', 'text-primary');
-                    btn.classList.add('border-transparent', 'text-on-surface-variant');
+                    btn.classList.remove('border-terra-green', 'text-terra-green');
+                    btn.classList.add('border-transparent', 'text-slate-500');
                 }
             }
         });
@@ -616,8 +616,8 @@
     function showToast(message, isError) {
         if (!toast) return;
         toast.textContent = message;
-        toast.classList.remove('hidden', 'bg-red-600', 'bg-emerald-600');
-        toast.classList.add(isError ? 'bg-red-600' : 'bg-emerald-600');
+        toast.classList.remove('hidden', 'bg-rose-600', 'bg-terra-green');
+        toast.classList.add(isError ? 'bg-rose-600' : 'bg-terra-green');
         clearTimeout(toastTimer);
         toastTimer = setTimeout(function () { toast.classList.add('hidden'); }, 3500);
     }

@@ -1,14 +1,16 @@
 <?= $this->extend('layouts/admin') ?>
 <?= $this->section('content') ?>
 
-<div class="space-y-lg">
+<div class="space-y-6">
 
-    <!-- Top Command & Status Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-md bg-surface-container-lowest p-md sm:p-lg rounded-2xl border border-outline-variant/30 shadow-xs">
+    <!-- Top Command & Status Bento Banner -->
+    <div class="rounded-3xl bg-surface-container-lowest p-6 border border-outline-variant/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-sm">
-                <h2 class="text-title-lg sm:text-headline-sm font-black text-on-surface tracking-tight">Platform Analytics &amp; Intelligence</h2>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-terra-green/10 text-terra-green border border-terra-green/20">
+                    Platform Telemetry
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
                     <span class="relative flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -16,267 +18,276 @@
                     Live Data
                 </span>
             </div>
-            <p class="text-xs text-on-surface-variant mt-0.5">Executive revenue, merchant volume, and Polomolok delivery operations</p>
+            <h1 class="text-2xl lg:text-3xl font-black text-on-surface font-display tracking-tight">
+                Analytics &amp; Revenue Intelligence
+            </h1>
+            <p class="text-xs text-on-surface-variant mt-1 max-w-xl">
+                Executive revenue metrics, merchant volume throughput, payment rails distribution, and regional delivery telemetry.
+            </p>
         </div>
-        <div class="flex items-center gap-sm">
-            <span class="hidden md:inline-flex items-center gap-1 px-sm py-1.5 rounded-xl bg-surface-container-low text-on-surface-variant text-xs font-medium border border-outline-variant/20">
-                <span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
-                Polomolok Zone: 6.10°–6.32° N
+        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container-low text-on-surface-variant text-xs font-mono border border-outline-variant/30">
+                <span class="material-symbols-outlined text-[16px] text-terra-green">location_on</span>
+                <span>Polomolok: 6.10°–6.32° N</span>
             </span>
-            <a href="<?= base_url('admin/tracking') ?>" class="inline-flex items-center gap-1.5 px-md py-sm rounded-xl text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 transition-all shadow-xs">
-                <span class="material-symbols-outlined text-[18px]">two_wheeler</span>
-                <span>Live Fleet Tracking</span>
+            <a href="<?= base_url('admin/tracking') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-terra-green text-white hover:bg-emerald-600 transition-all shadow-xs active:scale-95">
+                <span class="material-symbols-outlined text-[16px]">two_wheeler</span>
+                <span>Live Fleet Map</span>
             </a>
-            <button type="button" id="btnRefreshAnalytics" onclick="refreshAnalyticsData()" class="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container border border-outline-variant/30 transition-all" title="Refresh data">
+            <button type="button" id="btnRefreshAnalytics" onclick="refreshAnalyticsData()" class="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container border border-outline-variant/30 transition-all active:scale-95" title="Refresh data">
                 <span class="material-symbols-outlined text-[18px]" id="refreshIcon">refresh</span>
             </button>
         </div>
     </div>
 
     <!-- 4 High-Impact KPI Scorecards -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Admin Net Revenue -->
-        <div class="bg-surface-container-lowest rounded-2xl p-lg border border-outline-variant/30 shadow-xs hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-6 -mt-6 group-hover:bg-primary/10 transition-all"></div>
-            <div class="flex items-center justify-between mb-sm">
-                <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Admin Revenue</span>
-                <span class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[20px]">payments</span>
-                </span>
+        <div class="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-xs hover:border-terra-green/30 transition-all relative overflow-hidden group flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70">Admin Revenue</span>
+                    <span class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">payments</span>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-terra-green font-display font-mono tracking-tight mt-1">₱<?= number_format((float) ($admin_revenue ?? 0), 2) ?></h3>
+                <div class="mt-2 flex items-center justify-between text-xs text-on-surface-variant">
+                    <span>3.0% fee on payouts</span>
+                    <span class="font-bold font-mono text-terra-green bg-terra-green/10 px-2 py-0.5 rounded-lg border border-terra-green/20"><?= number_format((int) ($payout_count ?? 0)) ?> payouts</span>
+                </div>
             </div>
-            <h3 class="text-headline-md font-black text-primary tracking-tight">₱<?= number_format((float) ($admin_revenue ?? 0), 2) ?></h3>
-            <div class="mt-xs flex items-center justify-between text-xs text-on-surface-variant">
-                <span>3.0% fee on GCash payouts</span>
-                <span class="font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded"><?= number_format((int) ($payout_count ?? 0)) ?> payouts</span>
-            </div>
-            <div class="mt-sm pt-xs border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
-                <span>Average Fee per Payout</span>
-                <span class="font-bold text-on-surface">₱<?= number_format((float) ($avg_fee ?? 0), 2) ?></span>
+            <div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+                <span>Avg. Fee / Payout</span>
+                <span class="font-bold text-on-surface font-mono">₱<?= number_format((float) ($avg_fee ?? 0), 2) ?></span>
             </div>
         </div>
 
         <!-- Marketplace GMV -->
-        <div class="bg-surface-container-lowest rounded-2xl p-lg border border-outline-variant/30 shadow-xs hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-6 -mt-6 group-hover:bg-emerald-500/10 transition-all"></div>
-            <div class="flex items-center justify-between mb-sm">
-                <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Marketplace GMV</span>
-                <span class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
-                </span>
+        <div class="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-xs hover:border-emerald-500/30 transition-all relative overflow-hidden group flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70">Marketplace GMV</span>
+                    <span class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-on-surface font-display font-mono tracking-tight mt-1">₱<?= number_format((float) ($platform_gmv ?? 0), 2) ?></h3>
+                <div class="mt-2 flex items-center justify-between text-xs text-on-surface-variant">
+                    <span>Transacted volume</span>
+                    <span class="font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">All Channels</span>
+                </div>
             </div>
-            <h3 class="text-headline-md font-black text-on-surface tracking-tight">₱<?= number_format((float) ($platform_gmv ?? 0), 2) ?></h3>
-            <div class="mt-xs flex items-center justify-between text-xs text-on-surface-variant">
-                <span>Total transacted volume</span>
-                <span class="font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">All Channels</span>
-            </div>
-            <div class="mt-sm pt-xs border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+            <div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
                 <span>Avg. Order Value</span>
-                <span class="font-bold text-on-surface">₱<?= ($total_orders ?? 0) > 0 ? number_format(($platform_gmv ?? 0) / $total_orders, 2) : '0.00' ?></span>
+                <span class="font-bold text-on-surface font-mono">₱<?= ($total_orders ?? 0) > 0 ? number_format(($platform_gmv ?? 0) / $total_orders, 2) : '0.00' ?></span>
             </div>
         </div>
 
         <!-- Order Throughput & Volume -->
-        <div class="bg-surface-container-lowest rounded-2xl p-lg border border-outline-variant/30 shadow-xs hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-sky-500/5 rounded-full blur-2xl -mr-6 -mt-6 group-hover:bg-sky-500/10 transition-all"></div>
-            <div class="flex items-center justify-between mb-sm">
-                <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Total Orders</span>
-                <span class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[20px]">local_shipping</span>
-                </span>
+        <div class="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-xs hover:border-sky-500/30 transition-all relative overflow-hidden group flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70">Total Orders</span>
+                    <span class="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">local_shipping</span>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-on-surface font-display font-mono tracking-tight mt-1"><?= number_format((int) ($total_orders ?? 0)) ?></h3>
+                <div class="mt-2 flex items-center justify-between text-xs text-on-surface-variant">
+                    <span>All merchant orders</span>
+                    <span class="font-bold text-sky-600 bg-sky-500/10 px-2 py-0.5 rounded-lg border border-sky-500/20 font-mono"><?= number_format((int) ($active_deliveries_count ?? 0)) ?> Active Now</span>
+                </div>
             </div>
-            <h3 class="text-headline-md font-black text-on-surface tracking-tight"><?= number_format((int) ($total_orders ?? 0)) ?></h3>
-            <div class="mt-xs flex items-center justify-between text-xs text-on-surface-variant">
-                <span>Orders across all merchants</span>
-                <span class="font-bold text-sky-600 bg-sky-500/10 px-1.5 py-0.5 rounded"><?= number_format((int) ($active_deliveries_count ?? 0)) ?> Active Now</span>
-            </div>
-            <div class="mt-sm pt-xs border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+            <div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
                 <span>Fulfillment Split</span>
-                <span class="font-bold text-on-surface">🛵 <?= esc($fulfillment_dist['delivery_pct'] ?? 0) ?>% Delivery · 🏪 <?= esc($fulfillment_dist['pickup_pct'] ?? 0) ?>% Pick-up</span>
+                <span class="font-bold text-on-surface font-mono">🛵 <?= esc($fulfillment_dist['delivery_pct'] ?? 0) ?>% · 🏪 <?= esc($fulfillment_dist['pickup_pct'] ?? 0) ?>%</span>
             </div>
         </div>
 
         <!-- Merchant Network & Coverage -->
-        <div class="bg-surface-container-lowest rounded-2xl p-lg border border-outline-variant/30 shadow-xs hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-6 -mt-6 group-hover:bg-indigo-500/10 transition-all"></div>
-            <div class="flex items-center justify-between mb-sm">
-                <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Merchant Network</span>
-                <span class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-[20px]">storefront</span>
-                </span>
+        <div class="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-xs hover:border-terra-earth/30 transition-all relative overflow-hidden group flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70">Merchant Network</span>
+                    <span class="w-10 h-10 rounded-2xl bg-terra-earth/10 text-terra-earth flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[20px]">storefront</span>
+                    </span>
+                </div>
+                <h3 class="text-3xl font-black text-on-surface font-display font-mono tracking-tight mt-1"><?= number_format((int) ($active_shops ?? 0)) ?></h3>
+                <div class="mt-2 flex items-center justify-between text-xs text-on-surface-variant">
+                    <span>Active stores</span>
+                    <span class="font-bold text-terra-earth bg-terra-earth/10 px-2 py-0.5 rounded-lg border border-terra-earth/20 font-mono"><?= number_format((int) ($total_shops ?? 0)) ?> registered</span>
+                </div>
             </div>
-            <h3 class="text-headline-md font-black text-on-surface tracking-tight"><?= number_format((int) ($active_shops ?? 0)) ?></h3>
-            <div class="mt-xs flex items-center justify-between text-xs text-on-surface-variant">
-                <span>Active shops in Polomolok</span>
-                <span class="font-bold text-indigo-600 bg-indigo-500/10 px-1.5 py-0.5 rounded"><?= number_format((int) ($total_shops ?? 0)) ?> registered</span>
-            </div>
-            <div class="mt-sm pt-xs border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
+            <div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-[11px] text-on-surface-variant">
                 <span>Ecosystem Composition</span>
-                <span class="font-bold text-on-surface">🖨️ <?= (int) ($printing_shops ?? 0) ?> Print Hubs · 👥 <?= number_format((int) ($total_customers ?? 0)) ?> Customers</span>
+                <span class="font-bold text-on-surface font-mono">🖨️ <?= (int) ($printing_shops ?? 0) ?> Hubs · 👥 <?= number_format((int) ($total_customers ?? 0)) ?> Users</span>
             </div>
         </div>
     </section>
 
     <!-- Primary Charts & Distribution Section -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- Revenue Velocity Chart (2 Columns) -->
-        <div class="lg:col-span-2 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xs p-md sm:p-lg flex flex-col justify-between">
+        <div class="lg:col-span-2 bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs p-6 flex flex-col justify-between">
             <div>
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-sm mb-md">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div>
-                        <h3 class="text-title-md font-bold text-on-surface flex items-center gap-xs">
-                            <span class="material-symbols-outlined text-primary text-[20px]">trending_up</span>
-                            Admin Revenue Growth &amp; Fee Velocity
+                        <h3 class="text-base font-bold text-on-surface font-display flex items-center gap-2">
+                            <span class="material-symbols-outlined text-terra-green text-[20px]">trending_up</span>
+                            <span>Admin Revenue Growth &amp; Fee Velocity</span>
                         </h3>
-                        <p class="text-xs text-on-surface-variant">Commission and transaction fees earned from verified merchant disbursements</p>
+                        <p class="text-xs text-on-surface-variant mt-0.5">Commission and platform fees earned from verified merchant disbursements</p>
                     </div>
                     <!-- Range Switcher -->
-                    <div class="inline-flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/20 shrink-0 self-start sm:self-auto">
-                        <button type="button" data-range="7" class="rangeBtn px-3 py-1 rounded-lg text-xs font-bold transition-all <?= ($range ?? '30') === '7' ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">7 Days</button>
-                        <button type="button" data-range="30" class="rangeBtn px-3 py-1 rounded-lg text-xs font-bold transition-all <?= ($range ?? '30') === '30' ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">30 Days</button>
-                        <button type="button" data-range="year" class="rangeBtn px-3 py-1 rounded-lg text-xs font-bold transition-all <?= ($range ?? '30') === 'year' ? 'bg-primary text-on-primary shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">This Year</button>
+                    <div class="inline-flex items-center gap-1 bg-surface-container-low p-1.5 rounded-2xl border border-outline-variant/20 shrink-0 self-start sm:self-auto">
+                        <button type="button" data-range="7" class="rangeBtn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= ($range ?? '30') === '7' ? 'bg-terra-green text-white shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">7 Days</button>
+                        <button type="button" data-range="30" class="rangeBtn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= ($range ?? '30') === '30' ? 'bg-terra-green text-white shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">30 Days</button>
+                        <button type="button" data-range="year" class="rangeBtn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all <?= ($range ?? '30') === 'year' ? 'bg-terra-green text-white shadow-xs' : 'text-on-surface-variant hover:text-on-surface' ?>">This Year</button>
                     </div>
                 </div>
 
                 <!-- Micro KPI summary strip for the selected period -->
-                <div class="grid grid-cols-3 gap-xs sm:gap-md p-sm bg-surface-container-low/60 rounded-xl border border-outline-variant/20 mb-md text-center">
+                <div class="grid grid-cols-3 gap-3 p-3.5 bg-surface-container-low/60 rounded-2xl border border-outline-variant/20 mb-4 text-center">
                     <div>
-                        <p class="text-[10px] sm:text-xs text-on-surface-variant uppercase font-bold">Period Total</p>
-                        <p id="metric-period-total" class="text-sm sm:text-title-sm font-black text-primary">₱<?= number_format((float) ($chart_sum ?? 0), 2) ?></p>
+                        <p class="text-[10px] sm:text-[11px] text-on-surface-variant/70 uppercase font-bold tracking-wider">Period Total</p>
+                        <p id="metric-period-total" class="text-sm sm:text-base font-black text-terra-green font-display font-mono mt-0.5">₱<?= number_format((float) ($chart_sum ?? 0), 2) ?></p>
                     </div>
                     <div class="border-x border-outline-variant/20">
-                        <p class="text-[10px] sm:text-xs text-on-surface-variant uppercase font-bold">Daily Average</p>
-                        <p id="metric-period-avg" class="text-sm sm:text-title-sm font-black text-on-surface">₱<?= number_format((float) ($chart_avg ?? 0), 2) ?></p>
+                        <p class="text-[10px] sm:text-[11px] text-on-surface-variant/70 uppercase font-bold tracking-wider">Daily Average</p>
+                        <p id="metric-period-avg" class="text-sm sm:text-base font-black text-on-surface font-display font-mono mt-0.5">₱<?= number_format((float) ($chart_avg ?? 0), 2) ?></p>
                     </div>
                     <div>
-                        <p class="text-[10px] sm:text-xs text-on-surface-variant uppercase font-bold">Peak Day</p>
-                        <p id="metric-period-peak" class="text-sm sm:text-title-sm font-black text-emerald-600">₱<?= number_format((float) ($chart_peak ?? 0), 2) ?></p>
+                        <p class="text-[10px] sm:text-[11px] text-on-surface-variant/70 uppercase font-bold tracking-wider">Peak Day</p>
+                        <p id="metric-period-peak" class="text-sm sm:text-base font-black text-emerald-600 font-display font-mono mt-0.5">₱<?= number_format((float) ($chart_peak ?? 0), 2) ?></p>
                     </div>
                 </div>
 
                 <!-- High-DPI Interactive Canvas Chart -->
-                <div id="analyticsChartWrap" class="relative h-72 sm:h-80 w-full bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-2 sm:p-4">
+                <div id="analyticsChartWrap" class="relative h-72 sm:h-80 w-full bg-surface-container-lowest rounded-2xl border border-outline-variant/20 p-2 sm:p-4">
                     <canvas id="analyticsChart" class="w-full h-full block cursor-crosshair"></canvas>
-                    <div id="analyticsTooltip" class="hidden absolute z-30 pointer-events-none whitespace-nowrap text-xs font-medium px-3 py-2 rounded-xl shadow-xl bg-slate-900/95 text-slate-100 border border-slate-700/60 backdrop-blur-md transition-[opacity,transform] duration-75"></div>
+                    <div id="analyticsTooltip" class="hidden absolute z-30 pointer-events-none whitespace-nowrap text-xs font-medium px-3.5 py-2.5 rounded-2xl shadow-xl bg-slate-900/95 text-slate-100 border border-slate-700/60 backdrop-blur-md transition-[opacity,transform] duration-75"></div>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between pt-sm mt-xs border-t border-outline-variant/10 text-[11px] text-on-surface-variant">
+            <div class="flex items-center justify-between pt-3 mt-2 border-t border-outline-variant/15 text-[11px] text-on-surface-variant">
                 <span>Hover data points for exact timestamps and settlement figures.</span>
-                <span class="inline-flex items-center gap-1 font-semibold text-primary">
-                    <span class="material-symbols-outlined text-[14px]">verified</span>
-                    Audited Payouts
+                <span class="inline-flex items-center gap-1 font-bold text-terra-green">
+                    <span class="material-symbols-outlined text-[15px]">verified</span>
+                    <span>Audited Payouts</span>
                 </span>
             </div>
         </div>
 
-        <!-- Real Marketplace Distribution (1 Column) -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xs p-md sm:p-lg flex flex-col justify-between space-y-md">
+        <!-- Channel & Logistics Share (1 Column) -->
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs p-6 flex flex-col justify-between space-y-4">
             <div>
-                <div class="flex items-center justify-between mb-sm">
-                    <h3 class="text-title-md font-bold text-on-surface flex items-center gap-xs">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">pie_chart</span>
-                        Channel &amp; Logistics Share
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-base font-bold text-on-surface font-display flex items-center gap-2">
+                        <span class="material-symbols-outlined text-terra-earth text-[20px]">pie_chart</span>
+                        <span>Channel &amp; Logistics Share</span>
                     </h3>
-                    <span class="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Live Stats</span>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-terra-green bg-terra-green/10 px-2 py-0.5 rounded-full border border-terra-green/20">Live</span>
                 </div>
-                <p class="text-xs text-on-surface-variant mb-md">Verified distribution across fulfillment and transaction methods</p>
+                <p class="text-xs text-on-surface-variant mb-4">Verified distribution across fulfillment and transaction methods</p>
 
                 <!-- Section 1: Fulfillment Breakdown -->
-                <div class="space-y-sm mb-lg">
+                <div class="space-y-2 mb-5">
                     <div class="flex items-center justify-between text-xs font-bold text-on-surface">
-                        <span class="flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px] text-sky-600">two_wheeler</span>
-                            Doorstep Delivery
+                        <span class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-terra-green">two_wheeler</span>
+                            <span>Doorstep Delivery</span>
                         </span>
-                        <span><?= esc($fulfillment_dist['delivery_pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($fulfillment_dist['delivery_count'] ?? 0)) ?>)</span></span>
+                        <span class="font-mono"><?= esc($fulfillment_dist['delivery_pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($fulfillment_dist['delivery_count'] ?? 0)) ?>)</span></span>
                     </div>
                     <div class="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden">
-                        <div class="bg-primary h-full rounded-full transition-all duration-500" style="width: <?= max(4, min(100, (int) ($fulfillment_dist['delivery_pct'] ?? 0))) ?>%"></div>
+                        <div class="bg-terra-green h-full rounded-full transition-all duration-500" style="width: <?= max(4, min(100, (int) ($fulfillment_dist['delivery_pct'] ?? 0))) ?>%"></div>
                     </div>
 
-                    <div class="flex items-center justify-between text-xs font-bold text-on-surface pt-xs">
-                        <span class="flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px] text-secondary">store</span>
-                            Store Pick-up
+                    <div class="flex items-center justify-between text-xs font-bold text-on-surface pt-1">
+                        <span class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-terra-earth">store</span>
+                            <span>Store Pick-up</span>
                         </span>
-                        <span><?= esc($fulfillment_dist['pickup_pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($fulfillment_dist['pickup_count'] ?? 0)) ?>)</span></span>
+                        <span class="font-mono"><?= esc($fulfillment_dist['pickup_pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($fulfillment_dist['pickup_count'] ?? 0)) ?>)</span></span>
                     </div>
                     <div class="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden">
-                        <div class="bg-secondary h-full rounded-full transition-all duration-500" style="width: <?= max(4, min(100, (int) ($fulfillment_dist['pickup_pct'] ?? 0))) ?>%"></div>
+                        <div class="bg-terra-earth h-full rounded-full transition-all duration-500" style="width: <?= max(4, min(100, (int) ($fulfillment_dist['pickup_pct'] ?? 0))) ?>%"></div>
                     </div>
                 </div>
 
                 <!-- Section 2: Payment Methods Share -->
-                <div class="pt-sm border-t border-outline-variant/20 space-y-sm mb-md">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Payment Channels</h4>
+                <div class="pt-3 border-t border-outline-variant/20 space-y-2 mb-4">
+                    <h4 class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70 mb-2">Payment Channels</h4>
                     
                     <div class="flex items-center justify-between text-xs">
-                        <span class="font-semibold text-on-surface flex items-center gap-1">
+                        <span class="font-semibold text-on-surface flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> GCash Digital
                         </span>
-                        <span class="font-bold text-on-surface"><?= esc($payment_dist['gcash']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['gcash']['count'] ?? 0)) ?>)</span></span>
+                        <span class="font-bold text-on-surface font-mono"><?= esc($payment_dist['gcash']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['gcash']['count'] ?? 0)) ?>)</span></span>
                     </div>
-                    <div class="w-full bg-surface-container-high rounded-full h-2">
+                    <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
                         <div class="bg-blue-600 h-full rounded-full" style="width: <?= max(4, min(100, (int) ($payment_dist['gcash']['pct'] ?? 0))) ?>%"></div>
                     </div>
 
-                    <div class="flex items-center justify-between text-xs pt-xs">
-                        <span class="font-semibold text-on-surface flex items-center gap-1">
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <span class="font-semibold text-on-surface flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Online (PayMongo)
                         </span>
-                        <span class="font-bold text-on-surface"><?= esc($payment_dist['online']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['online']['count'] ?? 0)) ?>)</span></span>
+                        <span class="font-bold text-on-surface font-mono"><?= esc($payment_dist['online']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['online']['count'] ?? 0)) ?>)</span></span>
                     </div>
-                    <div class="w-full bg-surface-container-high rounded-full h-2">
+                    <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
                         <div class="bg-emerald-600 h-full rounded-full" style="width: <?= max(4, min(100, (int) ($payment_dist['online']['pct'] ?? 0))) ?>%"></div>
                     </div>
 
-                    <div class="flex items-center justify-between text-xs pt-xs">
-                        <span class="font-semibold text-on-surface flex items-center gap-1">
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <span class="font-semibold text-on-surface flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Cash on Delivery
                         </span>
-                        <span class="font-bold text-on-surface"><?= esc($payment_dist['cash']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['cash']['count'] ?? 0)) ?>)</span></span>
+                        <span class="font-bold text-on-surface font-mono"><?= esc($payment_dist['cash']['pct'] ?? 0) ?>% <span class="font-normal text-on-surface-variant">(<?= number_format((int) ($payment_dist['cash']['count'] ?? 0)) ?>)</span></span>
                     </div>
-                    <div class="w-full bg-surface-container-high rounded-full h-2">
+                    <div class="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
                         <div class="bg-slate-500 h-full rounded-full" style="width: <?= max(4, min(100, (int) ($payment_dist['cash']['pct'] ?? 0))) ?>%"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Ecosystem Summary Badge -->
-            <div class="p-sm rounded-xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between text-xs">
-                <span class="text-on-surface-variant">Merchant Specialization</span>
-                <span class="font-bold text-primary"><?= (int) ($printing_shops ?? 0) ?> Printing Hubs · <?= max(0, (int) ($active_shops ?? 0) - (int) ($printing_shops ?? 0)) ?> Retail</span>
+            <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between text-xs">
+                <span class="text-on-surface-variant font-medium">Specialization</span>
+                <span class="font-bold text-terra-green font-mono"><?= (int) ($printing_shops ?? 0) ?> Print Hubs · <?= max(0, (int) ($active_shops ?? 0) - (int) ($printing_shops ?? 0)) ?> Retail</span>
             </div>
         </div>
     </section>
 
     <!-- Secondary Section: Merchant Leaderboard & Polomolok Logistics -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- Top Performing Merchants Leaderboard (2 Columns) -->
-        <div class="lg:col-span-2 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xs overflow-hidden">
-            <div class="p-md sm:p-lg border-b border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-xs">
+        <div class="lg:col-span-2 bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs overflow-hidden">
+            <div class="p-6 border-b border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface flex items-center gap-xs">
+                    <h3 class="text-base font-bold text-on-surface font-display flex items-center gap-2">
                         <span class="material-symbols-outlined text-amber-500 text-[22px]">trophy</span>
-                        Merchant Performance Leaderboard
+                        <span>Merchant Performance Leaderboard</span>
                     </h3>
-                    <p class="text-xs text-on-surface-variant">Top-ranked partner shops by volume and gross transaction value</p>
+                    <p class="text-xs text-on-surface-variant mt-0.5">Top-ranked partner shops by order throughput and gross transaction value</p>
                 </div>
-                <a href="<?= base_url('admin/tenants') ?>" class="text-xs font-bold text-primary hover:underline inline-flex items-center gap-0.5">
-                    View All Tenants
+                <a href="<?= base_url('admin/tenants') ?>" class="text-xs font-bold text-terra-green hover:underline inline-flex items-center gap-0.5">
+                    <span>View All Merchants</span>
                     <span class="material-symbols-outlined text-[16px]">chevron_right</span>
                 </a>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse min-w-[620px]">
                     <thead>
-                        <tr class="bg-surface-container-low/60 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider border-b border-outline-variant/20">
-                            <th class="py-3 px-4">Rank &amp; Shop</th>
-                            <th class="py-3 px-4 text-center">Plan</th>
-                            <th class="py-3 px-4 text-center">Orders</th>
-                            <th class="py-3 px-4 text-right">Volume (GMV)</th>
-                            <th class="py-3 px-4 text-right">Action</th>
+                        <tr class="bg-surface-container-low/60 text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-wider border-b border-outline-variant/20">
+                            <th class="py-3.5 px-5">Rank &amp; Shop</th>
+                            <th class="py-3.5 px-5 text-center">Plan</th>
+                            <th class="py-3.5 px-5 text-center">Orders</th>
+                            <th class="py-3.5 px-5 text-right">Volume (GMV)</th>
+                            <th class="py-3.5 px-5 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="text-xs divide-y divide-outline-variant/10">
@@ -287,22 +298,22 @@
                             foreach ($top_shops as $s): 
                                 $medal = $medals[$rank] ?? "#{$rank}";
                             ?>
-                                <tr class="hover:bg-surface-container-low/40 transition-colors">
-                                    <td class="py-3 px-4">
-                                        <div class="flex items-center gap-sm">
-                                            <span class="w-7 text-center font-black text-sm <?= $rank <= 3 ? 'text-amber-500' : 'text-on-surface-variant' ?>"><?= $medal ?></span>
-                                            <div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center font-bold text-xs text-primary border border-outline-variant/30 overflow-hidden shrink-0">
+                                <tr class="hover:bg-surface-container-low/40 transition-colors group">
+                                    <td class="py-4 px-5">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-7 text-center font-black text-sm <?= $rank <= 3 ? 'text-amber-500' : 'text-on-surface-variant font-mono' ?>"><?= $medal ?></span>
+                                            <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 shadow-2xs">
                                                 <?php if (!empty($s['logo_url'])): ?>
-                                                    <img src="<?= esc($s['logo_url']) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover">
+                                                    <img src="<?= esc(logo_url($s['logo_url'])) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover">
                                                 <?php else: ?>
-                                                    <?= esc(strtoupper(substr($s['shop_name'] ?? 'S', 0, 2))) ?>
+                                                    <span class="font-display font-black text-xs"><?= esc(strtoupper(substr($s['shop_name'] ?? 'S', 0, 2))) ?></span>
                                                 <?php endif; ?>
                                             </div>
-                                            <div>
-                                                <p class="font-bold text-on-surface text-sm"><?= esc($s['shop_name']) ?></p>
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-on-surface text-sm group-hover:text-terra-green transition-colors truncate"><?= esc($s['shop_name']) ?></p>
                                                 <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-on-surface-variant">
                                                     <?php if (!empty($s['offers_printing'])): ?>
-                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-tertiary/10 text-tertiary font-medium">
+                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-terra-earth/10 text-terra-earth font-bold text-[10px]">
                                                             <span class="material-symbols-outlined text-[12px]">print</span> Print Hub
                                                         </span>
                                                     <?php endif; ?>
@@ -311,21 +322,21 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-3 px-4 text-center">
-                                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-surface-container text-on-surface-variant border border-outline-variant/30">
+                                    <td class="py-4 px-5 text-center">
+                                        <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-surface-container text-on-surface-variant border border-outline-variant/30">
                                             <?= esc($s['plan'] ?? 'standard') ?>
                                         </span>
                                     </td>
-                                    <td class="py-3 px-4 text-center">
-                                        <span class="font-black text-primary text-sm"><?= number_format((int) ($s['total_orders'] ?? 0)) ?></span>
+                                    <td class="py-4 px-5 text-center">
+                                        <span class="font-black text-terra-green font-mono text-sm"><?= number_format((int) ($s['total_orders'] ?? 0)) ?></span>
                                         <span class="block text-[10px] text-on-surface-variant">orders</span>
                                     </td>
-                                    <td class="py-3 px-4 text-right font-black text-on-surface text-sm">
+                                    <td class="py-4 px-5 text-right font-black text-on-surface font-mono text-sm">
                                         ₱<?= number_format((float) ($s['total_gmv'] ?? 0), 2) ?>
                                     </td>
-                                    <td class="py-3 px-4 text-right">
-                                        <a href="<?= base_url('admin/tenants?search=' . urlencode($s['shop_name'])) ?>" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
-                                            Manage
+                                    <td class="py-4 px-5 text-right whitespace-nowrap">
+                                        <a href="<?= base_url('admin/tenants?q=' . urlencode($s['shop_name'])) ?>" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-terra-green hover:bg-terra-green/10 border border-terra-green/20 transition-all active:scale-95">
+                                            <span>Manage</span>
                                             <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
                                         </a>
                                     </td>
@@ -333,9 +344,11 @@
                             <?php $rank++; endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-on-surface-variant">
-                                    <span class="material-symbols-outlined text-3xl text-outline mb-1 block">store</span>
-                                    No merchant order activity recorded yet.
+                                <td colspan="5" class="py-14 text-center text-on-surface-variant">
+                                    <div class="w-14 h-14 rounded-2xl bg-surface-container mx-auto flex items-center justify-center text-outline mb-2">
+                                        <span class="material-symbols-outlined text-3xl">store</span>
+                                    </div>
+                                    <p class="text-sm font-bold text-on-surface font-display">No merchant order activity recorded yet.</p>
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -345,63 +358,63 @@
         </div>
 
         <!-- Polomolok Delivery & Logistics Operations (1 Column) -->
-        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xs p-md sm:p-lg flex flex-col justify-between">
+        <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-xs p-6 flex flex-col justify-between">
             <div>
-                <div class="flex items-center justify-between mb-sm">
-                    <h3 class="text-title-md font-bold text-on-surface flex items-center gap-xs">
-                        <span class="material-symbols-outlined text-primary text-[20px]">near_me</span>
-                        Polomolok Logistics Hub
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-base font-bold text-on-surface font-display flex items-center gap-2">
+                        <span class="material-symbols-outlined text-terra-green text-[20px]">near_me</span>
+                        <span>Polomolok Logistics Hub</span>
                     </h3>
-                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                         Bounded
                     </span>
                 </div>
-                <p class="text-xs text-on-surface-variant mb-md">All delivery coordinates constrained to Polomolok municipality</p>
+                <p class="text-xs text-on-surface-variant mb-4">All delivery coordinates constrained to Polomolok municipality</p>
 
                 <!-- Core Zone Coordinates Box -->
-                <div class="p-sm rounded-xl bg-surface-container-low border border-outline-variant/20 mb-md">
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/20 mb-4">
                     <div class="flex items-center justify-between text-xs mb-1">
-                        <span class="font-bold text-on-surface flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px] text-primary">pin_drop</span>
-                            Operational Zone
+                        <span class="font-bold text-on-surface flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px] text-terra-green">pin_drop</span>
+                            <span>Operational Zone</span>
                         </span>
-                        <span class="text-[11px] text-primary font-bold">Active &amp; Guarded</span>
+                        <span class="text-[11px] text-terra-green font-bold">Active &amp; Guarded</span>
                     </div>
                     <p class="text-[11px] text-on-surface-variant font-mono">Latitude: 6.1000° to 6.3200° N</p>
                     <p class="text-[11px] text-on-surface-variant font-mono">Longitude: 124.9500° to 125.1800° E</p>
                 </div>
 
                 <!-- Top Areas Breakdown -->
-                <div class="space-y-sm mb-md">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Key Delivery Destinations</h4>
+                <div class="space-y-2 mb-4">
+                    <h4 class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/70 mb-1">Key Delivery Destinations</h4>
                     <?php if (!empty($area_counts)): ?>
                         <?php foreach ($area_counts as $area): ?>
-                            <div class="flex items-center justify-between text-xs p-2 rounded-xl bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
-                                <span class="font-semibold text-on-surface flex items-center gap-1.5">
+                            <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
+                                <span class="font-semibold text-on-surface flex items-center gap-2">
                                     <span class="material-symbols-outlined text-[16px] text-outline">location_city</span>
-                                    <?= esc($area['area']) ?>
+                                    <span><?= esc($area['area']) ?></span>
                                 </span>
-                                <span class="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                <span class="font-bold text-terra-green bg-terra-green/10 px-2 py-0.5 rounded-lg border border-terra-green/20 font-mono">
                                     <?= number_format((int) $area['count']) ?> deliveries
                                 </span>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="flex items-center justify-between text-xs p-2 rounded-xl bg-surface-container-low/50">
-                            <span class="font-semibold text-on-surface flex items-center gap-1.5">
+                        <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-surface-container-low/50">
+                            <span class="font-semibold text-on-surface flex items-center gap-2">
                                 <span class="material-symbols-outlined text-[16px] text-outline">location_city</span>
-                                Poblacion / Cannery Site
+                                <span>Poblacion / Cannery Site</span>
                             </span>
-                            <span class="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">Polomolok Core</span>
+                            <span class="font-bold text-terra-green bg-terra-green/10 px-2 py-0.5 rounded-lg font-mono">Polomolok Core</span>
                         </div>
                     <?php endif; ?>
                 </div>
             </div>
 
             <!-- CTA to Live Fleet Tracking -->
-            <div class="pt-sm border-t border-outline-variant/20">
-                <a href="<?= base_url('admin/tracking') ?>" class="w-full flex items-center justify-center gap-2 px-md py-2.5 rounded-xl text-xs font-bold bg-surface-container-low text-on-surface hover:bg-primary hover:text-on-primary border border-outline-variant/30 hover:border-primary transition-all group shadow-xs">
-                    <span class="material-symbols-outlined text-[18px] text-primary group-hover:text-on-primary">map</span>
+            <div class="pt-3 border-t border-outline-variant/20">
+                <a href="<?= base_url('admin/tracking') ?>" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-surface-container-low text-on-surface hover:bg-terra-green hover:text-white border border-outline-variant/30 hover:border-terra-green transition-all group shadow-xs active:scale-95">
+                    <span class="material-symbols-outlined text-[18px] text-terra-green group-hover:text-white">map</span>
                     <span>Launch Live GPS Fleet Map</span>
                 </a>
             </div>
@@ -439,7 +452,7 @@
         ctx.clearRect(0, 0, w, h);
 
         // Grid lines & labels
-        ctx.strokeStyle = 'rgba(115, 118, 134, 0.10)';
+        ctx.strokeStyle = 'rgba(115, 118, 134, 0.12)';
         ctx.lineWidth = 1;
         ctx.fillStyle = '#64748b';
         ctx.font = '10px Inter, sans-serif';
@@ -487,7 +500,7 @@
             }
         }
 
-        // Area Gradient
+        // Area Gradient in Terra Green
         ctx.save();
         drawCurve(ctx);
         ctx.lineTo(pts[pts.length - 1].x, h - pad.b);
@@ -495,17 +508,17 @@
         ctx.closePath();
 
         const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b);
-        grad.addColorStop(0, 'rgba(37, 99, 235, 0.22)');
-        grad.addColorStop(0.7, 'rgba(37, 99, 235, 0.04)');
-        grad.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
+        grad.addColorStop(0, 'rgba(74, 148, 62, 0.25)');
+        grad.addColorStop(0.7, 'rgba(74, 148, 62, 0.05)');
+        grad.addColorStop(1, 'rgba(74, 148, 62, 0.00)');
         ctx.fillStyle = grad;
         ctx.fill();
         ctx.restore();
 
-        // Curve stroke
+        // Curve stroke in Terra Green
         ctx.save();
         drawCurve(ctx);
-        ctx.strokeStyle = '#2563eb';
+        ctx.strokeStyle = '#4A943E';
         ctx.lineWidth = 2.5;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
@@ -517,7 +530,7 @@
             const ap = pts[activeIdx];
             ctx.save();
             ctx.beginPath();
-            ctx.strokeStyle = 'rgba(37, 99, 235, 0.35)';
+            ctx.strokeStyle = 'rgba(74, 148, 62, 0.40)';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([4, 4]);
             ctx.moveTo(ap.x, pad.t);
@@ -532,13 +545,13 @@
             if (isHovered) {
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
+                ctx.fillStyle = 'rgba(74, 148, 62, 0.25)';
                 ctx.fill();
             }
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, isHovered ? 5 : 3.5, 0, Math.PI * 2);
-            ctx.fillStyle = '#2563eb';
+            ctx.fillStyle = '#4A943E';
             ctx.fill();
 
             ctx.beginPath();
@@ -588,7 +601,7 @@
 
             tooltip.innerHTML = `
                 <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">${best.label}</div>
-                <div class="text-sm font-black text-emerald-400">₱${Number(best.v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div class="text-sm font-black text-emerald-400 font-mono">₱${Number(best.v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div class="text-[9px] text-slate-400 mt-0.5">Admin Fee Yield</div>
             `;
             tooltip.classList.remove('hidden');
@@ -636,9 +649,9 @@
     function loadAnalyticsRange(range) {
         document.querySelectorAll('.rangeBtn').forEach(b => {
             if (b.dataset.range === range) {
-                b.className = 'rangeBtn px-3 py-1 rounded-lg text-xs font-bold transition-all bg-primary text-on-primary shadow-xs';
+                b.className = 'rangeBtn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-terra-green text-white shadow-xs';
             } else {
-                b.className = 'rangeBtn px-3 py-1 rounded-lg text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface';
+                b.className = 'rangeBtn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all text-on-surface-variant hover:text-on-surface';
             }
         });
 
@@ -670,7 +683,7 @@
     window.refreshAnalyticsData = function() {
         const icon = document.getElementById('refreshIcon');
         if (icon) icon.classList.add('animate-spin');
-        const activeBtn = document.querySelector('.rangeBtn.bg-primary') || document.querySelector('.rangeBtn');
+        const activeBtn = document.querySelector('.rangeBtn.bg-terra-green') || document.querySelector('.rangeBtn');
         const range = activeBtn ? activeBtn.dataset.range : '30';
         
         loadAnalyticsRange(range);
@@ -682,3 +695,4 @@
 })();
 </script>
 <?= $this->endSection() ?>
+

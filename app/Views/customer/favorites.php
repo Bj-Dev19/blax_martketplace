@@ -1,111 +1,98 @@
 <?= $this->extend('layouts/marketplace') ?>
 <?= $this->section('content') ?>
 
-<div class="flex flex-1 flex-col md:flex-row w-full min-h-[calc(100vh-72px)] bg-slate-50/50">
+<div class="flex flex-1 flex-col md:flex-row w-full min-h-[calc(100vh-72px)] bg-slate-50/50 dark:bg-slate-950">
 
     <?= view('components/profile_sidebar', ['activeNav' => 'favorites']) ?>
 
     <!-- Main Content Area -->
-    <main class="flex-1 p-3 sm:p-6 md:p-8 lg:p-10 overflow-y-auto">
+    <main class="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-8">
 
-        <div class="max-w-5xl mx-auto space-y-6">
+        <div class="max-w-5xl mx-auto space-y-5 sm:space-y-6 pb-28">
 
-            <?php if (session()->getFlashdata('success')): ?>
-                <div class="p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-300 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs animate-fade-in">
-                    <span class="material-symbols-outlined text-lg shrink-0">check_circle</span>
-                    <span><?= esc(session()->getFlashdata('success')) ?></span>
+            <!-- Calm Page Header -->
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2.5">
+                    <h1 class="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight">Favorite Shops</h1>
+                    <?php if (!empty($shops)): ?>
+                        <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            <?= count($shops) ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
 
-            <?php if (session()->getFlashdata('error')): ?>
-                <div class="p-4 rounded-2xl bg-error-container/20 border border-error/30 text-error text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs animate-fade-in">
-                    <span class="material-symbols-outlined text-lg shrink-0">error</span>
-                    <span><?= esc(session()->getFlashdata('error')) ?></span>
-                </div>
-            <?php endif; ?>
-
-            <div class="mb-xl">
-
-                <h1 class="font-headline-lg text-headline-lg text-on-surface mb-sm">Favorite Shops</h1>
-                <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Manage and quickly access your most-visited local merchants.</p>
-
+                <a href="<?= base_url('shops') ?>" class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-terra-green hover:bg-[#3d7a33] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95 shrink-0">
+                    <span class="material-symbols-outlined text-[18px]">storefront</span>
+                    <span>Explore Shops</span>
+                </a>
             </div>
 
             <?php if (!empty($shops)): ?>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                     <?php foreach ($shops as $fav): ?>
 
                         <?php
                             $shopSlug    = $fav['slug'] ?? $fav['shop_id'];
                             $shopUrl     = base_url('shop/' . $shopSlug);
-                            $shopRating  = number_format((float) ($fav['rating_average'] ?? 0), 1);
-                            $shopDesc    = $fav['description'] ?? 'Verified Merchant';
+                            $shopRating  = number_format((float) ($fav['rating_average'] ?? 5.0), 1);
+                            $shopDesc    = $fav['description'] ?? 'Verified local merchant in Polomolok.';
                         ?>
 
-                        <div class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col gap-md transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+                        <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-terra-green/40 dark:hover:border-terra-green/40 rounded-2xl p-5 shadow-2xs transition-all flex flex-col justify-between gap-4 group">
 
-                            <div class="flex justify-between items-start">
+                            <div class="space-y-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <a href="<?= esc($shopUrl) ?>" class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shrink-0">
+                                            <?php if (!empty($fav['logo_url'])): ?>
+                                                <img class="w-full h-full object-cover" src="<?= esc(logo_url($fav['logo_url'])) ?>" alt="<?= esc($fav['shop_name']) ?> logo">
+                                            <?php else: ?>
+                                                <span class="material-symbols-outlined text-2xl text-terra-green dark:text-emerald-400">store</span>
+                                            <?php endif; ?>
+                                        </a>
 
-                                <div class="w-16 h-16 rounded-full overflow-hidden bg-surface-container shadow-sm border border-outline-variant flex items-center justify-center">
-
-                                    <?php if (!empty($fav['logo_url'])): ?>
-
-                                        <img class="w-full h-full object-cover" src="<?= esc(logo_url($fav['logo_url'])) ?>" alt="<?= esc($fav['shop_name']) ?> logo">
-
-                                    <?php else: ?>
-
-                                        <span class="material-symbols-outlined text-3xl text-primary">store</span>
-
-                                    <?php endif; ?>
-
-                                </div>
-
-                                <form method="post" action="<?= base_url('customer/favorites/remove') ?>" onsubmit="return confirm('Remove this shop from your favorites?');">
-
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="shop_id" value="<?= esc($fav['shop_id'] ?? $fav['id']) ?>">
-
-                                    <button type="submit" class="p-2 rounded-full text-error hover:bg-error-container transition-colors" title="Remove from favorites" aria-label="Remove from favorites">
-
-                                        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
-
-                                    </button>
-
-                                </form>
-
-                            </div>
-
-                            <div>
-
-                                <div class="flex items-center justify-between mb-xs">
-
-                                    <h3 class="font-title-lg text-title-lg text-on-surface"><?= esc($fav['shop_name']) ?></h3>
-
-                                    <div class="flex items-center gap-xs text-on-surface-variant">
-
-                                        <span class="material-symbols-outlined text-[18px] text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
-                                        <span class="text-label-sm font-semibold"><?= esc($shopRating) ?></span>
-
+                                        <div class="min-w-0">
+                                            <h3 class="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-terra-green dark:group-hover:text-emerald-400 transition-colors truncate">
+                                                <a href="<?= esc($shopUrl) ?>"><?= esc($fav['shop_name']) ?></a>
+                                            </h3>
+                                            <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                <span class="inline-flex items-center gap-0.5 font-mono font-bold text-slate-700 dark:text-slate-200">
+                                                    <span class="material-symbols-outlined text-[14px] text-amber-500 fill-icon">star</span>
+                                                    <?= esc($shopRating) ?>
+                                                </span>
+                                                <span>&bull;</span>
+                                                <span class="truncate">Verified Shop</span>
+                                            </div>
+                                        </div>
                                     </div>
 
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" class="fav-share w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" data-url="<?= esc($shopUrl) ?>" title="Share shop" aria-label="Share shop">
+                                            <span class="material-symbols-outlined text-[17px]">share</span>
+                                        </button>
+
+                                        <form method="post" action="<?= base_url('customer/favorites/remove') ?>" onsubmit="return confirm('Remove this shop from your favorites?');" class="inline">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="shop_id" value="<?= esc($fav['shop_id'] ?? $fav['id']) ?>">
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer" title="Remove from favorites" aria-label="Remove from favorites">
+                                                <span class="material-symbols-outlined text-[18px] fill-icon">favorite</span>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
 
-                                <p class="text-label-sm text-secondary"><?= esc($shopDesc) ?></p>
-
+                                <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed">
+                                    <?= esc($shopDesc) ?>
+                                </p>
                             </div>
 
-                            <div class="mt-auto flex items-center gap-sm">
-
-                                <a href="<?= esc($shopUrl) ?>" class="flex-1 bg-primary text-on-primary font-button text-button py-2.5 rounded-lg text-center block hover:opacity-90 transition-opacity">Visit Shop</a>
-
-                                <button type="button" class="fav-share px-3 py-2.5 border border-outline-variant rounded-lg hover:bg-surface-container-high transition-colors" data-url="<?= esc($shopUrl) ?>" title="Share this shop" aria-label="Share this shop">
-
-                                    <span class="material-symbols-outlined text-on-surface-variant">share</span>
-
-                                </button>
-
+                            <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end">
+                                <a href="<?= esc($shopUrl) ?>" class="w-full py-2 px-4 bg-terra-green/10 hover:bg-terra-green text-terra-green dark:text-emerald-400 hover:text-white rounded-xl text-xs font-bold text-center transition-all flex items-center justify-center gap-1.5">
+                                    <span>Visit Store</span>
+                                    <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                                </a>
                             </div>
 
                         </div>
@@ -116,46 +103,30 @@
 
             <?php else: ?>
 
-                <div class="glass-card rounded-2xl border border-outline-variant/30 p-xxl text-center text-on-surface-variant mb-lg flex flex-col items-center">
-                    <div class="w-20 h-20 rounded-full bg-error-container/30 text-error flex items-center justify-center mb-md">
-                        <span class="material-symbols-outlined text-4xl">favorite</span>
+                <!-- Calm Empty State -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-8 sm:p-10 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 mx-auto flex items-center justify-center">
+                        <span class="material-symbols-outlined text-2xl">favorite_border</span>
                     </div>
-                    <h2 class="text-title-lg font-bold text-on-surface mb-xs">No favorite shops yet</h2>
-                    <p class="text-body-md text-on-surface-variant max-w-md mb-lg">When browsing merchant stores, tap the heart icon to bookmark your favorite shops for one-tap access.</p>
-                    <a href="<?= base_url('shops') ?>" class="inline-flex items-center gap-xs bg-primary text-on-primary px-lg py-md rounded-xl font-button hover:bg-primary-container transition-all shadow-sm">
-                        <span class="material-symbols-outlined text-[20px]">store</span>
-                        <span>Browse Verified Shops</span>
-                    </a>
+                    <div class="space-y-1">
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-white">No saved shops yet</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Tap the heart icon on any store to save it here for quick access.</p>
+                    </div>
+                    <div class="pt-1">
+                        <a href="<?= base_url('shops') ?>" class="inline-flex items-center gap-1.5 bg-terra-green hover:bg-[#3d7a33] text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-[16px]">storefront</span>
+                            <span>Explore Shops</span>
+                        </a>
+                    </div>
                 </div>
 
             <?php endif; ?>
-
-            <div class="mt-xxl bg-secondary-container rounded-2xl p-xl flex flex-col md:flex-row items-center gap-lg border border-outline-variant">
-
-                <div class="p-lg bg-surface-container-lowest rounded-full">
-
-                    <span class="material-symbols-outlined text-primary text-[48px]">explore</span>
-
-                </div>
-
-                <div class="flex-1 text-center md:text-left">
-
-                    <h4 class="font-headline-md text-headline-md text-on-secondary-container mb-xs">Discover more shops</h4>
-                    <p class="font-body-md text-body-md text-on-secondary-container opacity-80">Explore thousands of highly-rated merchants across the marketplace ecosystem.</p>
-
-                </div>
-
-                <a href="<?= base_url('shops') ?>" class="bg-primary text-on-primary px-lg py-md rounded-lg font-button text-button shadow-sm hover:translate-y-[-2px] transition-all">Explore Marketplace</a>
-
-            </div>
 
         </div>
 
     </main>
 
 </div>
-
-
 
 <script>
     (function () {

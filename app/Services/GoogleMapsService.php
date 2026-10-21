@@ -428,4 +428,175 @@ class GoogleMapsService
             'lng' => $this->config->defaultLng,
         ];
     }
+
+    /**
+     * Calculate great-circle distance in meters between two coordinates using the Haversine formula.
+     */
+    public static function haversineDistanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371000.0; // meters
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) * sin($dLat / 2)
+           + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
+           * sin($dLng / 2) * sin($dLng / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(max(0.0, 1.0 - $a)));
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Resolve reliable coordinates for a shop or customer shipping address.
+     * Uses stored latitude/longitude first, then Barangay centroid lookup, then Polomolok town center.
+     *
+     * @return array{lat: float, lng: float, source: string}
+     */
+    public function resolveEntityCoordinates(array $entity): array
+    {
+        $lat = (float) ($entity['latitude'] ?? $entity['lat'] ?? 0);
+        $lng = (float) ($entity['longitude'] ?? $entity['lng'] ?? 0);
+
+        if ($lat != 0.0 && $lng != 0.0 && \App\Models\DeliveryModel::isPolomolokCoordinate($lat, $lng)) {
+            return ['lat' => $lat, 'lng' => $lng, 'source' => 'pinned'];
+        }
+
+        $city = trim((string) ($entity['city'] ?? ''));
+
+        // Try barangay / address_line2 / address_line1 / address_line lookup
+        $candidates = [
+            $entity['barangay'] ?? '',
+            $entity['address_line2'] ?? '',
+            $entity['address_line'] ?? '',
+            $entity['address_line1'] ?? '',
+        ];
+
+        foreach ($candidates as $text) {
+            $text = trim((string) $text);
+            if ($text === '') {
+                continue;
+            }
+            // Strip municipality suffix if present (e.g., "Poblacion, Polomolok")
+            $parts = array_map('trim', explode(',', $text));
+            foreach ($parts as $part) {
+                if ($part === '' || strcasecmp($part, 'Polomolok') === 0 || strcasecmp($part, 'Tupi') === 0 || strcasecmp($part, 'South Cotabato') === 0) {
+                    continue;
+                }
+                $centroid = \App\Models\DeliveryModel::getBarangayCoordinate($part, $city);
+                if ($centroid !== null) {
+                    return ['lat' => (float) $centroid['lat'], 'lng' => (float) $centroid['lng'], 'source' => 'barangay_centroid'];
+                }
+            }
+            $centroid = \App\Models\DeliveryModel::getBarangayCoordinate($text, $city);
+            if ($centroid !== null) {
+                return ['lat' => (float) $centroid['lat'], 'lng' => (float) $centroid['lng'], 'source' => 'barangay_centroid'];
+            }
+        }
+
+        if (stripos($city, 'tupi') !== false) {
+            return [
+                'lat'    => \App\Models\DeliveryModel::TUPI_CENTER_LAT,
+                'lng'    => \App\Models\DeliveryModel::TUPI_CENTER_LNG,
+                'source' => 'city_center',
+            ];
+        }
+
+        $def = $this->getDefaultCoordinates();
+        return ['lat' => (float) $def['lat'], 'lng' => (float) $def['lng'], 'source' => 'default_center'];
+    }
+
+    /**
+     * Calculate actual road distance and shipping fee between a tenant shop and a customer delivery address
+     * using Google Maps Routes API (with OSRM and road-adjusted Haversine fallback) and Admin's configured rates.
+     *
+     * @param array $shop     Shop record (latitude, longitude, barangay, address_line, shop_name)
+     * @param array $address  Customer shipping_addresses record (latitude, longitude, address_line1, address_line2, city)
+     * @param array|null $settings Optional preloaded settings from SiteContentModel::getShippingFeeSettings()
+     * @return array{
+     *   deliverable: bool,
+     *   distance_meters: int,
+     *   distance_km: float,
+     *   distance_text: string,
+     *   duration_text: string,
+     *   shipping_fee: float,
+     *   base_shipping_fee: float,
+     *   included_distance_km: float,
+     *   additional_fee_per_km: float,
+     *   extra_distance_km: float,
+     *   extra_distance_fee: float,
+     *   max_delivery_distance_km: float,
+     *   route_source: string,
+     *   error: string|null
+     * }
+     */
+    public function calculateDeliveryQuote(array $shop, array $address, ?array $settings = null): array
+    {
+        if ($settings === null) {
+            $settings = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+        }
+
+        $baseFee     = round(max(0.0, (float) ($settings['base_shipping_fee'] ?? 50.00)), 2);
+        $includedKm  = round(max(0.0, (float) ($settings['included_distance_km'] ?? 3.00)), 2);
+        $perKmFee    = round(max(0.0, (float) ($settings['additional_fee_per_km'] ?? 10.00)), 2);
+        $maxDistKm   = round(max(0.5, (float) ($settings['max_delivery_distance_km'] ?? 25.00)), 2);
+
+        $origin = $this->resolveEntityCoordinates($shop);
+        $dest   = $this->resolveEntityCoordinates($address);
+
+        $route = $this->computeRoute(
+            ['lat' => $origin['lat'], 'lng' => $origin['lng']],
+            ['lat' => $dest['lat'], 'lng' => $dest['lng']],
+            'DRIVE'
+        );
+
+        if ($route !== null && !empty($route['distanceMeters'])) {
+            $distanceMeters = (int) $route['distanceMeters'];
+            $durationText   = (string) ($route['duration_text'] ?? '15 mins');
+            $routeSource    = (string) ($route['source'] ?? 'google_routes');
+        } else {
+            // Road-winding adjusted Haversine fallback (1.25x straight-line distance)
+            $straightMeters = self::haversineDistanceMeters($origin['lat'], $origin['lng'], $dest['lat'], $dest['lng']);
+            $distanceMeters = (int) round($straightMeters * 1.25);
+            $estMins        = max(5, (int) round(($distanceMeters / 1000) * 2.5));
+            $durationText   = $estMins . ' mins';
+            $routeSource    = 'estimated_road';
+        }
+
+        $distanceKm   = round($distanceMeters / 1000, 2);
+        $distanceText = number_format($distanceKm, 1) . ' km';
+
+        $deliverable = ($distanceKm <= $maxDistKm);
+        $extraKm     = max(0.0, round($distanceKm - $includedKm, 2));
+        $extraFee    = round($extraKm * $perKmFee, 2);
+        $shippingFee = round($baseFee + $extraFee, 2);
+
+        $shopName = trim((string) ($shop['shop_name'] ?? 'the shop'));
+        $error = null;
+        if (!$deliverable) {
+            $error = sprintf(
+                'Delivery address is %.1f km away from %s, which exceeds the maximum delivery distance of %.1f km. Please choose Store Pick-up or select a closer address.',
+                $distanceKm,
+                $shopName,
+                $maxDistKm
+            );
+        }
+
+        return [
+            'deliverable'              => $deliverable,
+            'distance_meters'          => $distanceMeters,
+            'distance_km'              => $distanceKm,
+            'distance_text'            => $distanceText,
+            'duration_text'            => $durationText,
+            'shipping_fee'             => $shippingFee,
+            'base_shipping_fee'        => $baseFee,
+            'included_distance_km'     => $includedKm,
+            'additional_fee_per_km'    => $perKmFee,
+            'extra_distance_km'        => $extraKm,
+            'extra_distance_fee'       => $extraFee,
+            'max_delivery_distance_km' => $maxDistKm,
+            'route_source'             => $routeSource,
+            'origin_coords'            => $origin,
+            'destination_coords'       => $dest,
+            'error'                    => $error,
+        ];
+    }
 }
+

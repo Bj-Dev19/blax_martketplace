@@ -28,92 +28,92 @@
     <?php endif; ?>
 
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div>
             <div class="flex items-center gap-2">
-                <h1 class="text-2xl sm:text-3xl font-black text-on-surface tracking-tight">Orders Management</h1>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary">
+                <h1 class="font-display text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Orders Management</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-terra-green/10 text-terra-green border border-terra-green/20">
                     Live
                 </span>
             </div>
-            <p class="text-xs sm:text-sm text-on-surface-variant font-medium mt-0.5">
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                 Monitor incoming customer orders, manage packing queues, and track fulfillment status
             </p>
         </div>
         <div class="flex items-center gap-2.5">
-            <a href="<?= base_url('tenant/pos') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-on-secondary rounded-xl text-xs sm:text-sm font-bold hover:bg-secondary/90 shadow-xs hover:shadow-sm active:scale-95 transition-all">
+            <a href="<?= base_url('tenant/pos') ?>" class="inline-flex items-center gap-2 px-4 py-2.5 bg-terra-earth text-white rounded-2xl text-xs sm:text-sm font-bold hover:bg-terra-earth-dark shadow-sm active:scale-95 transition-all">
                 <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
                 <span>Open POS</span>
             </a>
-            <a href="<?= base_url('tenant/orders') ?>" class="p-2.5 bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/40 rounded-xl text-on-surface-variant hover:text-on-surface transition-colors shadow-2xs" title="Refresh Orders List">
+            <a href="<?= base_url('tenant/orders') ?>" class="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-300 transition-colors shadow-2xs" title="Refresh Orders List">
                 <span class="material-symbols-outlined text-[18px]">refresh</span>
             </a>
         </div>
     </div>
 
-    <!-- Modernized Interactive Metrics Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+    <!-- Modernized Interactive Metrics Bento Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Total Orders -->
-        <a href="<?= base_url('tenant/orders') ?>" class="group bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/30 shadow-xs hover:shadow-md hover:border-primary/40 transition-all flex items-center justify-between cursor-pointer">
+        <a href="<?= base_url('tenant/orders') ?>" class="group bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-terra-green/40 transition-all flex items-center justify-between cursor-pointer">
             <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">Total Orders</span>
-                    <span class="opacity-0 group-hover:opacity-100 text-primary text-[10px] font-bold transition-opacity">All</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Total Orders</span>
+                    <span class="opacity-0 group-hover:opacity-100 text-terra-green text-[10px] font-bold transition-opacity">All</span>
                 </div>
-                <p id="kpi-orders-total" class="text-2xl sm:text-3xl font-bold font-mono text-on-surface mt-1 group-hover:text-primary transition-colors">
+                <p id="kpi-orders-total" class="font-display text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 dark:text-white mt-1 group-hover:text-terra-green transition-colors tracking-tight">
                     <?= number_format((int) $summary['total_orders']) ?>
                 </p>
-                <span class="text-[11px] text-outline mt-0.5 block truncate">Store lifetime active orders</span>
+                <span class="text-[11px] text-slate-400 mt-0.5 block truncate">Store lifetime active orders</span>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-primary group-hover:text-on-primary transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-terra-green group-hover:text-white transition-all">
                 <span class="material-symbols-outlined text-[24px]">shopping_cart</span>
             </div>
         </a>
 
-        <!-- Card 2: Pending Shipments -->
-        <a href="<?= base_url('tenant/orders?status=shipped') ?>" class="group bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/30 shadow-xs hover:shadow-md hover:border-blue-400 transition-all flex items-center justify-between cursor-pointer">
+        <!-- Card 2: In Transit / Deliveries -->
+        <a href="<?= base_url('tenant/orders?status=shipped') ?>" class="group bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-terra-amber/40 transition-all flex items-center justify-between cursor-pointer">
             <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">In Transit / Deliveries</span>
-                    <span class="opacity-0 group-hover:opacity-100 text-blue-600 text-[10px] font-bold transition-opacity">Filter</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">In Transit</span>
+                    <span class="opacity-0 group-hover:opacity-100 text-terra-amber text-[10px] font-bold transition-opacity">Filter</span>
                 </div>
-                <p id="kpi-orders-pending-shipments" class="text-2xl sm:text-3xl font-bold font-mono text-blue-700 mt-1">
+                <p id="kpi-orders-pending-shipments" class="font-display text-2xl sm:text-3xl font-extrabold font-mono text-terra-earth dark:text-terra-amber mt-1 tracking-tight">
                     <?= number_format((int) $summary['pending_shipments']) ?>
                 </p>
-                <span class="text-[11px] text-outline mt-0.5 block truncate">Currently dispatched for delivery</span>
+                <span class="text-[11px] text-slate-400 mt-0.5 block truncate">Currently dispatched for delivery</span>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-700 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-terra-amber/15 text-terra-earth dark:text-terra-amber border border-terra-amber/25 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-terra-amber group-hover:text-slate-950 transition-all">
                 <span class="material-symbols-outlined text-[24px]">local_shipping</span>
             </div>
         </a>
 
         <!-- Card 3: Ready for Pickup -->
-        <a href="<?= base_url('tenant/orders?status=ready_for_pickup') ?>" class="group bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/30 shadow-xs hover:shadow-md hover:border-amber-400 transition-all flex items-center justify-between cursor-pointer">
+        <a href="<?= base_url('tenant/orders?status=ready_for_pickup') ?>" class="group bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-purple-400 transition-all flex items-center justify-between cursor-pointer">
             <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
-                    <span class="text-xs text-on-surface-variant font-semibold uppercase tracking-wider">Ready for Pick-up</span>
-                    <span class="opacity-0 group-hover:opacity-100 text-amber-600 text-[10px] font-bold transition-opacity">Filter</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Ready for Pick-up</span>
+                    <span class="opacity-0 group-hover:opacity-100 text-purple-600 text-[10px] font-bold transition-opacity">Filter</span>
                 </div>
-                <p id="kpi-orders-ready-pickup" class="text-2xl sm:text-3xl font-bold font-mono text-amber-700 mt-1">
+                <p id="kpi-orders-ready-pickup" class="font-display text-2xl sm:text-3xl font-extrabold font-mono text-purple-700 dark:text-purple-300 mt-1 tracking-tight">
                     <?= number_format((int) $summary['ready_for_pickup']) ?>
                 </p>
-                <span class="text-[11px] text-outline mt-0.5 block truncate">Waiting for customer handover</span>
+                <span class="text-[11px] text-slate-400 mt-0.5 block truncate">Waiting for customer handover</span>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-amber-600 group-hover:text-white transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 group-hover:bg-purple-600 group-hover:text-white transition-all">
                 <span class="material-symbols-outlined text-[24px]">storefront</span>
             </div>
         </a>
 
         <!-- Card 4: Revenue Today -->
-        <div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/30 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
             <div class="min-w-0">
-                <span class="text-xs text-on-surface-variant font-semibold uppercase tracking-wider block">Revenue Today</span>
-                <p id="kpi-orders-revenue-today" class="text-2xl sm:text-3xl font-bold font-mono text-emerald-700 mt-1">
+                <span class="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider block">Revenue Today</span>
+                <p id="kpi-orders-revenue-today" class="font-display text-2xl sm:text-3xl font-extrabold font-mono text-terra-green mt-1 tracking-tight">
                     ₱<?= number_format((float) $summary['revenue_today'], 2) ?>
                 </p>
-                <span class="text-[11px] text-outline mt-0.5 block truncate">Completed orders &amp; pickups</span>
+                <span class="text-[11px] text-slate-400 mt-0.5 block truncate">Completed orders &amp; pickups</span>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0 shadow-2xs">
+            <div class="w-12 h-12 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center shrink-0 shadow-2xs">
                 <span class="material-symbols-outlined text-[24px]">payments</span>
             </div>
         </div>
@@ -134,42 +134,41 @@
         }
     }
     ?>
-    <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
         
         <!-- Queue Header -->
-        <!-- Queue Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/20 pb-3.5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
+                <div class="w-10 h-10 rounded-2xl bg-terra-amber/10 text-terra-amber border border-terra-amber/20 flex items-center justify-center shrink-0 shadow-2xs">
                     <span class="material-symbols-outlined text-[22px]">inventory_2</span>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h2 class="text-base sm:text-lg font-bold text-on-surface">Active Processing &amp; Packing Queue</h2>
-                        <span id="queuePrepCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono <?= $procCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-surface-container text-outline' ?>">
+                        <h2 class="text-base sm:text-lg font-bold font-display text-slate-900 dark:text-white">Active Processing &amp; Packing Queue</h2>
+                        <span id="queuePrepCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono <?= $procCount > 0 ? 'bg-terra-amber/15 text-terra-amber border border-terra-amber/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500' ?>">
                             <?= $procCount ?> <?= $procCount === 1 ? 'order' : 'orders' ?> in prep
                         </span>
                     </div>
-                    <p class="text-xs text-on-surface-variant font-medium">Orders accepted by your shop. Pack items and click the button when ready.</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Orders accepted by your shop. Pack items and click when ready to dispatch or stage for pickup.</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2">
                 <!-- Sub-filters -->
                 <div id="queueFilterTabs" class="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar text-xs <?= $procCount === 0 ? 'hidden' : '' ?>">
-                    <button type="button" onclick="filterProcessingQueue('all')" id="proc-tab-all" class="proc-filter-tab px-3 py-1.5 rounded-full font-bold bg-primary text-on-primary shadow-2xs transition-all cursor-pointer">
+                    <button type="button" onclick="filterProcessingQueue('all')" id="proc-tab-all" class="proc-filter-tab px-3 py-1.5 rounded-full font-bold bg-terra-green text-white shadow-2xs transition-all cursor-pointer">
                         All (<span id="proc-tab-all-count"><?= $procCount ?></span>)
                     </button>
-                    <button type="button" onclick="filterProcessingQueue('pickup')" id="proc-tab-pickup" class="proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-surface-container-low text-on-surface-variant hover:bg-surface-container border border-outline-variant/30 transition-all cursor-pointer">
+                    <button type="button" onclick="filterProcessingQueue('pickup')" id="proc-tab-pickup" class="proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">
                         Store Pick-up (<span id="proc-tab-pickup-count"><?= $pickupProcCount ?></span>)
                     </button>
-                    <button type="button" onclick="filterProcessingQueue('delivery')" id="proc-tab-delivery" class="proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-surface-container-low text-on-surface-variant hover:bg-surface-container border border-outline-variant/30 transition-all cursor-pointer">
+                    <button type="button" onclick="filterProcessingQueue('delivery')" id="proc-tab-delivery" class="proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer">
                         Doorstep Delivery (<span id="proc-tab-delivery-count"><?= $deliveryProcCount ?></span>)
                     </button>
                 </div>
 
                 <!-- Toggle Hide/Show Button -->
-                <button type="button" id="toggleQueueBtn" onclick="toggleProcessingQueue()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/30 text-on-surface-variant hover:text-on-surface text-xs font-semibold transition-all shadow-2xs active:scale-95 shrink-0 cursor-pointer" title="Hide/Show Queue">
+                <button type="button" id="toggleQueueBtn" onclick="toggleProcessingQueue()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition-all shadow-2xs active:scale-95 shrink-0 cursor-pointer" title="Hide/Show Queue">
                     <span class="material-symbols-outlined text-[18px] transition-transform duration-300" id="toggleQueueIcon">expand_less</span>
                     <span id="toggleQueueLabel" class="hidden sm:inline">Hide</span>
                 </button>
@@ -179,7 +178,7 @@
         <!-- Collapsible Queue Content -->
         <div id="queueContent" class="transition-all duration-300 overflow-hidden">
             <!-- Grid (Always rendered in DOM for real-time reactivity) -->
-            <div id="processingQueueGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 <?= empty($processingOrders) ? 'hidden' : '' ?>">
+            <div id="processingQueueGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 <?= empty($processingOrders) ? 'hidden' : '' ?>">
                 <?php if (!empty($processingOrders)): ?>
                     <?php foreach ($processingOrders as $pOrd): ?>
                         <?php
@@ -194,59 +193,59 @@
                         $isPaid = ($pOrd['payment_status'] ?? '') === 'paid';
                         $shopNameStr = esc($shop['shop_name'] ?? 'Blax Storefront');
                         ?>
-                        <div class="processing-order-card bg-surface-container-low/40 hover:bg-surface-container-low border border-outline-variant/30 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-sm transition-all" data-fulfillment="<?= $isPickup ? 'pickup' : 'delivery' ?>">
+                        <div class="processing-order-card bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-3.5 shadow-2xs hover:shadow-sm transition-all" data-fulfillment="<?= $isPickup ? 'pickup' : 'delivery' ?>">
                             
                             <!-- Card Top: Order No, Elapsed Time & Fulfillment Pill -->
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="font-mono text-sm font-bold text-primary">#<?= esc($pOrd['order_number']) ?></span>
+                                    <span class="font-mono text-sm font-bold text-terra-green">#<?= esc($pOrd['order_number']) ?></span>
                                     <?php if ($isPickup): ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-900 border border-amber-500/30 shadow-2xs">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30 shadow-2xs">
                                             <span class="material-symbols-outlined text-[14px]">storefront</span>
                                             <span>Store Pick-up</span>
                                         </span>
                                     <?php else: ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-900 border border-blue-500/30 shadow-2xs">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30 shadow-2xs">
                                             <span class="material-symbols-outlined text-[14px]">local_shipping</span>
                                             <span>Doorstep Delivery</span>
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                <div class="flex items-center justify-between text-[11px] text-outline">
+                                <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                                     <span>Placed: <?= esc(date('M d, h:i A', strtotime($pOrd['placed_at'] ?? 'now'))) ?></span>
                                     <?php if ($pOrd['status'] === 'pending'): ?>
-                                        <span class="font-mono font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">New Pending</span>
+                                        <span class="font-mono font-semibold text-terra-amber bg-terra-amber/10 border border-terra-amber/20 px-1.5 py-0.5 rounded-md">New Pending</span>
                                     <?php else: ?>
-                                        <span class="font-mono font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">In Prep</span>
+                                        <span class="font-mono font-semibold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded-md">In Prep</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
 
                             <!-- Customer & Destination Info -->
-                            <div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 space-y-2 text-xs">
+                            <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/70 dark:border-slate-800 space-y-2 text-xs">
                                 <div class="flex items-center justify-between gap-2.5">
                                     <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                                        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs relative overflow-hidden">
+                                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs relative overflow-hidden">
                                             <span><?= esc($custInitials) ?></span>
                                             <?php if ($custProfileImg !== ''): ?>
                                                 <img class="absolute inset-0 w-full h-full object-cover rounded-full" src="<?= esc(profile_image_url($custProfileImg)) ?>" alt="<?= esc($custName) ?> avatar" loading="lazy" onerror="this.remove();">
                                             <?php endif; ?>
                                         </div>
-                                        <span class="font-bold text-sm text-on-surface truncate"><?= esc($custName !== '' ? $custName : 'Customer') ?></span>
+                                        <span class="font-bold text-xs text-slate-900 dark:text-white truncate"><?= esc($custName !== '' ? $custName : 'Customer') ?></span>
                                     </div>
                                     <?php if ($custPhone !== 'N/A' && $custPhone !== ''): ?>
-                                        <a href="tel:<?= $custPhone ?>" class="text-xs font-mono font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 shrink-0">
-                                            <span class="material-symbols-outlined text-[15px] text-blue-600">call</span>
+                                        <a href="tel:<?= $custPhone ?>" class="text-xs font-mono font-semibold text-terra-green hover:underline flex items-center gap-1 shrink-0">
+                                            <span class="material-symbols-outlined text-[15px]">call</span>
                                             <span><?= $custPhone ?></span>
                                         </a>
                                     <?php endif; ?>
                                 </div>
 
-                                <div class="flex items-center gap-1.5 text-xs text-on-surface-variant pt-2 border-t border-outline-variant/15">
-                                    <span class="material-symbols-outlined text-[16px] text-outline shrink-0">
+                                <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0">
                                         <?= $isPickup ? 'storefront' : 'local_shipping' ?>
                                     </span>
-                                    <span class="truncate leading-tight font-medium">
+                                    <span class="truncate leading-tight font-medium text-slate-600 dark:text-slate-300">
                                         <?= $isPickup ? 'Store Counter Pick-up' : esc($deliveryAddr) ?>
                                     </span>
                                 </div>
@@ -254,32 +253,32 @@
 
                             <!-- Items to Pack Checklist -->
                             <div class="space-y-1">
-                                <div class="flex items-center justify-between text-[11px] font-bold text-on-surface-variant px-0.5">
+                                <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-0.5">
                                     <span class="uppercase tracking-wider">Items to Pack</span>
-                                    <span class="font-mono text-outline"><?= (int) $totalUnits ?> units</span>
+                                    <span class="font-mono text-slate-500"><?= (int) $totalUnits ?> units</span>
                                 </div>
-                                <div class="bg-surface-container-lowest rounded-xl p-2 border border-outline-variant/20 space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                                <div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200/70 dark:border-slate-800 space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
                                     <?php if (!empty($orderItemsList)): ?>
                                         <?php foreach ($orderItemsList as $it): ?>
                                             <div class="flex items-center justify-between gap-2 text-xs">
                                                  <div class="flex items-center gap-2 min-w-0 flex-1">
                                                     <?php if (!empty($it['product_image'])): ?>
-                                                        <img src="<?= esc(product_image_url($it['product_image'], 'thumbnail')) ?>" class="w-7 h-7 rounded-lg object-cover border border-outline-variant/20 shrink-0" alt="">
+                                                        <img src="<?= esc(product_image_url($it['product_image'], 'thumbnail')) ?>" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="">
                                                     <?php else: ?>
-                                                        <span class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-outline text-[14px] material-symbols-outlined">inventory_2</span>
+                                                        <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-[14px] material-symbols-outlined">inventory_2</span>
                                                     <?php endif; ?>
                                                     <div class="min-w-0 flex-1">
-                                                        <p class="font-semibold text-on-surface truncate leading-tight"><?= esc($it['product_name']) ?></p>
-                                                        <p class="text-[10px] text-outline font-mono">₱<?= number_format((float) $it['unit_price'], 2) ?></p>
+                                                        <p class="font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight"><?= esc($it['product_name']) ?></p>
+                                                        <p class="text-[10px] text-slate-400 font-mono">₱<?= number_format((float) $it['unit_price'], 2) ?></p>
                                                     </div>
                                                 </div>
-                                                <span class="font-mono font-bold text-xs bg-surface-container px-2 py-0.5 rounded text-on-surface shrink-0">
+                                                <span class="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-800 dark:text-slate-200 shrink-0">
                                                     <?= (int) $it['quantity'] ?>x
                                                 </span>
                                             </div>
                                         <?php endforeach; ?>
                                     <?php else: ?>
-                                        <div class="text-[11px] text-outline text-center py-2">Item details loaded from order.</div>
+                                        <div class="text-[11px] text-slate-400 text-center py-2">Item details loaded from order.</div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -287,24 +286,24 @@
                             <!-- Financial Summary Pill -->
                             <div class="flex items-center justify-between pt-1 text-xs">
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-on-surface-variant font-medium">Total:</span>
-                                    <span class="font-mono font-bold text-sm text-on-surface">₱<?= number_format((float) $pOrd['total_amount'], 2) ?></span>
+                                    <span class="text-slate-500 dark:text-slate-400 font-medium">Total:</span>
+                                    <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">₱<?= number_format((float) $pOrd['total_amount'], 2) ?></span>
                                 </div>
-                                <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' ?>">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <?= $isPaid ? 'bg-terra-green/15 text-terra-green border border-terra-green/30' : 'bg-terra-amber/15 text-terra-amber border border-terra-amber/30' ?>">
                                     <span class="material-symbols-outlined text-[12px]"><?= $isPaid ? 'verified' : 'pending' ?></span>
                                     <?= $isPaid ? 'Paid Online' : ($isPickup ? 'Pay on Pick-up' : 'Cash on Delivery') ?>
                                 </span>
                             </div>
 
                             <!-- Action Buttons: Context-Aware Button + Utilities -->
-                            <div class="pt-2 border-t border-outline-variant/20 flex items-center gap-1.5">
+                            <div class="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center gap-1.5">
                                 <?php if ($pOrd['status'] === 'pending'): ?>
                                     <!-- Pending Order: Button is 'Accept & Start Prep' -->
                                     <form action="<?= base_url('tenant/orders/update-status') ?>" method="POST" class="flex-1">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="order_id" value="<?= (int) $pOrd['id'] ?>">
                                         <input type="hidden" name="status" value="processing">
-                                        <button type="submit" class="w-full min-h-[42px] py-2 px-3 bg-primary hover:bg-primary/90 active:scale-95 text-on-primary rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Accept order and start packaging">
+                                        <button type="submit" class="w-full min-h-[40px] py-2 px-3 bg-terra-green hover:bg-terra-green/90 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Accept order and start packaging">
                                             <span class="material-symbols-outlined text-[18px]">check_circle</span>
                                             <span>Accept &amp; Pack</span>
                                         </button>
@@ -315,7 +314,7 @@
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="order_id" value="<?= (int) $pOrd['id'] ?>">
                                         <input type="hidden" name="status" value="ready_for_pickup">
-                                        <button type="submit" class="w-full min-h-[42px] py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Mark packed and ready for customer pick-up">
+                                        <button type="submit" class="w-full min-h-[40px] py-2 px-3 bg-terra-green hover:bg-terra-green/90 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Mark packed and ready for customer pick-up">
                                             <span class="material-symbols-outlined text-[18px]">check_circle</span>
                                             <span>Ready for Pick-up</span>
                                         </button>
@@ -326,7 +325,7 @@
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="order_id" value="<?= (int) $pOrd['id'] ?>">
                                         <input type="hidden" name="status" value="shipped">
-                                        <button type="submit" class="w-full min-h-[42px] py-2 px-3 bg-primary hover:bg-primary/90 active:scale-95 text-on-primary rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Dispatch order as In Transit and hand over to delivery">
+                                        <button type="submit" class="w-full min-h-[40px] py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Dispatch order as In Transit and hand over to delivery">
                                             <span class="material-symbols-outlined text-[18px]">local_shipping</span>
                                             <span>In Transit</span>
                                         </button>
@@ -345,16 +344,16 @@
                                             '<?= esc(date('M d, Y h:i A', strtotime($pOrd['placed_at']))) ?>',
                                             '<?= esc(base_url('order/' . $pOrd['order_number'])) ?>'
                                         )"
-                                        class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-primary flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
+                                        class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-terra-green flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
                                         title="Generate & Download QR Code">
                                     <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                                 </button>
 
-                                <a href="<?= base_url('tenant/orders/receipt/' . (int) $pOrd['id']) ?>" target="_blank" class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-on-surface-variant flex items-center justify-center shrink-0 transition-colors shadow-2xs" title="Print Packing Slip / Receipt">
+                                <a href="<?= base_url('tenant/orders/receipt/' . (int) $pOrd['id']) ?>" target="_blank" class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 transition-colors shadow-2xs" title="Print Packing Slip / Receipt">
                                     <span class="material-symbols-outlined text-[18px]">receipt_long</span>
                                 </a>
 
-                                <button type="button" onclick="openOrderDetails(<?= (int) $pOrd['id'] ?>)" class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-on-surface-variant flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer" title="View Details">
+                                <button type="button" onclick="openOrderDetails(<?= (int) $pOrd['id'] ?>)" class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer" title="View Details">
                                     <span class="material-symbols-outlined text-[18px]">visibility</span>
                                 </button>
                             </div>
@@ -365,11 +364,11 @@
             </div>
 
             <!-- Empty State when no processing orders -->
-            <div id="queueEmptyState" class="py-8 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-outline-variant/40 rounded-2xl bg-surface-container-low/20 <?= !empty($processingOrders) ? 'hidden' : '' ?>">
-                <span class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-outline text-2xl material-symbols-outlined">task_alt</span>
+            <div id="queueEmptyState" class="py-8 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 <?= !empty($processingOrders) ? 'hidden' : '' ?>">
+                <span class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-2xl material-symbols-outlined">task_alt</span>
                 <div>
-                    <h4 class="text-sm font-bold text-on-surface">No Orders Currently in Preparation</h4>
-                    <p class="text-xs text-outline max-w-sm mt-0.5">Orders that have been accepted and set to processing will appear here for packaging and fulfillment.</p>
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 font-display">No Orders Currently in Preparation</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-0.5">Orders that have been accepted and set to processing will appear here for packaging and fulfillment.</p>
                 </div>
             </div>
         </div>
@@ -377,17 +376,17 @@
     </div>
 
     <!-- All Orders Main Section -->
-    <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl overflow-hidden shadow-xs space-y-0">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm space-y-0">
         
         <!-- Section Header -->
-        <div class="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-outline-variant/20">
+        <div class="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-2xs">
+                <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center shrink-0 shadow-2xs">
                     <span class="material-symbols-outlined text-[22px]">list_alt</span>
                 </div>
                 <div>
-                    <h3 class="text-base sm:text-lg font-bold text-on-surface">All Orders Directory</h3>
-                    <p class="text-xs text-on-surface-variant">View order logs, track statuses, inspect items, and handle fulfillment</p>
+                    <h3 class="text-base sm:text-lg font-bold font-display text-slate-900 dark:text-white">All Orders Directory</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">View order logs, track statuses, inspect items, and handle fulfillment</p>
                 </div>
             </div>
             
@@ -396,12 +395,12 @@
                 $hasFilters = !empty($filters['q']) || !empty($filters['status']) || !empty($filters['fulfillment']) || !empty($filters['from']) || !empty($filters['to']);
                 ?>
                 <?php if ($hasFilters): ?>
-                    <a href="<?= base_url('tenant/orders') ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all">
+                    <a href="<?= base_url('tenant/orders') ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 text-xs font-bold transition-all">
                         <span class="material-symbols-outlined text-[16px]">filter_alt_off</span>
                         <span>Clear Filters</span>
                     </a>
                 <?php endif; ?>
-                <a href="<?= base_url('tenant/pos') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-secondary text-on-secondary rounded-xl text-xs font-bold hover:bg-secondary/90 shadow-2xs transition-all">
+                <a href="<?= base_url('tenant/pos') ?>" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-terra-earth hover:bg-terra-earth/90 text-white rounded-xl text-xs font-bold shadow-2xs transition-all">
                     <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
                     <span>New POS Sale</span>
                 </a>
@@ -422,7 +421,7 @@
             'cancelled'        => ['label' => 'Cancelled',         'count' => $counts['cancelled'] ?? null,        'icon' => 'cancel'],
         ];
         ?>
-        <div class="px-4 sm:px-5 py-2.5 bg-surface-container-low/30 border-b border-outline-variant/20 overflow-x-auto custom-scrollbar">
+        <div class="px-4 sm:px-5 py-2.5 bg-slate-50/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 overflow-x-auto custom-scrollbar">
             <div class="flex items-center gap-2 min-w-max">
                 <?php foreach ($statusTabs as $tabKey => $tab): ?>
                     <?php
@@ -432,11 +431,11 @@
                     if ($tabKey === '') unset($urlParams['status']);
                     $tabUrl = base_url('tenant/orders?' . http_build_query(array_filter($urlParams)));
                     ?>
-                    <a href="<?= esc($tabUrl) ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all <?= $isActive ? 'bg-primary text-on-primary shadow-xs font-bold' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-on-surface border border-outline-variant/30' ?>">
+                    <a href="<?= esc($tabUrl) ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all <?= $isActive ? 'bg-terra-green text-white shadow-xs font-bold' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700' ?>">
                         <span class="material-symbols-outlined text-[15px]"><?= $tab['icon'] ?></span>
                         <span><?= esc($tab['label']) ?></span>
                         <?php if (isset($tab['count']) && $tab['count'] !== null): ?>
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono <?= $isActive ? 'bg-on-primary/20 text-on-primary font-bold' : 'bg-surface-container-high text-on-surface-variant' ?>">
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono <?= $isActive ? 'bg-white/20 text-white font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' ?>">
                                 <?= (int) $tab['count'] ?>
                             </span>
                         <?php endif; ?>
@@ -446,7 +445,7 @@
         </div>
 
         <!-- Secondary Filter Toolbar (Search, Fulfillment, Dates, Per-page) -->
-        <div class="p-3 sm:px-5 bg-surface-container-low/50 border-b border-outline-variant/20">
+        <div class="p-3 sm:px-5 bg-slate-50/50 dark:bg-slate-850/40 border-b border-slate-100 dark:border-slate-800">
             <form method="get" action="<?= base_url('tenant/orders') ?>" class="flex flex-wrap items-center gap-2.5 text-xs">
                 <?php if (!empty($filters['status'])): ?>
                     <input type="hidden" name="status" value="<?= esc($filters['status']) ?>">
@@ -454,34 +453,34 @@
 
                 <!-- Search Input -->
                 <div class="relative flex-1 min-w-[220px]">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                    <input type="text" name="q" value="<?= esc($filters['q']) ?>" placeholder="Search order #, customer, SKU, product..." class="w-full pl-9 pr-8 py-2 bg-surface-container-lowest border border-outline-variant/40 rounded-xl text-xs text-on-surface placeholder:text-outline focus:ring-2 focus:ring-primary focus:border-primary transition-all">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    <input type="text" name="q" value="<?= esc($filters['q']) ?>" placeholder="Search order #, customer, SKU, product..." class="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-terra-green focus:border-terra-green transition-all">
                     <?php if (!empty($filters['q'])): ?>
-                        <a href="<?= base_url('tenant/orders?' . http_build_query(array_merge($filters, ['q' => '']))) ?>" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface p-0.5" title="Clear search">
+                        <a href="<?= base_url('tenant/orders?' . http_build_query(array_merge($filters, ['q' => '']))) ?>" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-0.5" title="Clear search">
                             <span class="material-symbols-outlined text-[16px]">close</span>
                         </a>
                     <?php endif; ?>
                 </div>
 
                 <!-- Fulfillment Method Filter -->
-                <select name="fulfillment" class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-3 py-2 text-xs text-on-surface font-semibold focus:ring-2 focus:ring-primary transition-all cursor-pointer">
+                <select name="fulfillment" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-terra-green transition-all cursor-pointer">
                     <option value="">All Fulfillment</option>
                     <option value="delivery" <?= ($filters['fulfillment'] ?? '') === 'delivery' ? 'selected' : '' ?>>Doorstep Delivery</option>
                     <option value="pickup" <?= ($filters['fulfillment'] ?? '') === 'pickup' ? 'selected' : '' ?>>Store Pick-up</option>
                 </select>
 
                 <!-- Date Range -->
-                <div class="flex items-center gap-1.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-2.5 py-1 text-xs">
-                    <span class="text-outline font-medium text-[11px]">From:</span>
-                    <input name="from" value="<?= esc($filters['from']) ?>" type="date" class="bg-transparent text-xs text-on-surface font-medium border-0 p-1 focus:ring-0">
-                    <span class="text-outline font-medium text-[11px]">To:</span>
-                    <input name="to" value="<?= esc($filters['to']) ?>" type="date" class="bg-transparent text-xs text-on-surface font-medium border-0 p-1 focus:ring-0">
+                <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-xs">
+                    <span class="text-slate-400 font-medium text-[11px]">From:</span>
+                    <input name="from" value="<?= esc($filters['from']) ?>" type="date" class="bg-transparent text-xs text-slate-800 dark:text-slate-200 font-medium border-0 p-1 focus:ring-0">
+                    <span class="text-slate-400 font-medium text-[11px]">To:</span>
+                    <input name="to" value="<?= esc($filters['to']) ?>" type="date" class="bg-transparent text-xs text-slate-800 dark:text-slate-200 font-medium border-0 p-1 focus:ring-0">
                 </div>
 
                 <!-- Per-Page Selector -->
-                <div class="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                    <label for="orders_per_page" class="font-medium text-outline">Show:</label>
-                    <select name="per_page" id="orders_per_page" onchange="this.form.submit()" class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl px-2.5 py-2 text-xs font-semibold text-on-surface focus:ring-2 focus:ring-primary transition-all cursor-pointer">
+                <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <label for="orders_per_page" class="font-medium">Show:</label>
+                    <select name="per_page" id="orders_per_page" onchange="this.form.submit()" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-terra-green transition-all cursor-pointer">
                         <option value="5" <?= ($per_page ?? 10) == 5 ? 'selected' : '' ?>>5</option>
                         <option value="10" <?= ($per_page ?? 10) == 10 ? 'selected' : '' ?>>10</option>
                         <option value="15" <?= ($per_page ?? 10) == 15 ? 'selected' : '' ?>>15</option>
@@ -489,7 +488,7 @@
                     </select>
                 </div>
 
-                <button type="submit" class="bg-primary hover:bg-primary/90 text-on-primary px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer">
+                <button type="submit" class="bg-terra-green hover:bg-terra-green/90 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer">
                     Apply Filter
                 </button>
             </form>
@@ -498,19 +497,19 @@
         <!-- DESKTOP ORDERS TABLE (Hidden on small screens) -->
         <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
-                <thead class="bg-surface-container-low/70 border-b border-outline-variant/30">
+                <thead class="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800">
                     <tr>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Order ID</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Customer</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Items Summary</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center">Fulfillment &amp; Pay</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Placed Date</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right">Amount</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center">Status</th>
-                        <th class="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Order ID</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Items Summary</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">Fulfillment &amp; Pay</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Placed Date</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Amount</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center">Status</th>
+                        <th class="px-4 py-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="ordersTableBody" class="divide-y divide-outline-variant/15">
+                <tbody id="ordersTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60">
                     <?php if (!empty($orders)): ?>
                         <?php foreach ($orders as $o): ?>
                             <?php
@@ -526,14 +525,14 @@
                             $locationStr = trim(($o['address_line1'] ?? '') . ', ' . ($o['city'] ?? '')) ?: 'Polomolok, South Cotabato';
                             $labelStr    = esc($o['address_label'] ?? 'Home');
                             ?>
-                            <tr class="hover:bg-surface-container-low/40 transition-colors group">
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group">
                                 <!-- Order ID with Quick Copy -->
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     <div class="flex items-center gap-1.5">
-                                        <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="font-mono text-xs font-bold text-primary hover:underline hover:text-primary/80 cursor-pointer">
+                                        <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="font-mono text-xs font-bold text-terra-green hover:underline cursor-pointer">
                                             #<?= esc($o['order_number']) ?>
                                         </button>
-                                        <button type="button" onclick="copyOrderNumber('<?= esc($o['order_number']) ?>', this)" class="p-1 rounded-lg text-outline hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer" title="Copy Order #">
+                                        <button type="button" onclick="copyOrderNumber('<?= esc($o['order_number']) ?>', this)" class="p-1 rounded-lg text-slate-400 hover:text-terra-green hover:bg-terra-green/10 transition-colors cursor-pointer" title="Copy Order #">
                                             <span class="material-symbols-outlined text-[14px]">content_copy</span>
                                         </button>
                                     </div>
@@ -542,16 +541,16 @@
                                 <!-- Customer Info -->
                                 <td class="px-4 py-3.5">
                                     <div class="flex items-center gap-2.5 min-w-0">
-                                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden shadow-2xs">
+                                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden shadow-2xs">
                                             <span><?= esc($initials) ?></span>
                                             <?php if ($profileImage !== ''): ?>
                                                 <img class="absolute inset-0 w-full h-full object-cover rounded-full" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($fullName) ?> avatar" loading="lazy" onerror="this.remove();">
                                             <?php endif; ?>
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="text-xs font-bold text-on-surface truncate leading-tight"><?= esc($fullName !== '' ? $fullName : 'Customer') ?></p>
+                                            <p class="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight"><?= esc($fullName !== '' ? $fullName : 'Customer') ?></p>
                                             <?php if ($custPhone !== 'N/A' && $custPhone !== ''): ?>
-                                                <a href="tel:<?= $custPhone ?>" class="text-[11px] font-mono text-outline hover:text-primary flex items-center gap-0.5 mt-0.5">
+                                                <a href="tel:<?= $custPhone ?>" class="text-[11px] font-mono text-slate-400 hover:text-terra-green flex items-center gap-0.5 mt-0.5">
                                                     <span class="material-symbols-outlined text-[12px]">call</span>
                                                     <span><?= $custPhone ?></span>
                                                 </a>
@@ -564,11 +563,11 @@
                                 <td class="px-4 py-3.5 max-w-[220px]">
                                     <div class="text-xs space-y-0.5">
                                         <div class="flex items-center gap-1.5">
-                                            <span class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant">
+                                            <span class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                                 <?= $totalUnits > 0 ? $totalUnits . ' unit' . ($totalUnits === 1 ? '' : 's') : '1 unit' ?>
                                             </span>
                                         </div>
-                                        <p class="text-xs text-on-surface-variant truncate font-medium" title="<?= esc($itemsSummary) ?>">
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate font-medium" title="<?= esc($itemsSummary) ?>">
                                             <?= esc($itemsSummary !== '' ? $itemsSummary : 'Standard Order Items') ?>
                                         </p>
                                     </div>
@@ -578,12 +577,12 @@
                                 <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                     <div class="flex flex-col items-center gap-1">
                                         <?php if ($isPickup): ?>
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 shadow-2xs">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30 shadow-2xs">
                                                 <span class="material-symbols-outlined text-[13px]">storefront</span>
                                                 <span>Store Pick-up</span>
                                             </span>
                                         <?php else: ?>
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-800 border border-blue-500/20 shadow-2xs">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30 shadow-2xs">
                                                 <span class="material-symbols-outlined text-[13px]">local_shipping</span>
                                                 <span>Doorstep Delivery</span>
                                             </span>
@@ -592,11 +591,11 @@
                                         <!-- Payment Tag -->
                                         <div class="flex items-center gap-1 text-[10px]">
                                             <?php if ($isPaid): ?>
-                                                <span class="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                                <span class="font-bold text-terra-green bg-terra-green/10 border border-terra-green/20 px-1.5 py-0.2 rounded flex items-center gap-0.5">
                                                     <span class="material-symbols-outlined text-[11px]">verified</span> Paid
                                                 </span>
                                             <?php else: ?>
-                                                <span class="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded">
+                                                <span class="font-bold text-terra-amber bg-terra-amber/10 border border-terra-amber/20 px-1.5 py-0.2 rounded">
                                                     <?= $isPickup ? 'Pay on Pick-up' : 'COD' ?>
                                                 </span>
                                             <?php endif; ?>
@@ -605,21 +604,21 @@
                                 </td>
 
                                 <!-- Date Placed -->
-                                <td class="px-4 py-3.5 text-xs text-on-surface-variant whitespace-nowrap">
-                                    <p class="font-semibold text-on-surface"><?= esc(date('M d, Y', strtotime($o['placed_at']))) ?></p>
-                                    <p class="text-[10px] text-outline"><?= esc(date('h:i A', strtotime($o['placed_at']))) ?></p>
+                                <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200"><?= esc(date('M d, Y', strtotime($o['placed_at']))) ?></p>
+                                    <p class="text-[10px] text-slate-400"><?= esc(date('h:i A', strtotime($o['placed_at']))) ?></p>
                                 </td>
 
                                 <!-- Total Amount -->
                                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                    <span class="font-mono text-sm font-bold text-on-surface">₱<?= number_format((float) $o['total_amount'], 2) ?></span>
+                                    <span class="font-mono text-sm font-bold text-slate-900 dark:text-white">₱<?= number_format((float) $o['total_amount'], 2) ?></span>
                                 </td>
 
                                 <!-- Status Badge -->
                                 <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                     <?= status_badge($o['status']) ?>
                                     <?php if ($isPaid && !in_array($o['status'], ['delivered', 'completed', 'cancelled'], true)): ?>
-                                        <span class="block text-[9px] font-bold text-amber-700 mt-0.5 tracking-tight">Escrow Holding</span>
+                                        <span class="block text-[9px] font-bold text-terra-amber mt-0.5 tracking-tight">Escrow Holding</span>
                                     <?php endif; ?>
                                 </td>
 
@@ -633,7 +632,7 @@
                                                 <?= csrf_field() ?>
                                                 <input type="hidden" name="order_id" value="<?= (int) $o['id'] ?>">
                                                 <input type="hidden" name="status" value="processing">
-                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer" title="Accept order &amp; start packaging">
+                                                <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-terra-green hover:bg-terra-green/90 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer" title="Accept order &amp; start packaging">
                                                     <span class="material-symbols-outlined text-[15px]">check_circle</span>
                                                     <span>Accept</span>
                                                 </button>
@@ -650,7 +649,7 @@
                                             </form>
                                         <?php elseif ($isPickup && !in_array($o['status'], ['pending', 'completed', 'delivered', 'cancelled'], true)): ?>
                                             <a href="<?= base_url('tenant/pos?order_id=' . $o['id']) ?>" 
-                                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-secondary-container/50 hover:bg-secondary-container text-secondary border border-secondary/30 text-xs font-bold transition-all shadow-2xs active:scale-95" 
+                                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-terra-earth/10 hover:bg-terra-earth/20 text-terra-earth dark:text-amber-400 border border-terra-earth/25 text-xs font-bold transition-all shadow-2xs active:scale-95" 
                                                title="Add to POS for Store Pick-up Handover">
                                                 <span class="material-symbols-outlined text-[15px]">point_of_sale</span>
                                                 <span><?= $o['status'] === 'ready_for_pickup' ? 'Add POS' : 'POS' ?></span>
@@ -658,8 +657,8 @@
                                         <?php endif; ?>
 
                                         <!-- View Details Button -->
-                                        <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/30 transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer" title="View Full Order Details">
-                                            <span class="material-symbols-outlined text-[17px] text-primary">visibility</span>
+                                        <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-2xs active:scale-95 cursor-pointer" title="View Full Order Details">
+                                            <span class="material-symbols-outlined text-[17px] text-terra-green">visibility</span>
                                         </button>
 
                                         <!-- QR Code Button (if processing) -->
@@ -675,29 +674,29 @@
                                                         '<?= esc(date('M d, Y h:i A', strtotime($o['placed_at']))) ?>',
                                                         '<?= esc(base_url('order/' . $o['order_number'])) ?>'
                                                     )"
-                                                    class="p-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                                                    class="p-1.5 rounded-xl bg-terra-green/10 hover:bg-terra-green/20 text-terra-green border border-terra-green/20 transition-all shadow-2xs active:scale-95 cursor-pointer"
                                                     title="Generate & Download QR Code">
                                                 <span class="material-symbols-outlined text-[17px]">qr_code_2</span>
                                             </button>
                                         <?php endif; ?>
 
                                         <!-- Print Slip Button -->
-                                        <a href="<?= base_url('tenant/orders/receipt/' . (int) $o['id']) ?>" target="_blank" class="p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/30 transition-all shadow-2xs" title="Print Official Receipt">
+                                        <a href="<?= base_url('tenant/orders/receipt/' . (int) $o['id']) ?>" target="_blank" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-2xs" title="Print Official Receipt">
                                             <span class="material-symbols-outlined text-[17px]">receipt_long</span>
                                         </a>
 
                                         <!-- More Actions Dropdown -->
                                         <div class="relative">
-                                            <button type="button" data-row="<?= (int) $o['id'] ?>" onclick="toggleDropdown(this)" class="more-toggle p-1.5 hover:bg-surface-container-high rounded-xl text-on-surface-variant border border-transparent hover:border-outline-variant/30 transition-colors cursor-pointer" title="More Options" aria-haspopup="true" aria-expanded="false">
+                                            <button type="button" data-row="<?= (int) $o['id'] ?>" onclick="toggleDropdown(this)" class="more-toggle p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-500 dark:text-slate-400 border border-transparent hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer" title="More Options" aria-haspopup="true" aria-expanded="false">
                                                 <span class="material-symbols-outlined text-[18px]">more_vert</span>
                                             </button>
-                                            <div id="more-menu-<?= (int) $o['id'] ?>" class="hidden more-menu z-50 bg-surface-container-lowest border border-outline-variant/30 rounded-2xl shadow-xl p-2 min-w-[220px]" role="menu">
-                                                <p class="text-[10px] font-bold uppercase tracking-wider text-outline px-2.5 py-1">Update Status</p>
+                                            <div id="more-menu-<?= (int) $o['id'] ?>" class="hidden more-menu z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2.5 min-w-[220px]" role="menu">
+                                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">Update Status</p>
                                                 <form action="<?= base_url('tenant/orders/update-status') ?>" method="POST" class="space-y-1.5 px-1 pb-1">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="order_id" value="<?= (int) $o['id'] ?>">
                                                     <?php
-                                                    $rowStatusOptions = $isPickup
+                                                     $rowStatusOptions = $isPickup
                                                         ? [
                                                             'pending'          => 'Pending',
                                                             'processing'       => 'Processing',
@@ -714,17 +713,17 @@
                                                         $rowStatusOptions[$o['status']] = humanize_status($o['status']);
                                                     }
                                                     ?>
-                                                    <select name="status" class="w-full p-2 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs font-semibold">
+                                                    <select name="status" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100">
                                                         <?php foreach ($rowStatusOptions as $val => $label): ?>
                                                             <option value="<?= esc($val) ?>" <?= $o['status'] === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
-                                                    <button type="submit" class="w-full py-1.5 bg-primary text-on-primary rounded-xl text-xs font-bold hover:bg-primary/90 transition-all cursor-pointer">Apply Status</button>
+                                                    <button type="submit" class="w-full py-1.5 bg-terra-green text-white rounded-xl text-xs font-bold hover:bg-terra-green/90 transition-all cursor-pointer">Apply Status</button>
                                                 </form>
                                                 
-                                                <div class="border-t border-outline-variant/15 my-1"></div>
+                                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                                 
-                                                <button type="button" onclick="openReportCustomerModal(<?= (int) ($o['customer_id'] ?? 0) ?>, '<?= esc($fullName !== '' ? $fullName : 'Customer', 'js') ?>', '<?= esc($o['order_number'], 'js') ?>')" class="w-full text-left px-2.5 py-2 rounded-xl text-error text-xs font-bold hover:bg-rose-50 flex items-center gap-1.5 transition-colors cursor-pointer">
+                                                <button type="button" onclick="openReportCustomerModal(<?= (int) ($o['customer_id'] ?? 0) ?>, '<?= esc($fullName !== '' ? $fullName : 'Customer', 'js') ?>', '<?= esc($o['order_number'], 'js') ?>')" class="w-full text-left px-2.5 py-2 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1.5 transition-colors cursor-pointer">
                                                     <span class="material-symbols-outlined text-[16px]">flag</span>
                                                     <span>Report Customer</span>
                                                 </button>
@@ -737,13 +736,13 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="8" class="py-12 text-center text-on-surface-variant">
+                            <td colspan="8" class="py-12 text-center text-slate-500 dark:text-slate-400">
                                 <div class="flex flex-col items-center justify-center gap-2">
-                                    <div class="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-outline text-2xl material-symbols-outlined">search_off</div>
-                                    <h4 class="text-sm font-bold text-on-surface">No Orders Found</h4>
-                                    <p class="text-xs text-outline max-w-sm">No customer orders matched your active search or filters. Try adjusting your search query or status tab.</p>
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-2xl material-symbols-outlined">search_off</div>
+                                    <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 font-display">No Orders Found</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm">No customer orders matched your active search or filters. Try adjusting your search query or status tab.</p>
                                     <?php if ($hasFilters): ?>
-                                        <a href="<?= base_url('tenant/orders') ?>" class="mt-2 px-3 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold hover:bg-primary/90">
+                                        <a href="<?= base_url('tenant/orders') ?>" class="mt-2 px-3 py-1.5 rounded-xl bg-terra-green text-white text-xs font-bold hover:bg-terra-green/90">
                                             Clear All Filters
                                         </a>
                                     <?php endif; ?>
@@ -756,7 +755,7 @@
         </div>
 
         <!-- MOBILE ORDERS CARDS (Visible on screens < 768px) -->
-        <div id="ordersMobileCards" class="md:hidden divide-y divide-outline-variant/20">
+        <div id="ordersMobileCards" class="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
             <?php if (!empty($orders)): ?>
                 <?php foreach ($orders as $o): ?>
                     <?php
@@ -772,39 +771,39 @@
                     $locationStr = trim(($o['address_line1'] ?? '') . ', ' . ($o['city'] ?? '')) ?: 'Polomolok, South Cotabato';
                     $labelStr    = esc($o['address_label'] ?? 'Home');
                     ?>
-                    <div class="p-4 space-y-3 bg-surface-container-lowest hover:bg-surface-container-low/30 transition-colors">
+                    <div class="p-4 space-y-3 bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                         <!-- Top Header: Order #, Date, Status -->
                         <div class="flex items-start justify-between gap-2">
                             <div>
-                                <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="font-mono text-sm font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                                <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="font-mono text-sm font-bold text-terra-green hover:underline flex items-center gap-1 cursor-pointer">
                                     #<?= esc($o['order_number']) ?>
                                 </button>
-                                <span class="text-[11px] text-outline block mt-0.5">
+                                <span class="text-[11px] text-slate-400 block mt-0.5">
                                     <?= esc(date('M d, Y h:i A', strtotime($o['placed_at']))) ?>
                                 </span>
                             </div>
                             <div class="text-right flex flex-col items-end gap-1">
                                 <?= status_badge($o['status']) ?>
-                                <span class="font-mono text-xs font-bold text-on-surface">₱<?= number_format((float) $o['total_amount'], 2) ?></span>
+                                <span class="font-mono text-xs font-bold text-slate-900 dark:text-white">₱<?= number_format((float) $o['total_amount'], 2) ?></span>
                             </div>
                         </div>
 
                         <!-- Customer Info Row -->
-                        <div class="flex items-center justify-between p-2.5 bg-surface-container-low/40 rounded-xl border border-outline-variant/20 text-xs">
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
                             <div class="flex items-center gap-2 min-w-0">
-                                <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden">
+                                <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden">
                                     <span><?= esc($initials) ?></span>
                                     <?php if ($profileImage !== ''): ?>
                                         <img class="absolute inset-0 w-full h-full object-cover rounded-full" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($fullName) ?> avatar" loading="lazy" onerror="this.remove();">
                                     <?php endif; ?>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-bold text-on-surface truncate"><?= esc($fullName !== '' ? $fullName : 'Customer') ?></p>
-                                    <p class="text-[11px] text-outline truncate"><?= $isPickup ? 'Store Pick-up' : esc($locationStr) ?></p>
+                                    <p class="font-bold text-slate-900 dark:text-white truncate"><?= esc($fullName !== '' ? $fullName : 'Customer') ?></p>
+                                    <p class="text-[11px] text-slate-400 truncate"><?= $isPickup ? 'Store Pick-up' : esc($locationStr) ?></p>
                                 </div>
                             </div>
                             <?php if ($custPhone !== 'N/A' && $custPhone !== ''): ?>
-                                <a href="tel:<?= $custPhone ?>" class="p-1.5 rounded-lg bg-blue-50 text-blue-600 font-mono text-xs flex items-center gap-0.5">
+                                <a href="tel:<?= $custPhone ?>" class="p-1.5 rounded-lg bg-terra-green/10 text-terra-green font-mono text-xs flex items-center gap-0.5">
                                     <span class="material-symbols-outlined text-[15px]">call</span>
                                 </a>
                             <?php endif; ?>
@@ -812,30 +811,30 @@
 
                         <!-- Items Summary & Badges -->
                         <div class="flex items-center justify-between gap-2 text-xs">
-                            <div class="truncate text-on-surface-variant text-[11px] flex-1">
-                                <span class="font-mono font-bold bg-surface-container px-1.5 py-0.2 rounded mr-1"><?= $totalUnits ?>x</span>
+                            <div class="truncate text-slate-500 dark:text-slate-400 text-[11px] flex-1">
+                                <span class="font-mono font-bold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded mr-1"><?= $totalUnits ?>x</span>
                                 <?= esc($itemsSummary !== '' ? $itemsSummary : 'Order items') ?>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
                                 <?php if ($isPickup): ?>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pick-up</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30">Pick-up</span>
                                 <?php else: ?>
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Delivery</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">Delivery</span>
                                 <?php endif; ?>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-surface-container text-outline' ?>">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isPaid ? 'bg-terra-green/15 text-terra-green border border-terra-green/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500' ?>">
                                     <?= $isPaid ? 'Paid' : ($isPickup ? 'Unpaid' : 'COD') ?>
                                 </span>
                             </div>
                         </div>
 
                         <!-- Actions Bar -->
-                        <div class="flex items-center gap-1.5 pt-1 border-t border-outline-variant/15">
+                        <div class="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
                             <?php if ($o['status'] === 'pending'): ?>
                                 <form action="<?= base_url('tenant/orders/update-status') ?>" method="POST" class="flex-1">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="order_id" value="<?= (int) $o['id'] ?>">
                                     <input type="hidden" name="status" value="processing">
-                                    <button type="submit" class="w-full py-2 bg-primary text-on-primary rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer">
+                                    <button type="submit" class="w-full py-2 bg-terra-green text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer">
                                         <span class="material-symbols-outlined text-[16px]">check_circle</span>
                                         <span>Accept</span>
                                     </button>
@@ -851,25 +850,25 @@
                                     </button>
                                 </form>
                             <?php elseif ($isPickup && !in_array($o['status'], ['pending', 'completed', 'delivered', 'cancelled'], true)): ?>
-                                <a href="<?= base_url('tenant/pos?order_id=' . $o['id']) ?>" class="flex-1 py-2 bg-secondary text-on-secondary rounded-xl text-xs font-bold flex items-center justify-center gap-1">
+                                <a href="<?= base_url('tenant/pos?order_id=' . $o['id']) ?>" class="flex-1 py-2 bg-terra-earth text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1">
                                     <span class="material-symbols-outlined text-[16px]">point_of_sale</span>
                                     <span>POS</span>
                                 </a>
                             <?php endif; ?>
 
-                            <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="flex-1 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-xs font-bold border border-outline-variant/30 flex items-center justify-center gap-1 cursor-pointer">
-                                <span class="material-symbols-outlined text-[16px] text-primary">visibility</span>
+                            <button type="button" onclick="openOrderDetails(<?= (int) $o['id'] ?>)" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-[16px] text-terra-green">visibility</span>
                                 <span>Details</span>
                             </button>
 
-                            <a href="<?= base_url('tenant/orders/receipt/' . (int) $o['id']) ?>" target="_blank" class="p-2 bg-surface-container rounded-xl text-on-surface-variant border border-outline-variant/30 flex items-center justify-center" title="Receipt">
+                            <a href="<?= base_url('tenant/orders/receipt/' . (int) $o['id']) ?>" target="_blank" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center" title="Receipt">
                                 <span class="material-symbols-outlined text-[18px]">receipt_long</span>
                             </a>
                         </div>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="py-10 text-center text-on-surface-variant">
+                <div class="py-10 text-center text-slate-500 dark:text-slate-400">
                     <p class="text-xs font-bold">No orders found.</p>
                 </div>
             <?php endif; ?>
@@ -885,13 +884,13 @@
         $oEnd     = min($oCur * $oPerPage, $oTot);
         ?>
         <?php if ($oPag > 1 || $oTot > 0): ?>
-            <div class="px-4 sm:px-5 py-3.5 bg-surface-container-low/40 flex justify-between items-center border-t border-outline-variant/20 flex-wrap gap-2 text-xs">
-                <p class="text-on-surface-variant font-medium">
-                    Showing <span class="font-bold text-on-surface"><?= number_format($oStart) ?></span> to <span class="font-bold text-on-surface"><?= number_format($oEnd) ?></span> of <span class="font-bold text-on-surface"><?= number_format($oTot) ?></span> orders
+            <div class="px-4 sm:px-5 py-3.5 bg-slate-50/50 dark:bg-slate-850/40 flex justify-between items-center border-t border-slate-100 dark:border-slate-800 flex-wrap gap-2 text-xs">
+                <p class="text-slate-500 dark:text-slate-400 font-medium">
+                    Showing <span class="font-bold text-slate-900 dark:text-white"><?= number_format($oStart) ?></span> to <span class="font-bold text-slate-900 dark:text-white"><?= number_format($oEnd) ?></span> of <span class="font-bold text-slate-900 dark:text-white"><?= number_format($oTot) ?></span> orders
                 </p>
                 <?php if ($oPag > 1): ?>
                     <div class="flex items-center gap-1">
-                        <a class="p-1.5 rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-colors <?= $oCur <= 1 ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getPreviousPageURI('orders') ?>" title="Previous page">
+                        <a class="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors <?= $oCur <= 1 ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getPreviousPageURI('orders') ?>" title="Previous page">
                             <span class="material-symbols-outlined text-[18px]">chevron_left</span>
                         </a>
                         <?php
@@ -901,10 +900,10 @@
                         }
                         $pv = 0;
                         foreach ($w as $n):
-                            if ($n - $pv > 1): ?><span class="px-1 text-outline">...</span><?php endif; ?>
-                            <a class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-semibold transition-all <?= $oCur === $n ? 'bg-primary text-on-primary font-bold shadow-2xs' : 'bg-surface-container-lowest border border-outline-variant/30 hover:bg-surface-container-high text-on-surface' ?>" href="<?= $pager->getPageURI($n, 'orders') ?>"><?= $n ?></a>
+                            if ($n - $pv > 1): ?><span class="px-1 text-slate-400">...</span><?php endif; ?>
+                            <a class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-semibold transition-all <?= $oCur === $n ? 'bg-terra-green text-white font-bold shadow-2xs' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300' ?>" href="<?= $pager->getPageURI($n, 'orders') ?>"><?= $n ?></a>
                         <?php $pv = $n; endforeach; ?>
-                        <a class="p-1.5 rounded-xl border border-outline-variant/30 hover:bg-surface-container-high transition-colors <?= $oCur >= $oPag ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getNextPageURI('orders') ?>" title="Next page">
+                        <a class="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors <?= $oCur >= $oPag ? 'pointer-events-none opacity-30' : '' ?>" href="<?= $pager->getNextPageURI('orders') ?>" title="Next page">
                             <span class="material-symbols-outlined text-[18px]">chevron_right</span>
                         </a>
                     </div>
@@ -918,99 +917,99 @@
 
 <!-- Elevated Order Details Modal -->
 <div id="orderModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs" onclick="if(event.target === this) this.classList.add('hidden')">
-    <div class="bg-surface-container-lowest rounded-3xl p-5 sm:p-6 max-w-xl w-full border border-outline-variant/30 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4 animate-scaleUp">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4 animate-scaleUp">
         
         <!-- Header -->
-        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-3">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
                 <div class="flex items-center gap-2">
-                    <h3 class="text-lg sm:text-xl font-black text-on-surface">Order <span id="omNumber" class="text-primary font-mono"></span></h3>
-                    <span id="omStatusBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-surface-container text-on-surface-variant uppercase"></span>
+                    <h3 class="text-lg sm:text-xl font-bold font-display text-slate-900 dark:text-white">Order <span id="omNumber" class="text-terra-green font-mono"></span></h3>
+                    <span id="omStatusBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 uppercase"></span>
                 </div>
-                <p id="omDate" class="text-xs text-outline mt-0.5"></p>
+                <p id="omDate" class="text-xs text-slate-400 mt-0.5"></p>
             </div>
-            <button type="button" onclick="document.getElementById('orderModal').classList.add('hidden')" class="text-outline hover:text-on-surface p-1.5 rounded-full hover:bg-surface-container transition-colors cursor-pointer">
+            <button type="button" onclick="document.getElementById('orderModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
         <!-- Customer & Destination Card -->
-        <div class="bg-surface-container-low/60 p-4 rounded-2xl border border-outline-variant/25 space-y-2.5 text-xs">
+        <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px] text-primary">person</span>
-                    <span class="text-outline uppercase tracking-wider font-bold text-[10px]">Customer Information</span>
+                    <span class="material-symbols-outlined text-[18px] text-terra-green">person</span>
+                    <span class="text-slate-400 uppercase tracking-wider font-bold text-[10px]">Customer Information</span>
                 </div>
                 <button type="button" id="omReportCustomerBtn" class="text-[11px] font-bold text-rose-600 hover:text-rose-800 hover:underline flex items-center gap-0.5 cursor-pointer">
                     <span class="material-symbols-outlined text-[14px]">flag</span> Report Customer
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-outline-variant/15">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700">
                 <div>
-                    <span class="text-outline text-[10px] block uppercase font-medium">Name</span>
-                    <span id="omCustomer" class="font-bold text-sm text-on-surface"></span>
+                    <span class="text-slate-400 text-[10px] block uppercase font-medium">Name</span>
+                    <span id="omCustomer" class="font-bold text-sm text-slate-900 dark:text-white"></span>
                 </div>
                 <div>
-                    <span class="text-outline text-[10px] block uppercase font-medium">Contact Phone</span>
-                    <span id="omPhone" class="font-bold font-mono text-on-surface"></span>
+                    <span class="text-slate-400 text-[10px] block uppercase font-medium">Contact Phone</span>
+                    <span id="omPhone" class="font-bold font-mono text-slate-900 dark:text-white"></span>
                 </div>
                 <div class="sm:col-span-2">
-                    <span class="text-outline text-[10px] block uppercase font-medium">Fulfillment &amp; Address</span>
+                    <span class="text-slate-400 text-[10px] block uppercase font-medium">Fulfillment &amp; Address</span>
                     <div class="flex items-center gap-1.5 mt-0.5">
-                        <span id="omFulfillmentBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800"></span>
-                        <span id="omAddress" class="text-on-surface font-medium truncate"></span>
+                        <span id="omFulfillmentBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300"></span>
+                        <span id="omAddress" class="text-slate-900 dark:text-white font-medium truncate"></span>
                     </div>
                 </div>
                 <div>
-                    <span class="text-outline text-[10px] block uppercase font-medium">Payment Method</span>
-                    <span id="omPayment" class="font-bold text-on-surface uppercase font-mono"></span>
+                    <span class="text-slate-400 text-[10px] block uppercase font-medium">Payment Method</span>
+                    <span id="omPayment" class="font-bold text-slate-900 dark:text-white uppercase font-mono"></span>
                 </div>
             </div>
         </div>
 
         <!-- Products Breakdown Table -->
         <div class="space-y-1.5">
-            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Ordered Items</span>
-            <div class="rounded-2xl border border-outline-variant/20 overflow-hidden bg-surface-container-lowest">
+            <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Ordered Items</span>
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
                 <table class="w-full text-left border-collapse text-xs">
-                    <thead class="bg-surface-container-low/70 border-b border-outline-variant/20">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
                         <tr>
-                            <th class="px-3 py-2 text-[10px] font-bold text-outline uppercase tracking-wider">Product</th>
-                            <th class="px-3 py-2 text-[10px] font-bold text-outline uppercase tracking-wider text-right">Qty</th>
-                            <th class="px-3 py-2 text-[10px] font-bold text-outline uppercase tracking-wider text-right">Unit Price</th>
-                            <th class="px-3 py-2 text-[10px] font-bold text-outline uppercase tracking-wider text-right">Total</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Product</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Qty</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Unit Price</th>
+                            <th class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Total</th>
                         </tr>
                     </thead>
-                    <tbody id="omItems" class="divide-y divide-outline-variant/10"></tbody>
+                    <tbody id="omItems" class="divide-y divide-slate-100 dark:divide-slate-800/60"></tbody>
                 </table>
             </div>
         </div>
 
         <!-- Financial Breakdown -->
-        <div class="bg-surface-container-low/40 p-3.5 rounded-2xl border border-outline-variant/20 space-y-1.5 text-xs">
-            <div class="flex justify-between text-on-surface-variant">
+        <div class="bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+            <div class="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Subtotal</span>
-                <span id="omSubtotal" class="font-mono font-medium text-on-surface">₱0.00</span>
+                <span id="omSubtotal" class="font-mono font-medium text-slate-900 dark:text-white">₱0.00</span>
             </div>
-            <div class="flex justify-between text-on-surface-variant">
+            <div class="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Delivery / Shipping Fee</span>
-                <span id="omShipping" class="font-mono font-medium text-on-surface">₱0.00</span>
+                <span id="omShipping" class="font-mono font-medium text-slate-900 dark:text-white">₱0.00</span>
             </div>
-            <div class="flex justify-between text-on-surface-variant">
+            <div class="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Tax</span>
-                <span id="omTax" class="font-mono font-medium text-on-surface">₱0.00</span>
+                <span id="omTax" class="font-mono font-medium text-slate-900 dark:text-white">₱0.00</span>
             </div>
-            <div class="flex justify-between text-sm font-bold pt-1.5 border-t border-outline-variant/20">
-                <span class="text-on-surface">Grand Total</span>
-                <span id="omTotal" class="font-mono text-base font-extrabold text-primary">₱0.00</span>
+            <div class="flex justify-between text-sm font-bold pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                <span class="text-slate-900 dark:text-white font-display">Grand Total</span>
+                <span id="omTotal" class="font-mono text-base font-extrabold text-terra-green">₱0.00</span>
             </div>
         </div>
 
         <!-- Modal Action Buttons -->
         <div class="space-y-2 pt-1">
             <div id="omAcceptContainer" class="hidden">
-                <button type="button" id="omAcceptBtn" class="w-full py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm active:scale-95 cursor-pointer">
+                <button type="button" id="omAcceptBtn" class="w-full py-2.5 bg-terra-green text-white rounded-xl font-bold hover:bg-terra-green/90 transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm active:scale-95 cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">check_circle</span>
                     <span>Accept Order &amp; Start Packaging</span>
                 </button>
@@ -1018,27 +1017,27 @@
 
             <div class="grid grid-cols-2 gap-2">
                 <div id="omPosContainer" class="hidden col-span-2 sm:col-span-1">
-                    <button type="button" id="omPosBtn" class="w-full py-2.5 bg-secondary text-on-secondary rounded-xl font-bold hover:bg-secondary/90 transition-all flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer">
+                    <button type="button" id="omPosBtn" class="w-full py-2.5 bg-terra-earth text-white rounded-xl font-bold hover:bg-terra-earth/90 transition-all flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer">
                         <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
                         <span>Open in POS</span>
                     </button>
                 </div>
 
                 <div id="omQrContainer" class="hidden col-span-2 sm:col-span-1">
-                    <button type="button" id="omQrBtn" class="w-full py-2.5 bg-primary/10 text-primary border border-primary/25 rounded-xl font-bold hover:bg-primary/20 transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer">
+                    <button type="button" id="omQrBtn" class="w-full py-2.5 bg-terra-green/10 text-terra-green border border-terra-green/25 rounded-xl font-bold hover:bg-terra-green/20 transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer">
                         <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                         <span>View QR Code</span>
                     </button>
                 </div>
 
                 <div id="omReceiptContainer" class="col-span-2 sm:col-span-1">
-                    <button type="button" id="omReceiptBtn" class="w-full py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant/40 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer">
+                    <button type="button" id="omReceiptBtn" class="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer">
                         <span class="material-symbols-outlined text-[18px]">receipt_long</span>
                         <span>Print Receipt</span>
                     </button>
                 </div>
 
-                <button type="button" onclick="document.getElementById('orderModal').classList.add('hidden')" class="col-span-2 sm:col-span-1 py-2.5 bg-surface-container text-on-surface rounded-xl font-semibold hover:bg-surface-container-high transition-all text-xs cursor-pointer">
+                <button type="button" onclick="document.getElementById('orderModal').classList.add('hidden')" class="col-span-2 sm:col-span-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-xs cursor-pointer">
                     Close
                 </button>
             </div>
@@ -1049,67 +1048,67 @@
 
 <!-- Order QR Code & Waybill Modal -->
 <div id="orderQrModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-    <div class="bg-surface-container-lowest rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 border border-outline-variant/30 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 max-w-lg w-full space-y-4 border border-slate-200 dark:border-slate-800 shadow-2xl relative max-h-[92vh] overflow-y-auto">
         
-        <button type="button" onclick="closeOrderQrModal()" class="absolute top-4 right-4 text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container cursor-pointer">
+        <button type="button" onclick="closeOrderQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
             <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <!-- Header Status & Order No -->
-        <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30">
                     <span class="material-symbols-outlined text-[13px]">sync</span> Processing Order
                 </span>
-                <h3 id="qrModalOrderNumber" class="text-xl font-black text-on-surface mt-1 font-mono"></h3>
+                <h3 id="qrModalOrderNumber" class="text-xl font-bold font-display text-slate-900 dark:text-white mt-1 font-mono"></h3>
             </div>
             <div class="text-right">
-                <span id="qrModalPlacedAt" class="text-xs text-outline font-medium"></span>
+                <span id="qrModalPlacedAt" class="text-xs text-slate-400 font-medium"></span>
             </div>
         </div>
 
         <!-- 2-Column Table UI: QR on Left, Shop Name / Customer / Location on Right -->
-        <div class="bg-surface-container-low/70 p-4 rounded-2xl border border-outline-variant/25">
+        <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
                 
                 <!-- Left Side: QR Code -->
                 <div class="sm:col-span-5 flex flex-col items-center justify-center">
-                    <div class="bg-white p-2.5 rounded-2xl border border-outline-variant/30 shadow-sm flex items-center justify-center">
+                    <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center">
                         <img id="qrModalImg" src="" alt="Order QR Code" class="w-36 h-36 object-contain rounded-lg">
                     </div>
-                    <span class="text-[10px] text-outline mt-1.5 text-center font-semibold">Scan to Verify Order</span>
+                    <span class="text-[10px] text-slate-400 mt-1.5 text-center font-semibold">Scan to Verify Order</span>
                 </div>
 
                 <!-- Right Side: Shop Name, Customer Name & Location -->
-                <div class="sm:col-span-7 space-y-3 border-t sm:border-t-0 sm:border-l border-outline-variant/20 pt-3 sm:pt-0 sm:pl-4 text-left">
+                <div class="sm:col-span-7 space-y-3 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-700 pt-3 sm:pt-0 sm:pl-4 text-left">
                     
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-outline tracking-wider block">Shop Name</span>
-                            <h4 id="qrModalShopName" class="text-base font-black text-primary leading-tight mt-0.5"></h4>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Shop Name</span>
+                            <h4 id="qrModalShopName" class="text-base font-bold font-display text-terra-green leading-tight mt-0.5"></h4>
                         </div>
                         <div class="text-right shrink-0">
-                            <span class="text-[10px] uppercase font-bold text-outline tracking-wider block">Phone</span>
-                            <span id="qrModalPhone" class="text-xs font-bold text-on-surface bg-surface-container-high px-2 py-0.5 rounded-lg font-mono"></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Phone</span>
+                            <span id="qrModalPhone" class="text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-200/80 dark:bg-slate-700 px-2 py-0.5 rounded-lg font-mono"></span>
                         </div>
                     </div>
 
-                    <div class="border-t border-outline-variant/15 pt-2.5 space-y-2">
+                    <div class="border-t border-slate-200/60 dark:border-slate-700 pt-2.5 space-y-2">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-outline tracking-wider flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[13px] text-primary">person</span> Customer Name
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px] text-terra-green">person</span> Customer Name
                             </span>
-                            <p id="qrModalCustName" class="text-sm font-bold text-on-surface truncate mt-0.5"></p>
+                            <p id="qrModalCustName" class="text-sm font-bold text-slate-900 dark:text-white truncate mt-0.5"></p>
                         </div>
 
                         <div>
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] uppercase font-bold text-outline tracking-wider flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[13px] text-primary">location_on</span> Location
+                                <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-terra-green">location_on</span> Location
                                 </span>
-                                <span id="qrModalAddressLabel" class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-secondary-container text-on-secondary-container uppercase"></span>
+                                <span id="qrModalAddressLabel" class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-terra-earth/10 text-terra-earth dark:text-amber-400 uppercase"></span>
                             </div>
-                            <p id="qrModalLocation" class="text-xs font-medium text-on-surface-variant mt-0.5 leading-snug"></p>
+                            <p id="qrModalLocation" class="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5 leading-snug"></p>
                         </div>
                     </div>
 
@@ -1120,11 +1119,11 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-2 pt-1">
-            <button type="button" onclick="triggerQrDownload()" class="flex-1 py-2.5 px-3 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 text-xs cursor-pointer">
+            <button type="button" onclick="triggerQrDownload()" class="flex-1 py-2.5 px-3 bg-terra-green text-white rounded-xl font-bold hover:bg-terra-green/90 transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5 text-xs cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">download</span>
                 <span>Download QR</span>
             </button>
-            <button type="button" onclick="printQrCode()" class="flex-1 py-2.5 px-3 bg-surface-container-high text-on-surface rounded-xl font-bold hover:bg-surface-container-highest transition-all active:scale-95 flex items-center justify-center gap-1.5 text-xs cursor-pointer" title="Print Waybill & QR Code">
+            <button type="button" onclick="printQrCode()" class="flex-1 py-2.5 px-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-xs cursor-pointer" title="Print Waybill & QR Code">
                 <span class="material-symbols-outlined text-[18px]">print</span>
                 <span>Print Waybill</span>
             </button>
@@ -1135,16 +1134,16 @@
 
 <!-- Modal: Report Customer -->
 <div id="reportCustomerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
-        <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div class="flex items-center gap-2.5">
-                <span class="p-2 bg-rose-100 text-rose-700 rounded-xl material-symbols-outlined text-[20px]">flag</span>
+                <span class="p-2 bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 rounded-xl material-symbols-outlined text-[20px]">flag</span>
                 <div>
-                    <h3 class="text-base font-bold text-on-surface">Report Customer</h3>
-                    <p id="rcCustomerName" class="text-xs text-on-surface-variant font-semibold"></p>
+                    <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Report Customer</h3>
+                    <p id="rcCustomerName" class="text-xs text-slate-500 dark:text-slate-400 font-semibold"></p>
                 </div>
             </div>
-            <button type="button" onclick="closeReportCustomerModal()" class="text-outline hover:text-on-surface p-1 rounded-full cursor-pointer">
+            <button type="button" onclick="closeReportCustomerModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1 rounded-full cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
         </div>
@@ -1154,8 +1153,8 @@
             <input type="hidden" name="customer_id" id="rcCustomerId">
 
             <div>
-                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Issue Type</label>
-                <select name="issue_type" required class="w-full mt-1 p-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary">
+                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Issue Type</label>
+                <select name="issue_type" required class="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-terra-green">
                     <option value="Bogus Buyer / Refused Order">Bogus Buyer / Refused Order</option>
                     <option value="Unresponsive Customer">Unresponsive Customer</option>
                     <option value="Abusive Language / Harassment">Abusive Language / Harassment</option>
@@ -1166,12 +1165,12 @@
             </div>
 
             <div>
-                <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Incident Description &amp; Evidence</label>
-                <textarea name="description" rows="4" required class="w-full mt-1 p-3 bg-surface-container-low border border-outline-variant/40 rounded-xl text-xs focus:ring-2 focus:ring-primary" placeholder="Detail the incident, messages, dates, or order context..."></textarea>
+                <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Incident Description &amp; Evidence</label>
+                <textarea name="description" rows="4" required class="w-full mt-1 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-terra-green" placeholder="Detail the incident, messages, dates, or order context..."></textarea>
             </div>
 
-            <div class="flex gap-2 pt-2 border-t border-outline-variant/20">
-                <button type="button" onclick="closeReportCustomerModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-outline-variant/40 hover:bg-surface-container cursor-pointer">Cancel</button>
+            <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="closeReportCustomerModal()" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
                 <button type="submit" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700 shadow-sm cursor-pointer">Submit Report</button>
             </div>
         </form>
@@ -1179,8 +1178,8 @@
 </div>
 
 <!-- Dynamic Feedback Toast Notification -->
-<div id="copyToast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-16 opacity-0 pointer-events-none flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold shadow-lg">
-    <span class="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span>
+<div id="copyToast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-16 opacity-0 pointer-events-none flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-lg border border-slate-800">
+    <span class="material-symbols-outlined text-[16px] text-terra-green">check_circle</span>
     <span id="copyToastMsg">Order # copied to clipboard!</span>
 </div>
 
@@ -1351,18 +1350,18 @@
                     const tr = document.createElement('tr');
                     
                     const prodTd = document.createElement('td');
-                    prodTd.className = 'px-3 py-2.5 text-xs text-left font-medium text-on-surface';
+                    prodTd.className = 'px-3 py-2.5 text-xs text-left font-medium text-slate-800 dark:text-slate-200';
                     
                     let imgTag = '';
                     if (it.image_url) {
-                        imgTag = `<img src="${escapeHtml(it.image_url)}" class="w-9 h-9 object-cover rounded-lg border border-outline-variant/30 shrink-0 bg-surface-container" alt="">`;
+                        imgTag = `<img src="${escapeHtml(it.image_url)}" class="w-9 h-9 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800" alt="">`;
                     } else {
-                        imgTag = `<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-outline shrink-0"><span class="material-symbols-outlined text-[16px]">inventory_2</span></div>`;
+                        imgTag = `<div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0"><span class="material-symbols-outlined text-[16px]">inventory_2</span></div>`;
                     }
 
-                    let nameHtml = `<div class="min-w-0"><p class="font-bold text-on-surface leading-tight truncate">${escapeHtml(it.product_name)}</p>`;
+                    let nameHtml = `<div class="min-w-0"><p class="font-bold text-slate-900 dark:text-white leading-tight truncate">${escapeHtml(it.product_name)}</p>`;
                     if (it.variant_label) {
-                        nameHtml += `<span class="inline-block text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded mt-0.5">${escapeHtml(it.variant_label)}</span>`;
+                        nameHtml += `<span class="inline-block text-[10px] font-bold text-terra-green bg-terra-green/10 px-1.5 py-0.2 rounded-md mt-0.5">${escapeHtml(it.variant_label)}</span>`;
                     }
                     nameHtml += `</div>`;
 
@@ -1370,24 +1369,24 @@
                     tr.appendChild(prodTd);
 
                     const qtyTd = document.createElement('td');
-                    qtyTd.className = 'px-3 py-2.5 text-xs text-right font-mono font-bold text-on-surface';
+                    qtyTd.className = 'px-3 py-2.5 text-xs text-right font-mono font-bold text-slate-900 dark:text-white';
                     qtyTd.textContent = it.quantity + 'x';
                     tr.appendChild(qtyTd);
 
                     const unitTd = document.createElement('td');
-                    unitTd.className = 'px-3 py-2.5 text-xs text-right font-mono text-outline';
+                    unitTd.className = 'px-3 py-2.5 text-xs text-right font-mono text-slate-400';
                     unitTd.textContent = money(it.unit_price);
                     tr.appendChild(unitTd);
 
                     const lineTd = document.createElement('td');
-                    lineTd.className = 'px-3 py-2.5 text-xs text-right font-mono font-bold text-on-surface';
+                    lineTd.className = 'px-3 py-2.5 text-xs text-right font-mono font-bold text-slate-900 dark:text-white';
                     lineTd.textContent = money(it.line_total);
                     tr.appendChild(lineTd);
 
                     tbody.appendChild(tr);
                 });
                 if (!data.items || data.items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-outline">No items recorded for this order.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400">No items recorded for this order.</td></tr>';
                 }
 
                 // Accept button for pending orders
@@ -1647,11 +1646,11 @@
 
     function filterProcessingQueue(type) {
         document.querySelectorAll('.proc-filter-tab').forEach(t => {
-            t.className = 'proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-surface-container-low text-on-surface-variant hover:bg-surface-container border border-outline-variant/30 transition-all cursor-pointer';
+            t.className = 'proc-filter-tab px-3 py-1.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer';
         });
         const activeTab = document.getElementById('proc-tab-' + type);
         if (activeTab) {
-            activeTab.className = 'proc-filter-tab px-3 py-1.5 rounded-full font-bold bg-primary text-on-primary shadow-2xs transition-all cursor-pointer';
+            activeTab.className = 'proc-filter-tab px-3 py-1.5 rounded-full font-bold bg-terra-green text-white shadow-2xs transition-all cursor-pointer';
         }
         document.querySelectorAll('.processing-order-card').forEach(card => {
             if (type === 'all' || card.dataset.fulfillment === type) {
@@ -1780,13 +1779,13 @@
                     itemsHtml += `
                         <div class="flex items-center justify-between gap-2 text-xs">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
-                                ${imgUrl ? `<img src="${imgUrl}" class="w-7 h-7 rounded-lg object-cover border border-outline-variant/20 shrink-0" alt="">` : `<span class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-outline text-[14px] material-symbols-outlined">inventory_2</span>`}
+                                ${imgUrl ? `<img src="${imgUrl}" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="">` : `<span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-[14px] material-symbols-outlined">inventory_2</span>`}
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-semibold text-on-surface truncate leading-tight">${item.product_name || 'Product'}</p>
-                                    <p class="text-[10px] text-outline font-mono">₱${price}</p>
+                                    <p class="font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">${item.product_name || 'Product'}</p>
+                                    <p class="text-[10px] text-slate-400 font-mono">₱${price}</p>
                                 </div>
                             </div>
-                            <span class="font-mono font-bold text-xs bg-surface-container px-2 py-0.5 rounded text-on-surface shrink-0">
+                            <span class="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-800 dark:text-slate-200 shrink-0">
                                 ${qty}x
                             </span>
                         </div>
@@ -1794,11 +1793,11 @@
                 });
             } else {
                 totalUnits = order.items_count || 1;
-                itemsHtml = `<div class="text-[11px] text-outline text-center py-2">${order.items_summary || 'Standard Order Items'}</div>`;
+                itemsHtml = `<div class="text-[11px] text-slate-400 text-center py-2">${order.items_summary || 'Standard Order Items'}</div>`;
             }
 
             const card = document.createElement('div');
-            card.className = 'processing-order-card bg-surface-container-low/40 hover:bg-surface-container-low border-2 border-emerald-400 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-md hover:shadow-lg transition-all animate-fadeIn';
+            card.className = 'processing-order-card bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/80 dark:hover:bg-slate-800/70 border-2 border-terra-green rounded-2xl p-4 flex flex-col justify-between gap-3.5 shadow-md hover:shadow-lg transition-all animate-fadeIn';
             card.setAttribute('data-fulfillment', isPickup ? 'pickup' : 'delivery');
 
             const safeCustName = (order.customer_name || 'Customer').replace(/'/g, "\\'");
@@ -1810,48 +1809,48 @@
                 <!-- Card Top: Order No, Elapsed Time & Fulfillment Pill -->
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-mono text-sm font-bold text-primary">#${order.order_number}</span>
+                        <span class="font-mono text-sm font-bold text-terra-green">#${order.order_number}</span>
                         ${isPickup ? `
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-900 border border-amber-500/30 shadow-2xs">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30 shadow-2xs">
                                 <span class="material-symbols-outlined text-[14px]">storefront</span>
                                 <span>Store Pick-up</span>
                             </span>
                         ` : `
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-900 border border-blue-500/30 shadow-2xs">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30 shadow-2xs">
                                 <span class="material-symbols-outlined text-[14px]">local_shipping</span>
                                 <span>Doorstep Delivery</span>
                             </span>
                         `}
                     </div>
-                    <div class="flex items-center justify-between text-[11px] text-outline">
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                         <span>Placed: ${order.placed_at_fmt || 'Just now'}</span>
-                        <span class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded animate-pulse">⚡ Just In</span>
+                        <span class="font-mono font-bold text-terra-green bg-terra-green/10 border border-terra-green/20 px-2 py-0.5 rounded-md animate-pulse">⚡ Just In</span>
                     </div>
                 </div>
 
                 <!-- Customer & Destination Info -->
-                <div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/20 space-y-2 text-xs">
+                <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/70 dark:border-slate-800 space-y-2 text-xs">
                     <div class="flex items-center justify-between gap-2.5">
                         <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs relative overflow-hidden">
+                            <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs relative overflow-hidden">
                                 <span>${order.customer_initials || 'CU'}</span>
                                 ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                             </div>
-                            <span class="font-bold text-sm text-on-surface truncate">${order.customer_name || 'Customer'}</span>
+                            <span class="font-bold text-xs text-slate-900 dark:text-white truncate">${order.customer_name || 'Customer'}</span>
                         </div>
                         ${order.customer_phone && order.customer_phone !== 'N/A' ? `
-                            <a href="tel:${order.customer_phone}" class="text-xs font-mono font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 shrink-0">
-                                <span class="material-symbols-outlined text-[15px] text-blue-600">call</span>
+                            <a href="tel:${order.customer_phone}" class="text-xs font-mono font-semibold text-terra-green hover:underline flex items-center gap-1 shrink-0">
+                                <span class="material-symbols-outlined text-[15px]">call</span>
                                 <span>${order.customer_phone}</span>
                             </a>
                         ` : ''}
                     </div>
 
-                    <div class="flex items-center gap-1.5 text-xs text-on-surface-variant pt-2 border-t border-outline-variant/15">
-                        <span class="material-symbols-outlined text-[16px] text-outline shrink-0">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0">
                             ${isPickup ? 'storefront' : 'local_shipping'}
                         </span>
-                        <span class="truncate leading-tight font-medium">
+                        <span class="truncate leading-tight font-medium text-slate-600 dark:text-slate-300">
                             ${isPickup ? 'Store Counter Pick-up' : (order.delivery_address || 'Delivery Address')}
                         </span>
                     </div>
@@ -1859,11 +1858,11 @@
 
                 <!-- Items to Pack Checklist -->
                 <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[11px] font-bold text-on-surface-variant px-0.5">
+                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-0.5">
                         <span class="uppercase tracking-wider">Items to Pack</span>
-                        <span class="font-mono text-outline">${totalUnits} units</span>
+                        <span class="font-mono text-slate-500">${totalUnits} units</span>
                     </div>
-                    <div class="bg-surface-container-lowest rounded-xl p-2 border border-outline-variant/20 space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                    <div class="bg-white dark:bg-slate-900 rounded-xl p-2.5 border border-slate-200/70 dark:border-slate-800 space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
                         ${itemsHtml}
                     </div>
                 </div>
@@ -1871,22 +1870,22 @@
                 <!-- Financial Summary Pill -->
                 <div class="flex items-center justify-between pt-1 text-xs">
                     <div class="flex items-center gap-1.5">
-                        <span class="text-on-surface-variant font-medium">Total:</span>
-                        <span class="font-mono font-bold text-sm text-on-surface">₱${order.total_amount_fmt || '0.00'}</span>
+                        <span class="text-slate-500 dark:text-slate-400 font-medium">Total:</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">₱${order.total_amount_fmt || '0.00'}</span>
                     </div>
-                    <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isPaid ? 'bg-terra-green/15 text-terra-green border border-terra-green/30' : 'bg-terra-amber/15 text-terra-amber border border-terra-amber/30'}">
                         <span class="material-symbols-outlined text-[12px]">${isPaid ? 'verified' : 'pending'}</span>
                         ${isPaid ? 'Paid Online' : (isPickup ? 'Pay on Pick-up' : 'Cash on Delivery')}
                     </span>
                 </div>
 
                 <!-- Action Buttons: Context-Aware Button + Utilities -->
-                <div class="pt-2 border-t border-outline-variant/20 flex items-center gap-1.5">
+                <div class="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center gap-1.5">
                     <form action="<?= base_url('tenant/orders/update-status') ?>" method="POST" class="flex-1">
                         <input type="hidden" name="${csrfName}" value="${csrfHash}">
                         <input type="hidden" name="order_id" value="${order.id}">
                         <input type="hidden" name="status" value="processing">
-                        <button type="submit" class="w-full min-h-[42px] py-2 px-3 bg-primary hover:bg-primary/90 active:scale-95 text-on-primary rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Accept order and start packaging">
+                        <button type="submit" class="w-full min-h-[40px] py-2 px-3 bg-terra-green hover:bg-terra-green/90 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Accept order and start packaging">
                             <span class="material-symbols-outlined text-[18px]">check_circle</span>
                             <span>Accept &amp; Pack</span>
                         </button>
@@ -1904,16 +1903,16 @@
                                 '${order.placed_at_fmt || ''}',
                                 '<?= base_url('order') ?>/${order.order_number}'
                             )"
-                            class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-primary flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
+                            class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-terra-green flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer"
                             title="Generate & Download QR Code">
                         <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                     </button>
 
-                    <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-on-surface-variant flex items-center justify-center shrink-0 transition-colors shadow-2xs" title="Print Packing Slip / Receipt">
+                    <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 transition-colors shadow-2xs" title="Print Packing Slip / Receipt">
                         <span class="material-symbols-outlined text-[18px]">receipt_long</span>
                     </a>
 
-                    <button type="button" onclick="openOrderDetails(${order.id})" class="w-9 h-[42px] bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/30 rounded-xl text-on-surface-variant flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer" title="View Details">
+                    <button type="button" onclick="openOrderDetails(${order.id})" class="w-9 h-[40px] bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 transition-colors shadow-2xs cursor-pointer" title="View Details">
                         <span class="material-symbols-outlined text-[18px]">visibility</span>
                     </button>
                 </div>
@@ -1928,7 +1927,7 @@
             if (emptyTd) emptyTd.closest('tr')?.remove();
 
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-surface-container-low/40 transition-colors group bg-emerald-50/40 dark:bg-emerald-950/20 animate-fadeIn';
+            tr.className = 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group bg-terra-green/5 animate-fadeIn';
             
             const safeCustName = (order.customer_name || 'Customer').replace(/'/g, "\\'");
             const safeAddr = (order.delivery_address || 'Store Counter Pick-up').replace(/'/g, "\\'");
@@ -1939,11 +1938,11 @@
                 <!-- Order ID -->
                 <td class="px-4 py-3.5 whitespace-nowrap">
                     <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="openOrderDetails(${order.id})" class="font-mono text-xs font-bold text-primary hover:underline hover:text-primary/80 cursor-pointer">
+                        <button type="button" onclick="openOrderDetails(${order.id})" class="font-mono text-xs font-bold text-terra-green hover:underline cursor-pointer">
                             #${order.order_number}
                         </button>
-                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" title="⚡ New Live Order"></span>
-                        <button type="button" onclick="copyOrderNumber('${order.order_number}', this)" class="p-1 rounded-lg text-outline hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer" title="Copy Order #">
+                        <span class="inline-block w-2 h-2 rounded-full bg-terra-green animate-ping" title="⚡ New Live Order"></span>
+                        <button type="button" onclick="copyOrderNumber('${order.order_number}', this)" class="p-1 rounded-lg text-slate-400 hover:text-terra-green hover:bg-terra-green/10 transition-colors cursor-pointer" title="Copy Order #">
                             <span class="material-symbols-outlined text-[14px]">content_copy</span>
                         </button>
                     </div>
@@ -1952,14 +1951,14 @@
                 <!-- Customer Info -->
                 <td class="px-4 py-3.5">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden shadow-2xs">
+                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden shadow-2xs">
                             <span>${order.customer_initials || 'CU'}</span>
                             ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                         </div>
                         <div class="min-w-0">
-                            <p class="text-xs font-bold text-on-surface truncate leading-tight">${order.customer_name || 'Customer'}</p>
+                            <p class="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">${order.customer_name || 'Customer'}</p>
                             ${order.customer_phone && order.customer_phone !== 'N/A' ? `
-                                <a href="tel:${order.customer_phone}" class="text-[11px] font-mono text-outline hover:text-primary flex items-center gap-0.5 mt-0.5">
+                                <a href="tel:${order.customer_phone}" class="text-[11px] font-mono text-slate-400 hover:text-terra-green flex items-center gap-0.5 mt-0.5">
                                     <span class="material-symbols-outlined text-[12px]">call</span>
                                     <span>${order.customer_phone}</span>
                                 </a>
@@ -1972,11 +1971,11 @@
                 <td class="px-4 py-3.5 max-w-[220px]">
                     <div class="text-xs space-y-0.5">
                         <div class="flex items-center gap-1.5">
-                            <span class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant">
+                            <span class="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                 ${order.items_count || 1} unit(s)
                             </span>
                         </div>
-                        <p class="text-xs text-on-surface-variant truncate font-medium" title="${order.items_summary || ''}">
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate font-medium" title="${order.items_summary || ''}">
                             ${order.items_summary || 'Standard Order Items'}
                         </p>
                     </div>
@@ -1986,23 +1985,23 @@
                 <td class="px-4 py-3.5 text-center whitespace-nowrap">
                     <div class="flex flex-col items-center gap-1">
                         ${isPickup ? `
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 shadow-2xs">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30 shadow-2xs">
                                 <span class="material-symbols-outlined text-[13px]">storefront</span>
                                 <span>Store Pick-up</span>
                             </span>
                         ` : `
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-800 border border-blue-500/20 shadow-2xs">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30 shadow-2xs">
                                 <span class="material-symbols-outlined text-[13px]">local_shipping</span>
                                 <span>Doorstep Delivery</span>
                             </span>
                         `}
                         <div class="flex items-center gap-1 text-[10px]">
                             ${isPaid ? `
-                                <span class="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                                <span class="font-bold text-terra-green bg-terra-green/10 border border-terra-green/20 px-1.5 py-0.2 rounded flex items-center gap-0.5">
                                     <span class="material-symbols-outlined text-[11px]">verified</span> Paid
                                 </span>
                             ` : `
-                                <span class="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded">
+                                <span class="font-bold text-terra-amber bg-terra-amber/10 border border-terra-amber/20 px-1.5 py-0.2 rounded">
                                     ${isPickup ? 'Pay on Pick-up' : 'COD'}
                                 </span>
                             `}
@@ -2011,19 +2010,19 @@
                 </td>
 
                 <!-- Date Placed -->
-                <td class="px-4 py-3.5 text-xs text-on-surface-variant whitespace-nowrap">
-                    <p class="font-semibold text-on-surface">${order.placed_at_date || order.placed_at_fmt}</p>
-                    <p class="text-[10px] text-outline">${order.placed_at_time || ''}</p>
+                <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    <p class="font-semibold text-slate-800 dark:text-slate-200">${order.placed_at_date || order.placed_at_fmt}</p>
+                    <p class="text-[10px] text-slate-400">${order.placed_at_time || ''}</p>
                 </td>
 
                 <!-- Total Amount -->
                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                    <span class="font-mono text-sm font-bold text-on-surface">₱${order.total_amount_fmt || '0.00'}</span>
+                    <span class="font-mono text-sm font-bold text-slate-900 dark:text-white">₱${order.total_amount_fmt || '0.00'}</span>
                 </td>
 
                 <!-- Status Badge -->
                 <td class="px-4 py-3.5 text-center whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30">
                         New Pending
                     </span>
                 </td>
@@ -2035,17 +2034,17 @@
                             <input type="hidden" name="${csrfName}" value="${csrfHash}">
                             <input type="hidden" name="order_id" value="${order.id}">
                             <input type="hidden" name="status" value="processing">
-                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer" title="Accept order &amp; start packaging">
+                            <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-terra-green hover:bg-terra-green/90 text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer" title="Accept order &amp; start packaging">
                                 <span class="material-symbols-outlined text-[15px]">check_circle</span>
                                 <span>Accept</span>
                             </button>
                         </form>
 
-                        <button type="button" onclick="openOrderDetails(${order.id})" class="p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface border border-outline-variant/30 transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer" title="View Full Order Details">
-                            <span class="material-symbols-outlined text-[17px] text-primary">visibility</span>
+                        <button type="button" onclick="openOrderDetails(${order.id})" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-2xs active:scale-95 cursor-pointer" title="View Full Order Details">
+                            <span class="material-symbols-outlined text-[17px] text-terra-green">visibility</span>
                         </button>
 
-                        <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant border border-outline-variant/30 transition-all shadow-2xs" title="Print Official Receipt">
+                        <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-2xs" title="Print Official Receipt">
                             <span class="material-symbols-outlined text-[17px]">receipt_long</span>
                         </a>
                     </div>
@@ -2061,73 +2060,73 @@
             if (noOrdersMsg) noOrdersMsg.remove();
 
             const mCard = document.createElement('div');
-            mCard.className = 'p-4 space-y-3 bg-surface-container-lowest hover:bg-surface-container-low/30 transition-colors bg-emerald-50/20 dark:bg-emerald-950/20 animate-fadeIn';
+            mCard.className = 'p-4 space-y-3 bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors bg-terra-green/5 animate-fadeIn';
             mCard.innerHTML = `
                 <div class="flex items-start justify-between gap-2">
                     <div>
-                        <button type="button" onclick="openOrderDetails(${order.id})" class="font-mono text-sm font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                        <button type="button" onclick="openOrderDetails(${order.id})" class="font-mono text-sm font-bold text-terra-green hover:underline flex items-center gap-1 cursor-pointer">
                             #${order.order_number}
                         </button>
-                        <span class="text-[11px] text-outline block mt-0.5">
+                        <span class="text-[11px] text-slate-400 block mt-0.5">
                             ${order.placed_at_fmt || 'Just now'}
                         </span>
                     </div>
                     <div class="text-right flex flex-col items-end gap-1">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">New Pending</span>
-                        <span class="font-mono text-xs font-bold text-on-surface">₱${order.total_amount_fmt || '0.00'}</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-terra-amber/15 text-terra-amber border border-terra-amber/30">New Pending</span>
+                        <span class="font-mono text-xs font-bold text-slate-900 dark:text-white">₱${order.total_amount_fmt || '0.00'}</span>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between p-2.5 bg-surface-container-low/40 rounded-xl border border-outline-variant/20 text-xs">
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs">
                     <div class="flex items-center gap-2 min-w-0">
-                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden">
+                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden">
                             <span>${order.customer_initials || 'CU'}</span>
                             ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-on-surface truncate">${order.customer_name || 'Customer'}</p>
-                            <p class="text-[11px] text-outline truncate">${isPickup ? 'Store Pick-up' : (order.delivery_address || 'Delivery')}</p>
+                            <p class="font-bold text-slate-900 dark:text-white truncate">${order.customer_name || 'Customer'}</p>
+                            <p class="text-[11px] text-slate-400 truncate">${isPickup ? 'Store Pick-up' : (order.delivery_address || 'Delivery')}</p>
                         </div>
                     </div>
                     ${order.customer_phone && order.customer_phone !== 'N/A' ? `
-                        <a href="tel:${order.customer_phone}" class="p-1.5 rounded-lg bg-blue-50 text-blue-600 font-mono text-xs flex items-center gap-0.5">
+                        <a href="tel:${order.customer_phone}" class="p-1.5 rounded-lg bg-terra-green/10 text-terra-green font-mono text-xs flex items-center gap-0.5">
                             <span class="material-symbols-outlined text-[15px]">call</span>
                         </a>
                     ` : ''}
                 </div>
 
                 <div class="flex items-center justify-between gap-2 text-xs">
-                    <div class="truncate text-on-surface-variant text-[11px] flex-1">
-                        <span class="font-mono font-bold bg-surface-container px-1.5 py-0.2 rounded mr-1">${order.items_count || 1}x</span>
+                    <div class="truncate text-slate-500 dark:text-slate-400 text-[11px] flex-1">
+                        <span class="font-mono font-bold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded mr-1">${order.items_count || 1}x</span>
                         ${order.items_summary || 'Order items'}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPickup ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPickup ? 'bg-terra-amber/15 text-terra-amber border border-terra-amber/30' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'}">
                             ${isPickup ? 'Pick-up' : 'Delivery'}
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-surface-container text-outline'}">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPaid ? 'bg-terra-green/15 text-terra-green border border-terra-green/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}">
                             ${isPaid ? 'Paid' : (isPickup ? 'Unpaid' : 'COD')}
                         </span>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1.5 pt-1 border-t border-outline-variant/15">
+                <div class="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
                     <form action="<?= base_url('tenant/orders/update-status') ?>" method="POST" class="flex-1">
                         <input type="hidden" name="${csrfName}" value="${csrfHash}">
                         <input type="hidden" name="order_id" value="${order.id}">
                         <input type="hidden" name="status" value="processing">
-                        <button type="submit" class="w-full py-2 bg-primary text-on-primary rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer">
+                        <button type="submit" class="w-full py-2 bg-terra-green text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer">
                             <span class="material-symbols-outlined text-[16px]">check_circle</span>
                             <span>Accept</span>
                         </button>
                     </form>
 
-                    <button type="button" onclick="openOrderDetails(${order.id})" class="flex-1 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-xs font-bold border border-outline-variant/30 flex items-center justify-center gap-1 cursor-pointer">
-                        <span class="material-symbols-outlined text-[16px] text-primary">visibility</span>
+                    <button type="button" onclick="openOrderDetails(${order.id})" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px] text-terra-green">visibility</span>
                         <span>Details</span>
                     </button>
 
-                    <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="p-2 bg-surface-container rounded-xl text-on-surface-variant border border-outline-variant/30 flex items-center justify-center" title="Receipt">
+                    <a href="<?= base_url('tenant/orders/receipt') ?>/${order.id}" target="_blank" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center" title="Receipt">
                         <span class="material-symbols-outlined text-[18px]">receipt_long</span>
                     </a>
                 </div>

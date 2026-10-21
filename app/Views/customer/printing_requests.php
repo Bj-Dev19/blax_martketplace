@@ -1,63 +1,74 @@
 <?= $this->extend('layouts/marketplace') ?>
 <?= $this->section('content') ?>
 
-<div class="flex flex-1 flex-col md:flex-row w-full min-h-[calc(100vh-72px)] bg-slate-50/50">
+<div class="flex-1 flex flex-col md:flex-row items-start w-full min-h-[calc(100vh-72px)] bg-slate-50/50 dark:bg-slate-950 transition-colors duration-200">
 
     <?= view('components/profile_sidebar', ['activeNav' => 'printing']) ?>
 
     <!-- Main Content Area -->
-    <main class="flex-1 p-3 sm:p-6 md:p-8 lg:p-10 overflow-y-auto">
+    <main class="flex-1 w-full min-w-0 p-4 sm:p-6 md:p-8">
 
-        <div class="max-w-5xl mx-auto space-y-6">
+        <div class="max-w-5xl mx-auto space-y-5 sm:space-y-6 pb-28">
 
-            <!-- Flash Notices -->
-            <?php if (session()->getFlashdata('success')): ?>
-                <div class="p-4 rounded-2xl bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-300 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs animate-fade-in">
-                    <span class="material-symbols-outlined text-lg shrink-0">check_circle</span>
-                    <span><?= esc(session()->getFlashdata('success')) ?></span>
-                </div>
-            <?php endif; ?>
-
-            <?php if (session()->getFlashdata('error')): ?>
-                <div class="p-4 rounded-2xl bg-error-container/20 border border-error/30 text-error text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs animate-fade-in">
-                    <span class="material-symbols-outlined text-lg shrink-0">error</span>
-                    <span><?= esc(session()->getFlashdata('error')) ?></span>
-                </div>
-            <?php endif; ?>
-
-            <!-- Page Title & Navigation -->
-            <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <div class="flex items-center gap-2 text-xs font-semibold text-outline mb-1">
-                        <a href="<?= base_url('customer/profile') ?>" class="hover:text-primary transition-colors">Account</a>
-                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                        <span class="text-on-surface">Printing Requests</span>
-                    </div>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight flex items-center gap-2.5">
-                        <span>Printing Requests</span>
+            <!-- Calm Page Header & Filter Tabs -->
+            <header class="space-y-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5">
+                        <h1 class="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white tracking-tight">Printing Requests</h1>
                         <?php if (!empty($requests)): ?>
-                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                                <?= count($requests) ?> <?= count($requests) === 1 ? 'job' : 'jobs' ?>
+                            <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                <?= count($requests) ?>
                             </span>
                         <?php endif; ?>
-                    </h1>
+                    </div>
+
+                    <a href="<?= base_url('printing-services') ?>" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-terra-green hover:bg-[#3d7a33] text-white text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer">
+                        <span class="material-symbols-outlined text-[18px]">add</span>
+                        <span>New Request</span>
+                    </a>
                 </div>
 
-                <a href="<?= base_url('printing-services') ?>" class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors self-start sm:self-auto">
-                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                    <span>New Printing Request</span>
-                </a>
+                <?php if (!empty($requests)): ?>
+                    <?php
+                        $prCountAll = count($requests);
+                        $prCountActive = 0;
+                        $prCountCompleted = 0;
+                        $prCountCancelled = 0;
+                        foreach ($requests as $rItem) {
+                            $rSt = strtolower((string) ($rItem['status'] ?? 'new'));
+                            if ($rSt === 'cancelled') {
+                                $prCountCancelled++;
+                            } elseif ($rSt === 'completed') {
+                                $prCountCompleted++;
+                            } else {
+                                $prCountActive++;
+                            }
+                        }
+                    ?>
+                    <nav class="flex border-b border-slate-200/80 dark:border-slate-800 gap-2 sm:gap-4 overflow-x-auto no-scrollbar pb-px">
+                        <button type="button" class="pr-tab px-3.5 py-2.5 text-xs sm:text-sm font-bold text-terra-green border-b-2 border-terra-green transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer" data-filter="all" data-label="printing requests">
+                            <span>All</span>
+                            <span class="px-2 py-0.5 bg-terra-green/10 text-terra-green rounded-full text-[10px] font-mono font-bold"><?= $prCountAll ?></span>
+                        </button>
+                        <button type="button" class="pr-tab px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-terra-green dark:hover:text-emerald-400 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer" data-filter="active" data-label="active printing requests">
+                            <span>Active</span>
+                            <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-[10px] font-mono font-bold"><?= $prCountActive ?></span>
+                        </button>
+                        <button type="button" class="pr-tab px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-terra-green dark:hover:text-emerald-400 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer" data-filter="completed" data-label="completed printing requests">
+                            <span>Completed</span>
+                            <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-[10px] font-mono font-bold"><?= $prCountCompleted ?></span>
+                        </button>
+                        <button type="button" class="pr-tab px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-terra-green dark:hover:text-emerald-400 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer" data-filter="cancelled" data-label="cancelled printing requests">
+                            <span>Cancelled</span>
+                            <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-[10px] font-mono font-bold"><?= $prCountCancelled ?></span>
+                        </button>
+                    </nav>
+                <?php endif; ?>
             </header>
 
             <?php if (!empty($requests)): ?>
 
-                <nav class="flex items-center gap-lg border-b border-outline-variant/20 pb-2 mb-2">
-                    <button class="pr-tab px-md py-2 text-label-sm font-semibold text-primary border-b-2 border-primary transition-all" data-filter="all" data-label="printing requests">All Printing</button>
-                    <button class="pr-tab px-md py-2 text-label-sm font-medium text-on-surface-variant hover:text-primary transition-all" data-filter="active" data-label="active printing requests">Active</button>
-                    <button class="pr-tab px-md py-2 text-label-sm font-medium text-on-surface-variant hover:text-primary transition-all" data-filter="completed" data-label="completed printing requests">Completed</button>
-                    <button class="pr-tab px-md py-2 text-label-sm font-medium text-on-surface-variant hover:text-primary transition-all" data-filter="cancelled" data-label="cancelled printing requests">Cancelled</button>
-                </nav>
-
+                <div class="flex flex-col gap-4 sm:gap-5">
                 <?php foreach ($requests as $req): ?>
 
                     <?php
@@ -68,25 +79,24 @@
                         $reqGroup    = in_array($reqStatus, ['new', 'in_production', 'ready_for_pickup', 'ready_for_delivery', 'in_transit']) ? 'active' : $reqStatus;
                         $reqLabel    = humanize_status($reqStatus);
                         $reqPill     = match ($reqStatus) {
-                            'ready_for_pickup', 'ready_for_delivery' => 'bg-green-100 text-green-700',
-                            'in_transit'                             => 'bg-blue-100 text-blue-700',
-                            'in_production', 'new'                   => 'bg-primary/10 text-primary',
-                            'completed'                              => 'bg-surface-container-highest text-on-surface-variant',
-                            'cancelled'                              => 'bg-error/10 text-error',
-                            default                                  => 'bg-surface-variant text-on-surface-variant',
+                            'ready_for_pickup', 'ready_for_delivery' => 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60',
+                            'in_transit'                             => 'bg-sky-500/10 text-sky-700 border-sky-500/20 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/60',
+                            'in_production', 'new'                   => 'bg-terra-green/10 text-terra-green border-terra-green/20 dark:bg-terra-green/20 dark:text-emerald-300',
+                            'completed'                              => 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+                            'cancelled'                              => 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60',
+                            default                                  => 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300',
                         };
-                        $reqPriceLbl = match ($reqStatus) { 'completed' => 'Paid', 'cancelled' => 'Total', 'new', 'in_production' => 'Estimated Total', default => 'Total Price' };
-                        $reqPriceCls = in_array($reqStatus, ['ready_for_pickup', 'ready_for_delivery', 'in_transit']) ? 'text-primary' : 'text-on-surface-variant';
+                        $reqPriceLbl = match ($reqStatus) { 'completed' => 'Paid', 'cancelled' => 'Total', 'new', 'in_production' => 'Estimated Total', default => 'Total' };
                         $reqPrice    = number_format((float) ($req['total_price'] ?? 0), 2);
                         $reqCopies   = (int) ($req['copies'] ?? 1);
                         $reqPages    = (int) ($req['page_count'] ?? 0);
-                        $reqSpec     = implode(', ', array_filter([
+                        $reqSpec     = implode(' · ', array_filter([
                             $req['paper_stock'] ?? null,
                             ($reqPages > 0 ? $reqPages . ' Page' . ($reqPages !== 1 ? 's' : '') : null),
                             ($reqCopies > 1 ? $reqCopies . ' Copies' : null),
                             ($req['paper_size'] ?? null) ? strtoupper(($req['paper_size'] ?? 'A4')) : null,
-                            $req['color_mode'] ?? null,
-                            ($reqBinding !== 'none' ? $reqBinding : null),
+                            $req['color_mode'] ? strtoupper($req['color_mode']) : null,
+                            ($reqBinding !== 'none' ? ucfirst($reqBinding) : null),
                         ]));
                         $reqPrinter  = $req['printer_assigned'] ?? '';
                         $isPickup    = (($req['fulfillment_method'] ?? 'pickup') === 'pickup');
@@ -99,262 +109,188 @@
                         $isPaid      = !empty($req['payment_status']) && strtolower($req['payment_status']) === 'paid';
                     ?>
 
-                    <div class="pr-card bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-lg shadow-sm flex flex-col gap-md" data-group="<?= esc($reqGroup) ?>">
+                    <div class="pr-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-2xs transition-all" data-group="<?= esc($reqGroup) ?>">
 
-                        <!-- Top row: Ref #, Title, Badges -->
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-
-                            <div class="flex flex-col">
-                                <span class="text-label-sm text-outline font-medium tracking-tight">#<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?></span>
-                                <h3 class="text-headline-md font-bold text-on-surface mt-0.5"><?= esc($req['file_name'] ?? 'Document.pdf') ?></h3>
+                        <!-- 1. Top Header Bar -->
+                        <div class="px-4 py-3.5 sm:px-5 bg-slate-50/60 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-[18px]"><?= esc($reqIcon) ?></span>
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate"><?= esc($req['file_name'] ?? 'Document.pdf') ?></h3>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                        <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">#<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?></span>
+                                        <span>&bull;</span>
+                                        <span class="truncate"><?= esc($shopName) ?></span>
+                                    </p>
+                                </div>
                             </div>
 
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <?php if (($req['doc_change_type'] ?? '') === 'has_changes'): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-900 border border-amber-500/30 shadow-2xs">
-                                        <span class="material-symbols-outlined text-[13px] text-amber-700">edit_note</span>
-                                        <span>With Changes</span>
-                                    </span>
-                                <?php endif; ?>
+                            <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                    <span class="material-symbols-outlined text-[13px]"><?= $isPickup ? 'storefront' : 'local_shipping' ?></span>
+                                    <span><?= $isPickup ? 'Pick-up' : 'Delivery' ?></span>
+                                </span>
 
-                                <!-- Fulfillment Method Badge -->
-                                <?php if ($isPickup): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-900 border border-amber-500/30 shadow-2xs">
-                                        <span class="material-symbols-outlined text-[14px]">storefront</span>
-                                        <span>Store Pick-up</span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-900 border border-blue-500/30 shadow-2xs">
-                                        <span class="material-symbols-outlined text-[14px]">local_shipping</span>
-                                        <span>Doorstep Delivery</span>
-                                    </span>
-                                <?php endif; ?>
-
-                                <!-- Status Pill -->
-                                <span class="px-sm py-1 <?= esc($reqPill) ?> text-[10px] font-bold rounded-full uppercase tracking-wider"><?= esc($reqLabel) ?></span>
+                                <span class="px-2.5 py-0.5 border text-[11px] font-bold rounded-full <?= esc($reqPill) ?>"><?= esc($reqLabel) ?></span>
                             </div>
-
                         </div>
 
-                        <!-- Middle row: Icon, Service, Spec, Shop -->
-                        <div class="flex items-center gap-md py-md border-y border-outline-variant/10">
+                        <!-- 2. Body: Specs, Stepper & Reference Photos -->
+                        <div class="p-4 sm:p-5 space-y-4">
 
-                            <div class="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;"><?= esc($reqIcon) ?></span>
+                            <!-- Compact Spec Summary -->
+                            <div class="flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
+                                <div class="min-w-0">
+                                    <span class="font-semibold text-slate-800 dark:text-slate-200"><?= esc($reqService) ?></span>
+                                    <?php if ($reqSpec !== ''): ?>
+                                        <span class="mx-1.5 text-slate-300 dark:text-slate-600">&bull;</span>
+                                        <span class="text-slate-500 dark:text-slate-400"><?= esc($reqSpec) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if ($reqCreated !== ''): ?>
+                                    <span class="text-[11px] text-slate-400 dark:text-slate-500 shrink-0"><?= esc($reqCreated) ?></span>
+                                <?php endif; ?>
                             </div>
 
-                            <div class="min-w-0 flex-1">
-                                <p class="text-body-md font-semibold text-on-surface truncate"><?= esc($reqService) ?></p>
-                                <p class="text-label-sm text-on-surface-variant truncate"><?= esc($reqSpec) ?> · <span class="font-semibold text-on-surface"><?= esc($shopName) ?></span></p>
-                            </div>
+                            <!-- Fulfillment Progress Stepper -->
+                            <?php if ($reqStatus === 'cancelled'): ?>
+                                <div class="px-3.5 py-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-medium">
+                                    <span class="material-symbols-outlined text-[16px] shrink-0">cancel</span>
+                                    <span>Printing request cancelled</span>
+                                </div>
+                            <?php else: ?>
+                                <?php
+                                    if ($isPickup) {
+                                        $prSteps = [
+                                            ['key' => 'new',              'label' => 'Placed'],
+                                            ['key' => 'in_production',    'label' => 'Printing'],
+                                            ['key' => 'ready_for_pickup', 'label' => 'Pickup Ready'],
+                                            ['key' => 'completed',        'label' => 'Completed'],
+                                        ];
+                                    } else {
+                                        $prSteps = [
+                                            ['key' => 'new',                'label' => 'Placed'],
+                                            ['key' => 'in_production',      'label' => 'Printing'],
+                                            ['key' => 'ready_for_delivery', 'label' => 'On the Way'],
+                                            ['key' => 'completed',          'label' => 'Completed'],
+                                        ];
+                                    }
 
-                        </div>
+                                    $prStepOrder = [];
+                                    foreach ($prSteps as $si => $st) { $prStepOrder[$st['key']] = $si; }
+                                    $prStepOrder['in_transit'] = $prStepOrder['ready_for_delivery'] ?? 2;
+                                    $prCurrentIdx = $prStepOrder[$reqStatus] ?? 0;
+                                ?>
+                                <div class="pt-1 pb-0.5">
+                                    <div class="grid grid-cols-4 w-full">
+                                        <?php foreach ($prSteps as $si => $st):
+                                            $isDone   = ($si < $prCurrentIdx) || ($reqStatus === 'completed');
+                                            $isActive = ($si === $prCurrentIdx) && ($reqStatus !== 'completed');
+                                        ?>
+                                            <div class="relative flex flex-col items-center">
+                                                <?php if ($si > 0): ?>
+                                                    <!-- Connector line centered at top-3.5 (14px) -->
+                                                    <div class="absolute top-3.5 -left-1/2 w-full h-0.5 transition-colors duration-300 <?= ($isDone || $isActive || $reqStatus === 'completed') ? 'bg-terra-green' : 'bg-slate-200 dark:bg-slate-700' ?>"></div>
+                                                <?php endif; ?>
 
-                        <!-- Reference Photos & Change Instructions Preview Banner -->
-                        <?php if (!empty($req['attachments']) || !empty($req['special_instructions'])): ?>
-                            <div class="p-3 bg-purple-50/60 dark:bg-purple-950/20 rounded-xl border border-purple-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <div class="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 flex items-center justify-center shrink-0">
-                                        <span class="material-symbols-outlined text-[17px]">photo_library</span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-bold text-on-surface truncate">
-                                            <?= !empty($req['attachments']) ? (count($req['attachments']) . ' Reference Photo' . (count($req['attachments']) > 1 ? 's' : '') . ' Uploaded') : 'Document Change Request' ?>
-                                        </p>
-                                        <?php if (!empty($req['special_instructions'])): ?>
-                                            <p class="text-[11px] text-on-surface-variant truncate italic">&ldquo;<?= esc($req['special_instructions']) ?>&rdquo;</p>
-                                        <?php endif; ?>
+                                                <div class="relative z-10">
+                                                    <?php if ($isDone): ?>
+                                                        <div class="w-7 h-7 rounded-full bg-terra-green text-white flex items-center justify-center shadow-2xs">
+                                                            <span class="material-symbols-outlined text-[15px]">check</span>
+                                                        </div>
+                                                    <?php elseif ($isActive): ?>
+                                                        <div class="relative w-7 h-7 rounded-full bg-terra-green text-white flex items-center justify-center shadow-2xs ring-4 ring-terra-green/15">
+                                                            <span class="w-2 h-2 rounded-full bg-white"></span>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                                                            <span class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+
+                                                <span class="mt-1.5 text-[10px] sm:text-[11px] font-semibold <?= ($isDone || $isActive) ? 'text-terra-green dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500' ?> text-center leading-tight px-0.5"><?= esc($st['label']) ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 shrink-0">
-                                    <?php if (!empty($req['attachments'])): ?>
-                                        <div class="flex items-center -space-x-2 overflow-hidden py-0.5">
-                                            <?php foreach (array_slice($req['attachments'], 0, 3) as $attThumb):
-                                                $tUrl = $attThumb['image_url'] ?? '';
-                                                if ($tUrl !== '' && !str_starts_with($tUrl, 'http')) {
-                                                    $tUrl = base_url(ltrim($tUrl, '/'));
-                                                }
-                                            ?>
-                                                <img class="inline-block h-7 w-7 rounded-lg ring-2 ring-surface object-cover shadow-2xs" src="<?= esc($tUrl) ?>" alt="Reference preview" loading="lazy">
-                                            <?php endforeach; ?>
-                                            <?php if (count($req['attachments']) > 3): ?>
-                                                <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-surface-container-high ring-2 ring-surface text-[10px] font-bold text-on-surface-variant">+<?= count($req['attachments']) - 3 ?></span>
+                            <?php endif; ?>
+
+                            <!-- Single Clean Reference Photos & Change Notes Bar (No duplicate footer button) -->
+                            <?php if (!empty($req['attachments']) || !empty($req['special_instructions'])): ?>
+                                <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px] text-slate-400 shrink-0">attach_file</span>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                                <?= !empty($req['attachments']) ? (count($req['attachments']) . ' Reference Photo' . (count($req['attachments']) > 1 ? 's' : '')) : 'Formatting Notes' ?>
+                                            </p>
+                                            <?php if (!empty($req['special_instructions'])): ?>
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate"><?= esc($req['special_instructions']) ?></p>
                                             <?php endif; ?>
                                         </div>
-                                    <?php endif; ?>
+                                    </div>
                                     <button type="button"
-                                            class="view-ref-photos-btn px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs"
+                                            class="view-ref-photos-btn px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-terra-green/50 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shrink-0"
                                             data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>"
                                             data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>"
                                             data-instructions="<?= esc($req['special_instructions'] ?? '') ?>"
                                             data-attachments="<?= esc(json_encode($req['attachments'] ?? []), 'attr') ?>"
                                             data-changetype="<?= esc(($req['doc_change_type'] ?? '') === 'has_changes' ? 'Requested Changes' : 'Print As-Is') ?>">
-                                        <span class="material-symbols-outlined text-[15px]">visibility</span>
-                                        <span>View Photos</span>
+                                        <span class="material-symbols-outlined text-[14px]">visibility</span>
+                                        <span>View</span>
                                     </button>
                                 </div>
-                            </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <!-- Fulfillment Progress Stepper -->
-                        <?php if ($reqStatus !== 'cancelled'): ?>
-                            <?php
-                                // Define stepper steps based on fulfillment method
-                                if ($isPickup) {
-                                    $prSteps = [
-                                        ['key' => 'new',              'label' => 'Placed'],
-                                        ['key' => 'in_production',    'label' => 'Processing'],
-                                        ['key' => 'ready_for_pickup', 'label' => 'Ready'],
-                                        ['key' => 'completed',        'label' => 'Completed'],
-                                    ];
-                                } else {
-                                    $prSteps = [
-                                        ['key' => 'new',                'label' => 'Placed'],
-                                        ['key' => 'in_production',      'label' => 'Processing'],
-                                        ['key' => 'ready_for_delivery', 'label' => 'Shipped'],
-                                        ['key' => 'completed',          'label' => 'Completed'],
-                                    ];
-                                }
+                        </div>
 
-                                // Build an order map: step key => numeric index
-                                $prStepOrder = [];
-                                foreach ($prSteps as $si => $st) { $prStepOrder[$st['key']] = $si; }
-                                // Map in_transit to the same index as ready_for_delivery
-                                $prStepOrder['in_transit'] = $prStepOrder['ready_for_delivery'] ?? 2;
+                        <!-- 3. Footer: Price & Action Buttons (Zero duplicate buttons or passive text notices) -->
+                        <div class="px-4 py-3.5 sm:px-5 bg-slate-50/40 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
 
-                                $prCurrentIdx = $prStepOrder[$reqStatus] ?? 0;
-                            ?>
-                            <div class="py-md">
-                                <div class="flex items-center w-full">
-                                    <?php foreach ($prSteps as $si => $st):
-                                        $isDone   = ($si < $prCurrentIdx) || ($reqStatus === 'completed');
-                                        $isActive = ($si === $prCurrentIdx) && ($reqStatus !== 'completed');
-                                    ?>
-                                        <?php if ($si > 0): ?>
-                                            <!-- Connector line -->
-                                            <div class="flex-1 h-[3px] mx-0.5 rounded-full transition-all duration-500 <?= ($isDone || ($isActive && $si <= $prCurrentIdx) || $reqStatus === 'completed') ? 'bg-blue-600' : 'bg-outline-variant/30' ?>"></div>
-                                        <?php endif; ?>
-
-                                        <!-- Step node -->
-                                        <div class="flex flex-col items-center gap-1 shrink-0">
-                                            <?php if ($isDone): ?>
-                                                <!-- Completed step -->
-                                                <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm ring-2 ring-blue-600/20">
-                                                    <span class="material-symbols-outlined text-[16px]">check</span>
-                                                </div>
-                                            <?php elseif ($isActive): ?>
-                                                <!-- Active step -->
-                                                <div class="relative w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm">
-                                                    <span class="absolute w-full h-full rounded-full bg-blue-500 animate-ping opacity-30"></span>
-                                                    <span class="w-3 h-3 rounded-full bg-white relative z-10"></span>
-                                                </div>
-                                            <?php else: ?>
-                                                <!-- Pending step -->
-                                                <div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-outline-variant/50 flex items-center justify-center">
-                                                    <span class="w-2 h-2 rounded-full bg-outline-variant/60"></span>
-                                                </div>
-                                            <?php endif; ?>
-                                            <span class="text-[10px] font-bold <?= $isDone ? 'text-blue-700' : ($isActive ? 'text-blue-600' : 'text-on-surface-variant/60') ?> whitespace-nowrap"><?= esc($st['label']) ?></span>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Bottom row: Price & Action Buttons -->
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mt-sm gap-md">
-
-                            <div class="flex flex-col gap-1">
-                                <span class="text-[10px] text-outline uppercase font-bold tracking-widest"><?= esc($reqPriceLbl) ?></span>
-                                <span class="text-headline-lg font-bold <?= esc($reqPriceCls) ?>">₱<?= esc($reqPrice) ?></span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xs text-slate-500 dark:text-slate-400"><?= esc($reqPriceLbl) ?>:</span>
+                                <span class="text-base sm:text-lg font-extrabold font-mono text-terra-green dark:text-emerald-400">₱<?= esc($reqPrice) ?></span>
                             </div>
 
                             <!-- Actions -->
-                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
+                            <div class="flex flex-wrap items-center gap-2 justify-end">
 
-                                <!-- Rate Service Button: for completed requests -->
                                 <?php if ($reqStatus === 'completed'): ?>
                                     <button type="button" 
-                                            class="rate-pr-btn bg-amber-500 hover:bg-amber-600 text-white py-2 px-3.5 rounded-xl font-button text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                                            class="rate-pr-btn inline-flex items-center gap-1 px-3.5 py-1.5 bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300/40 hover:bg-amber-500/25 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
                                             data-req='<?= esc(json_encode($req), 'attr') ?>'>
-                                        <span class="material-symbols-outlined text-[16px]">star</span>
-                                        <span>Rate Shop & Service</span>
+                                        <span class="material-symbols-outlined text-[15px]">star</span>
+                                        <span>Rate</span>
                                     </button>
                                 <?php endif; ?>
 
-                                <!-- Store Pick-up Actions -->
-                                <?php if ($isPickup && $reqStatus !== 'cancelled'): ?>
-                                    <?php if (in_array($reqStatus, ['ready_for_pickup', 'completed'], true)): ?>
-                                        <button type="button" 
-                                                class="pr-qr-btn bg-primary text-on-primary py-2 px-3.5 rounded-xl font-button text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer" 
-                                                data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>" 
-                                                data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>"
-                                                data-shop="<?= esc($shopName) ?>"
-                                                data-location="<?= esc($shopAddress) ?>"
-                                                data-paid="<?= $isPaid ? 'PAID' : 'PAY AT COUNTER' ?>">
-                                            <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
-                                            <span>View Pick-up QR</span>
-                                        </button>
-                                    <?php else: ?>
-                                        <span class="text-xs text-on-surface-variant/70 font-medium py-2 px-3 bg-surface-container/70 border border-outline-variant/30 rounded-xl flex items-center justify-center gap-1">
-                                            <span class="material-symbols-outlined text-[15px] text-outline">schedule</span>
-                                            <span>QR available when ready</span>
-                                        </span>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-
-                                <!-- Doorstep Delivery Actions -->
-                                <?php if (!$isPickup && $reqStatus !== 'cancelled'): ?>
-                                    <?php if (in_array($reqStatus, ['ready_for_delivery', 'in_transit', 'completed', 'delivered'], true)): ?>
-                                        <a href="<?= base_url('customer/printing/track/' . esc($req['request_number'] ?? $req['id'])) ?>" 
-                                           class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition gap-1.5 active:scale-95 cursor-pointer">
-                                            <span class="material-symbols-outlined text-[18px]">local_shipping</span>
-                                            <span>Track Delivery</span>
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="text-xs text-on-surface-variant/70 font-medium py-2 px-3 bg-surface-container/70 border border-outline-variant/30 rounded-xl flex items-center justify-center gap-1">
-                                            <span class="material-symbols-outlined text-[15px] text-outline">schedule</span>
-                                            <span>Tracking available once dispatched</span>
-                                        </span>
-                                    <?php endif; ?>
-                                <?php endif; ?>
-
-                                <!-- Track Status Popup Button -->
-                                <?php if (in_array($reqStatus, ['new', 'in_production', 'ready_for_delivery', 'ready_for_pickup', 'in_transit'])): ?>
+                                <?php if ($isPickup && in_array($reqStatus, ['ready_for_pickup', 'completed'], true)): ?>
                                     <button type="button" 
-                                            class="pr-track flex items-center gap-1 px-3 py-2 border border-outline-variant/50 text-on-surface hover:bg-surface-container rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer" 
+                                            class="pr-qr-btn bg-terra-green hover:bg-[#3d7a33] text-white py-1.5 px-3.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer" 
                                             data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>" 
-                                            data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>" 
-                                            data-status="<?= esc($reqStatus) ?>" 
-                                            data-status-label="<?= esc($reqLabel) ?>" 
-                                            data-progress="<?= esc($reqProgress) ?>" 
-                                            data-printer="<?= esc($reqPrinter) ?>" 
-                                            data-method="<?= esc($reqMethod) ?>" 
-                                            data-created="<?= esc($reqCreated) ?>" 
-                                            data-completed="<?= esc($reqDone) ?>">
-                                        <span class="material-symbols-outlined text-[16px] text-primary">monitoring</span>
-                                        <span>Status</span>
-                                    </button>
-                                <?php endif; ?>
-
-                                <!-- Reference Photos Action Button -->
-                                <?php if (!empty($req['attachments']) || !empty($req['special_instructions'])): ?>
-                                    <button type="button" 
-                                            class="view-ref-photos-btn flex items-center gap-1 px-3 py-2 border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                                            data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>"
                                             data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>"
-                                            data-instructions="<?= esc($req['special_instructions'] ?? '') ?>"
-                                            data-attachments="<?= esc(json_encode($req['attachments'] ?? []), 'attr') ?>"
-                                            data-changetype="<?= esc(($req['doc_change_type'] ?? '') === 'has_changes' ? 'Requested Changes' : 'Print As-Is') ?>">
-                                        <span class="material-symbols-outlined text-[16px] text-purple-700">photo_library</span>
-                                        <span>Photos <?= !empty($req['attachments']) ? ('(' . count($req['attachments']) . ')') : '' ?></span>
+                                            data-shop="<?= esc($shopName) ?>"
+                                            data-location="<?= esc($shopAddress) ?>"
+                                            data-paid="<?= $isPaid ? 'PAID' : 'PAY AT COUNTER' ?>">
+                                        <span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+                                        <span>Pick-up QR</span>
                                     </button>
                                 <?php endif; ?>
 
-                                <!-- Edit Request & Change Files Button: Only available if status is NOT in production/processing -->
+                                <?php if (!$isPickup && in_array($reqStatus, ['ready_for_delivery', 'in_transit', 'completed', 'delivered'], true)): ?>
+                                    <a href="<?= base_url('customer/printing/track/' . esc($req['request_number'] ?? $req['id'])) ?>" 
+                                       class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-terra-green hover:bg-[#3d7a33] text-white text-xs font-bold rounded-xl shadow-2xs transition active:scale-95 cursor-pointer">
+                                        <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                                        <span>Track</span>
+                                    </a>
+                                <?php endif; ?>
+
                                 <?php if (in_array($reqStatus, ['new', 'pending'], true)): ?>
                                     <button type="button" 
-                                            class="edit-pr-btn bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 py-2 px-3 rounded-xl font-button text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer font-bold shadow-2xs"
+                                            class="edit-pr-btn bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-terra-green/50 text-slate-700 dark:text-slate-200 py-1.5 px-3.5 rounded-xl text-xs font-semibold transition-all inline-flex items-center gap-1 active:scale-95 cursor-pointer"
                                             data-id="<?= (int) $req['id'] ?>"
                                             data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>"
                                             data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>"
@@ -367,24 +303,30 @@
                                             data-pages="<?= (int) ($req['page_count'] ?? 1) ?>"
                                             data-instructions="<?= esc($req['special_instructions'] ?? '') ?>"
                                             data-changetype="<?= esc($req['doc_change_type'] ?? 'as_is') ?>">
-                                        <span class="material-symbols-outlined text-[16px]">edit_document</span>
-                                        <span>Edit &amp; Change Files</span>
+                                        <span>Edit</span>
                                     </button>
-                                <?php elseif ($reqStatus === 'in_production'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 shadow-2xs" title="This printing request is currently in production and cannot be modified or have its files replaced.">
-                                        <span class="material-symbols-outlined text-[15px] text-amber-600">lock</span>
-                                        <span>In Production (Locked)</span>
-                                    </span>
-                                <?php endif; ?>
 
-                                <!-- Cancel Request Button: only visible if new or pending (not yet in production) -->
-                                <?php if (in_array($reqStatus, ['new', 'pending'], true)): ?>
                                     <button type="button" 
-                                            class="cancel-pr-btn border border-error/50 text-error hover:bg-error/10 py-2 px-3 rounded-xl font-button text-xs transition-colors flex items-center justify-center gap-1 active:scale-95 cursor-pointer font-semibold"
+                                            class="cancel-pr-btn border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 py-1.5 px-3 rounded-xl text-xs font-semibold transition-colors inline-flex items-center gap-1 active:scale-95 cursor-pointer"
                                             data-id="<?= (int) $req['id'] ?>"
                                             data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>">
-                                        <span class="material-symbols-outlined text-[16px]">close</span>
-                                        <span>Cancel Request</span>
+                                        <span>Cancel</span>
+                                    </button>
+                                <?php endif; ?>
+
+                                <?php if (in_array($reqStatus, ['new', 'in_production', 'ready_for_delivery', 'ready_for_pickup', 'in_transit'])): ?>
+                                    <button type="button" 
+                                            class="pr-track inline-flex items-center gap-1 px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-terra-green/50 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer" 
+                                            data-number="<?= esc($req['request_number'] ?? ('PR-' . $req['id'])) ?>" 
+                                            data-name="<?= esc($req['file_name'] ?? 'Document.pdf') ?>" 
+                                            data-status="<?= esc($reqStatus) ?>" 
+                                            data-status-label="<?= esc($reqLabel) ?>" 
+                                            data-progress="<?= esc($reqProgress) ?>" 
+                                            data-printer="<?= esc($reqPrinter) ?>" 
+                                            data-method="<?= esc($reqMethod) ?>" 
+                                            data-created="<?= esc($reqCreated) ?>" 
+                                            data-completed="<?= esc($reqDone) ?>">
+                                        <span>Details</span>
                                     </button>
                                 <?php endif; ?>
 
@@ -395,24 +337,29 @@
                     </div>
 
                 <?php endforeach; ?>
+                </div>
 
-                <div id="pr-empty" class="hidden bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-xl text-center text-on-surface-variant">
-                    <span class="material-symbols-outlined text-4xl text-outline mb-2">print</span>
+                <div id="pr-empty" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-8 text-center text-slate-500 dark:text-slate-400 text-xs">
+                    <span class="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-600 mb-1 block">print</span>
                     <p>No <span id="pr-empty-label">printing requests</span> found.</p>
                 </div>
 
             <?php else: ?>
 
-                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 p-xl text-center text-on-surface-variant flex flex-col items-center">
-                    <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-md">
-                        <span class="material-symbols-outlined text-3xl">print</span>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-8 sm:p-10 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-terra-green/10 text-terra-green dark:text-emerald-400 mx-auto flex items-center justify-center">
+                        <span class="material-symbols-outlined text-2xl">print</span>
                     </div>
-                    <h3 class="text-title-lg font-bold text-on-surface mb-xs">No printing requests yet</h3>
-                    <p class="text-body-md text-on-surface-variant max-w-md mb-lg">When you request custom document printing or bookbinding, you will be able to track live progress and store pick-up passes right here.</p>
-                    <a href="<?= base_url('printing-services') ?>" class="inline-flex items-center gap-xs bg-primary text-on-primary px-lg py-md rounded-xl font-button hover:bg-primary-container transition-all shadow-sm">
-                        <span class="material-symbols-outlined text-[20px]">storefront</span>
-                        <span>Find Printing Shops</span>
-                    </a>
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">No printing requests yet</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">Upload documents for local printing, binding, and pickup.</p>
+                    </div>
+                    <div class="pt-1">
+                        <a href="<?= base_url('printing-services') ?>" class="inline-flex items-center gap-1.5 bg-terra-green hover:bg-[#3d7a33] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">print</span>
+                            <span>Find Printing Shops</span>
+                        </a>
+                    </div>
                 </div>
 
             <?php endif; ?>
@@ -421,132 +368,130 @@
 
     </main>
 
-</div>
-
-<!-- Track Progress Modal -->
-<div id="track-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-xs" id="track-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xl w-full max-w-md p-lg flex flex-col gap-md z-10">
-        <div class="flex justify-between items-start gap-md">
+</div><!-- Track Progress Modal -->
+<div id="track-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-xs" id="track-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 z-10">
+        <div class="flex justify-between items-start gap-4">
             <div class="flex flex-col">
-                <span class="text-label-sm text-outline font-medium tracking-tight" id="track-number">#PR-00000</span>
-                <h3 class="text-headline-md font-bold text-on-surface mt-1" id="track-name">Document.pdf</h3>
+                <span class="text-[11px] font-mono font-bold text-neutral-400 dark:text-neutral-500 tracking-tight" id="track-number">#PR-00000</span>
+                <h3 class="text-base sm:text-lg font-bold text-neutral-900 dark:text-white mt-0.5" id="track-name">Document.pdf</h3>
             </div>
-            <button type="button" id="track-close" class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant cursor-pointer">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" id="track-close" class="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
-        <span id="track-status" class="self-start px-sm py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider">In Production</span>
-        <div class="flex flex-col gap-1">
-            <div class="flex justify-between items-center">
-                <span class="text-[10px] text-outline uppercase font-bold tracking-widest">Progress</span>
-                <span class="text-label-sm font-semibold text-on-surface" id="track-progress">0%</span>
+        <span id="track-status" class="self-start px-2.5 py-0.5 bg-terra-green/10 text-terra-green border border-terra-green/20 text-[11px] font-bold rounded-full uppercase tracking-wider">In Production</span>
+        <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between items-center text-xs">
+                <span class="text-neutral-400 dark:text-neutral-500 font-bold uppercase tracking-wider text-[10px]">Progress</span>
+                <span class="font-mono font-bold text-terra-green" id="track-progress">0%</span>
             </div>
-            <div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                <div id="track-progress-bar" class="h-2 bg-primary rounded-full transition-all" style="width:0%"></div>
-            </div>
-        </div>
-        <div class="grid grid-cols-2 gap-md">
-            <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-outline uppercase font-bold tracking-widest">Printer</span>
-                <span class="text-body-md font-semibold text-on-surface" id="track-printer">Not assigned yet</span>
-            </div>
-            <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-outline uppercase font-bold tracking-widest">Fulfillment</span>
-                <span class="text-body-md font-semibold text-on-surface" id="track-method">Pickup</span>
+            <div class="w-full h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                <div id="track-progress-bar" class="h-2 bg-gradient-to-r from-terra-green to-emerald-500 rounded-full transition-all" style="width:0%"></div>
             </div>
         </div>
-        <div class="flex flex-col gap-1">
-            <span class="text-[10px] text-outline uppercase font-bold tracking-widest">Requested On</span>
-            <span class="text-body-md font-semibold text-on-surface" id="track-created">—</span>
+        <div class="grid grid-cols-2 gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/40 rounded-xl border border-neutral-100 dark:border-neutral-800/80">
+            <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Printer</span>
+                <span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200" id="track-printer">Not assigned yet</span>
+            </div>
+            <div class="flex flex-col gap-0.5">
+                <span class="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Fulfillment</span>
+                <span class="text-xs font-semibold text-neutral-800 dark:text-neutral-200" id="track-method">Pickup</span>
+            </div>
         </div>
-        <div id="track-completed-row" class="flex flex-col gap-1 hidden">
-            <span class="text-[10px] text-outline uppercase font-bold tracking-widest">Completed On</span>
-            <span class="text-body-md font-semibold text-on-surface" id="track-completed">—</span>
+        <div class="flex flex-col gap-0.5 text-xs">
+            <span class="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Requested On</span>
+            <span class="font-medium text-neutral-700 dark:text-neutral-300" id="track-created">—</span>
         </div>
-        <button type="button" id="track-done" class="self-end px-xl py-md bg-primary text-on-primary rounded-xl text-button font-button hover:bg-primary-container transition-all active:scale-95 shadow-md cursor-pointer">Close</button>
+        <div id="track-completed-row" class="flex flex-col gap-0.5 text-xs hidden">
+            <span class="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase font-bold tracking-wider">Completed On</span>
+            <span class="font-medium text-neutral-700 dark:text-neutral-300" id="track-completed">—</span>
+        </div>
+        <button type="button" id="track-done" class="self-end px-5 py-2 bg-terra-green hover:bg-terra-green/90 text-white rounded-xl text-xs font-semibold transition-all active:scale-95 shadow-xs cursor-pointer">Close</button>
     </div>
 </div>
 
 <!-- Pick-up QR Modal (Store Pick-up Pass) -->
-<div id="qr-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="qr-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl w-full max-w-sm p-xl flex flex-col items-center gap-md text-center z-10">
-        <div class="flex justify-between items-center w-full border-b border-outline-variant/20 pb-md">
-            <div class="flex items-center gap-xs text-primary font-bold">
+<div id="qr-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" id="qr-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 text-center z-10">
+        <div class="flex justify-between items-center w-full border-b border-neutral-100 dark:border-neutral-800 pb-3">
+            <div class="flex items-center gap-2 text-terra-green font-bold">
                 <span class="material-symbols-outlined text-2xl">qr_code_2</span>
-                <span class="text-title-md">Store Pick-up Pass</span>
+                <span class="text-sm font-bold text-neutral-900 dark:text-white">Store Pick-up Pass</span>
             </div>
-            <button type="button" id="qr-close" class="p-1 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" id="qr-close" class="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
         
-        <div class="flex flex-col items-center justify-center bg-white p-6 rounded-2xl shadow-inner border border-slate-100 w-full max-w-[240px] aspect-square mx-auto">
+        <div class="flex flex-col items-center justify-center bg-white p-5 rounded-2xl shadow-inner border border-neutral-100 w-full max-w-[220px] aspect-square mx-auto">
             <div id="qr-canvas-container" class="flex justify-center items-center w-full h-full"></div>
         </div>
         
         <div class="flex flex-col items-center w-full space-y-1">
-            <span class="text-[10px] uppercase tracking-widest text-outline font-bold">Request Identifier</span>
-            <span id="qr-request-number" class="text-headline-sm font-mono font-bold text-primary">#PR-00000</span>
+            <span class="text-[10px] uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-bold">Request Identifier</span>
+            <span id="qr-request-number" class="text-lg font-mono font-bold text-terra-green">#PR-00000</span>
             
             <div class="flex items-center justify-center gap-2 mt-1">
-                <span id="qr-shop" class="text-xs font-semibold text-on-surface">Store</span>
-                <span class="text-on-surface-variant/40">•</span>
+                <span id="qr-shop" class="text-xs font-semibold text-neutral-900 dark:text-white">Store</span>
+                <span class="text-neutral-300 dark:text-neutral-700">•</span>
                 <span id="qr-payment" class="text-[11px] font-bold px-2 py-0.5 rounded-full"></span>
             </div>
 
-            <div id="qr-location-box" class="text-[11px] text-on-surface-variant/90 mt-1 flex items-center justify-center gap-1">
-                <span class="material-symbols-outlined text-[14px] text-primary">location_on</span>
+            <div id="qr-location-box" class="text-xs text-neutral-500 dark:text-neutral-400 mt-1 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-terra-green">location_on</span>
                 <span id="qr-location">Poblacion, Polomolok</span>
             </div>
 
-            <p class="text-xs text-on-surface-variant/80 mt-2.5 leading-relaxed italic px-2">
-                Present this QR code to the cashier at <span id="qr-inst-shop" class="font-semibold text-on-surface not-italic">the store</span> upon claiming your printed document.
+            <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed italic px-2">
+                Present this QR code to the cashier at <span id="qr-inst-shop" class="font-semibold text-neutral-900 dark:text-white not-italic">the store</span> upon claiming your printed document.
             </p>
 
-            <div class="mt-3 p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-1.5 text-amber-800 text-[11px] font-medium text-left w-full">
-                <span class="material-symbols-outlined text-[16px] text-amber-600 shrink-0">brightness_high</span>
+            <div class="mt-3 p-2.5 bg-terra-amber/10 dark:bg-terra-amber/20 border border-terra-amber/30 rounded-xl flex items-center gap-2 text-amber-800 dark:text-amber-300 text-xs font-medium text-left w-full">
+                <span class="material-symbols-outlined text-[16px] text-terra-amber shrink-0">brightness_high</span>
                 <span>Turn up screen brightness for fast barcode scanning</span>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 w-full">
-            <button type="button" id="qr-download" class="w-full py-md bg-surface-container-highest hover:bg-outline-variant text-on-surface rounded-xl text-button font-button transition-all flex items-center justify-center gap-xs cursor-pointer">
-                <span class="material-symbols-outlined text-[18px]">download</span>
+        <div class="grid grid-cols-2 gap-2 w-full pt-1">
+            <button type="button" id="qr-download" class="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">download</span>
                 <span>Download QR</span>
             </button>
-            <button type="button" id="qr-done" class="w-full py-md bg-primary text-on-primary rounded-xl text-button font-button hover:bg-primary-container transition-all active:scale-95 shadow-md cursor-pointer">Close</button>
+            <button type="button" id="qr-done" class="w-full py-2.5 bg-terra-green text-white rounded-xl text-xs font-semibold hover:bg-terra-green/90 transition-all active:scale-95 shadow-xs cursor-pointer">Close</button>
         </div>
     </div>
 </div>
 
 <!-- Cancel Printing Confirmation Modal -->
-<div id="cancel-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="cancel-pr-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl w-full max-w-md p-lg md:p-xl flex flex-col gap-md z-10">
-        <div class="flex items-center gap-sm">
-            <div class="w-12 h-12 rounded-2xl bg-error-container/20 flex items-center justify-center shrink-0 text-error">
+<div id="cancel-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" id="cancel-pr-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">warning</span>
             </div>
             <div>
-                <h3 class="text-title-lg font-bold text-on-surface" id="cancel-pr-title">Cancel Printing Request?</h3>
-                <p class="text-xs text-on-surface-variant font-medium">Permanent Action</p>
+                <h3 class="text-base font-bold text-neutral-900 dark:text-white" id="cancel-pr-title">Cancel Printing Request?</h3>
+                <p class="text-xs text-neutral-400 font-medium">Permanent Action</p>
             </div>
         </div>
 
-        <p class="text-body-md text-on-surface-variant leading-relaxed">
+        <p class="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
             Are you sure you want to cancel this printing request? This action cannot be undone and will notify the shop attendant.
         </p>
 
-        <div id="cancel-pr-error" class="hidden p-sm bg-error-container/20 border border-error-container/50 rounded-xl text-xs text-error font-semibold flex items-center gap-1.5">
+        <div id="cancel-pr-error" class="hidden p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-semibold flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[16px]">error</span>
             <span id="cancel-pr-error-text">Failed to cancel printing request.</span>
         </div>
 
-        <div class="flex items-center gap-sm pt-sm border-t border-outline-variant/20">
-            <button type="button" id="cancel-pr-keep" class="flex-1 py-md bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-button text-button transition-all font-semibold cursor-pointer">Keep Request</button>
-            <button type="button" id="cancel-pr-confirm" class="flex-1 py-md bg-error hover:bg-error/90 text-white rounded-xl font-button text-button transition-all font-semibold flex items-center justify-center gap-xs shadow-md active:scale-95 cursor-pointer">
+        <div class="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <button type="button" id="cancel-pr-keep" class="flex-1 py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-xl text-xs font-semibold transition-all cursor-pointer">Keep Request</button>
+            <button type="button" id="cancel-pr-confirm" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
                 <span id="cancel-pr-spinner" class="material-symbols-outlined text-[16px] animate-spin hidden">progress_activity</span>
                 <span id="cancel-pr-confirm-text">Yes, Cancel</span>
             </button>
@@ -555,49 +500,49 @@
 </div>
 
 <!-- Rate Shop & Service Modal -->
-<div id="rate-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="rate-pr-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl w-full max-w-lg p-lg md:p-xl flex flex-col gap-md z-10 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-md">
+<div id="rate-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" id="rate-pr-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-lg p-6 flex flex-col gap-4 z-10 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-neutral-100 dark:border-neutral-800 pb-3">
             <div>
-                <span class="text-[10px] uppercase font-bold text-outline tracking-wider">Leave Feedback</span>
-                <h3 class="text-title-lg font-bold text-on-surface" id="rate-pr-title">Rate Printing Service</h3>
+                <span class="text-[10px] uppercase font-bold text-neutral-400 dark:text-neutral-500 tracking-wider">Leave Feedback</span>
+                <h3 class="text-base font-bold text-neutral-900 dark:text-white" id="rate-pr-title">Rate Printing Service</h3>
             </div>
-            <button type="button" id="rate-pr-close" class="p-1 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" id="rate-pr-close" class="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
-        <form id="rate-pr-form" class="space-y-lg">
+        <form id="rate-pr-form" class="space-y-4">
             <input type="hidden" id="rate-pr-shop-id" value="">
             <input type="hidden" id="rate-pr-request-id" value="">
 
             <!-- Shop & Printing Rating -->
-            <div class="bg-surface-container-low p-md rounded-2xl border border-outline-variant/20 space-y-xs">
+            <div class="bg-neutral-50 dark:bg-neutral-800/40 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-800 space-y-2">
                 <div class="flex justify-between items-center">
-                    <label class="text-xs font-bold text-on-surface uppercase tracking-wide">Shop & Service Rating: <span id="rate-pr-shop-name" class="text-primary font-semibold">Store</span></label>
-                    <span id="rate-pr-val-text" class="text-xs font-bold text-amber-500">5 / 5</span>
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white uppercase tracking-wide">Shop &amp; Service: <span id="rate-pr-shop-name" class="text-terra-green font-semibold">Store</span></label>
+                    <span id="rate-pr-val-text" class="text-xs font-bold text-terra-amber font-mono">5 / 5</span>
                 </div>
                 <div class="flex items-center gap-1" id="pr-star-group">
                     <?php for ($i = 1; $i <= 5; $i++): ?>
-                        <button type="button" class="pr-star text-amber-400 hover:scale-110 transition-transform cursor-pointer" data-val="<?= $i ?>">
+                        <button type="button" class="pr-star text-terra-amber hover:scale-110 transition-transform cursor-pointer" data-val="<?= $i ?>">
                             <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">star</span>
                         </button>
                     <?php endfor; ?>
                 </div>
                 <input type="hidden" id="rate-pr-score" value="5">
-                <textarea id="rate-pr-comment" rows="3" placeholder="How was the print quality, paper stock, and customer turnaround time?" class="w-full text-xs p-2.5 rounded-xl border border-outline-variant/40 bg-surface focus:border-primary focus:ring-1 focus:ring-primary text-on-surface"></textarea>
+                <textarea id="rate-pr-comment" rows="3" placeholder="How was the print quality, paper stock, and customer turnaround time?" class="w-full text-xs p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:border-terra-green focus:ring-1 focus:ring-terra-green text-neutral-900 dark:text-white"></textarea>
             </div>
 
-            <div id="rate-pr-error" class="hidden p-sm bg-error-container/20 border border-error-container/50 rounded-xl text-xs text-error font-semibold flex items-center gap-1.5">
+            <div id="rate-pr-error" class="hidden p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-semibold flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px]">error</span>
                 <span id="rate-pr-error-text">Failed to submit review.</span>
             </div>
 
-            <div class="flex justify-end gap-sm pt-xs border-t border-outline-variant/20">
-                <button type="button" id="rate-pr-cancel" class="py-sm px-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-button text-button transition-all font-semibold cursor-pointer">Cancel</button>
-                <button type="submit" id="rate-pr-submit-btn" class="py-sm px-xl bg-primary hover:bg-primary-container text-on-primary rounded-xl font-button text-button transition-all font-semibold flex items-center justify-center gap-xs shadow-md active:scale-95 cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">send</span>
+            <div class="flex justify-end gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                <button type="button" id="rate-pr-cancel" class="py-2 px-4 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-xl text-xs font-semibold transition-all cursor-pointer">Cancel</button>
+                <button type="submit" id="rate-pr-submit-btn" class="py-2 px-5 bg-terra-green hover:bg-terra-green/90 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">send</span>
                     <span>Submit Review</span>
                 </button>
             </div>
@@ -606,74 +551,74 @@
 </div>
 
 <!-- Customer Reference Photos & Instructions Modal -->
-<div id="ref-photos-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="ref-photos-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl w-full max-w-lg p-lg md:p-xl flex flex-col gap-md z-10 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-sm">
+<div id="ref-photos-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" id="ref-photos-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-lg p-6 flex flex-col gap-4 z-10 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-neutral-100 dark:border-neutral-800 pb-3">
             <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 flex items-center justify-center shrink-0">
+                <div class="w-9 h-9 rounded-xl bg-terra-earth/10 dark:bg-terra-earth/30 text-terra-earth dark:text-amber-300 flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-[20px]">photo_library</span>
                 </div>
                 <div>
-                    <h3 class="text-title-md font-bold text-on-surface">Reference Photos & Changes</h3>
-                    <span id="ref-modal-number" class="text-xs font-mono text-primary font-bold"></span>
+                    <h3 class="text-sm font-bold text-neutral-900 dark:text-white">Reference Photos &amp; Changes</h3>
+                    <span id="ref-modal-number" class="text-xs font-mono text-terra-green font-bold"></span>
                 </div>
             </div>
-            <button type="button" id="ref-modal-close" class="p-1.5 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" id="ref-modal-close" class="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
-        <div class="space-y-md">
+        <div class="space-y-4">
             <!-- Special Instructions Box -->
-            <div id="ref-modal-instructions-box" class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
-                <span class="text-[11px] font-bold text-amber-950 dark:text-amber-300 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px] text-amber-800 dark:text-amber-400">edit_note</span>
+            <div id="ref-modal-instructions-box" class="p-3.5 rounded-2xl bg-terra-amber/10 dark:bg-terra-amber/20 border border-terra-amber/20 dark:border-terra-amber/30 space-y-1.5">
+                <span class="text-[11px] font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px] text-terra-amber">edit_note</span>
                     <span>Your Change Instructions:</span>
                 </span>
-                <p id="ref-modal-instructions" class="text-xs text-on-surface bg-surface-container-lowest p-2.5 rounded-xl border border-amber-200/80 whitespace-pre-wrap font-medium leading-relaxed shadow-2xs"></p>
+                <p id="ref-modal-instructions" class="text-xs text-neutral-800 dark:text-neutral-200 bg-white dark:bg-neutral-900 p-3 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 whitespace-pre-wrap font-medium leading-relaxed"></p>
             </div>
 
             <!-- Photos Grid -->
             <div id="ref-modal-photos-box" class="space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[17px] text-purple-600">image</span>
+                    <span class="text-[11px] font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[17px] text-terra-earth">image</span>
                         <span>Attached Photos (<span id="ref-modal-count">0</span>)</span>
                     </span>
-                    <span class="text-[10px] text-outline">Click photo to zoom</span>
+                    <span class="text-[10px] text-neutral-400">Click photo to zoom</span>
                 </div>
                 <div id="ref-modal-photos-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
             </div>
         </div>
 
-        <div class="pt-sm border-t border-outline-variant/20 flex justify-end">
-            <button type="button" id="ref-modal-done" class="px-xl py-2 bg-primary text-on-primary rounded-xl font-button text-xs font-semibold hover:bg-primary/90 transition-all cursor-pointer">Close</button>
+        <div class="pt-2 border-t border-neutral-100 dark:border-neutral-800 flex justify-end">
+            <button type="button" id="ref-modal-done" class="px-5 py-2 bg-terra-green text-white rounded-xl text-xs font-semibold hover:bg-terra-green/90 transition-all cursor-pointer">Close</button>
         </div>
     </div>
 </div>
 
 <!-- Edit Printing Request Modal (Restricted if In Production) -->
-<div id="edit-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-md">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="edit-pr-overlay"></div>
-    <div class="relative bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl w-full max-w-2xl p-lg md:p-xl flex flex-col gap-md z-10 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center border-b border-outline-variant/20 pb-md">
+<div id="edit-pr-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" id="edit-pr-overlay"></div>
+    <div class="bento-card relative bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-2xl w-full max-w-2xl p-6 flex flex-col gap-4 z-10 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-neutral-100 dark:border-neutral-800 pb-3">
             <div class="flex items-center gap-2.5">
-                <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green dark:bg-terra-green/20 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-2xl">edit_document</span>
                 </div>
                 <div>
-                    <span class="text-[10px] uppercase font-bold text-primary tracking-wider" id="edit-pr-ref-number">#PR-0000</span>
-                    <h3 class="text-title-lg font-bold text-on-surface">Edit Request &amp; Files</h3>
+                    <span class="text-[10px] uppercase font-bold text-terra-green font-mono tracking-wider" id="edit-pr-ref-number">#PR-0000</span>
+                    <h3 class="text-base font-bold text-neutral-900 dark:text-white">Edit Request &amp; Files</h3>
                 </div>
             </div>
-            <button type="button" id="edit-pr-close" class="p-1 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors cursor-pointer">
-                <span class="material-symbols-outlined">close</span>
+            <button type="button" id="edit-pr-close" class="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
-        <div id="edit-pr-locked-alert" class="hidden p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-2">
-            <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0">lock</span>
+        <div id="edit-pr-locked-alert" class="hidden p-3 bg-terra-amber/10 dark:bg-terra-amber/20 border border-terra-amber/30 rounded-2xl text-xs text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-terra-amber shrink-0">lock</span>
             <span>This request is already in processing/production. Options and uploaded files can no longer be modified.</span>
         </div>
 
@@ -682,30 +627,30 @@
             <input type="hidden" name="request_id" id="edit-pr-id" value="">
 
             <!-- Document Details & File Replacement -->
-            <div class="bg-surface-container-low p-3.5 rounded-2xl border border-outline-variant/20 space-y-2.5">
+            <div class="bg-neutral-50 dark:bg-neutral-800/40 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-800 space-y-2.5">
                 <div class="flex items-center justify-between">
-                    <label class="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-[16px] text-primary">description</span>
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px] text-terra-green">description</span>
                         <span>Attached Document</span>
                     </label>
-                    <span id="edit-pr-current-pages-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface">1 Page</span>
+                    <span id="edit-pr-current-pages-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200">1 Page</span>
                 </div>
 
-                <div class="flex items-center gap-2 p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/30">
-                    <span class="material-symbols-outlined text-primary text-[20px] shrink-0">file_present</span>
+                <div class="flex items-center gap-2.5 p-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700">
+                    <span class="material-symbols-outlined text-terra-green text-[22px] shrink-0">file_present</span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs font-bold text-on-surface truncate" id="edit-pr-current-file-name">Document.pdf</p>
-                        <p class="text-[10px] text-on-surface-variant">Current file used for printing</p>
+                        <p class="text-xs font-bold text-neutral-900 dark:text-white truncate" id="edit-pr-current-file-name">Document.pdf</p>
+                        <p class="text-[10px] text-neutral-400">Current file used for printing</p>
                     </div>
                 </div>
 
                 <!-- Replace Document Upload -->
                 <div class="pt-1 space-y-1.5">
-                    <label class="text-[11px] font-semibold text-on-surface-variant flex items-center gap-1">
+                    <label class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
                         <span>Replace with a new document (Optional):</span>
                     </label>
-                    <input type="file" name="document" id="edit-pr-file-input" accept=".pdf,.docx,.doc" class="block w-full text-xs text-on-surface file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 file:cursor-pointer cursor-pointer border border-outline-variant/30 rounded-xl p-1 bg-surface-container-lowest">
-                    <p class="text-[10px] text-on-surface-variant/70">Supported formats: PDF, Word (.docx, .doc). Uploading a new file will automatically recalculate total page count.</p>
+                    <input type="file" name="document" id="edit-pr-file-input" accept=".pdf,.docx,.doc" class="block w-full text-xs text-neutral-700 dark:text-neutral-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-terra-green file:text-white hover:file:bg-terra-green/90 file:cursor-pointer cursor-pointer border border-neutral-200 dark:border-neutral-700 rounded-xl p-1 bg-white dark:bg-neutral-900">
+                    <p class="text-[10px] text-neutral-400">Supported formats: PDF, Word (.docx, .doc). Uploading a new file will automatically recalculate total page count.</p>
                 </div>
             </div>
 
@@ -713,8 +658,8 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <!-- Document Type -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Document Format</label>
-                    <select name="document_type" id="edit-pr-doctype" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Document Format</label>
+                    <select name="document_type" id="edit-pr-doctype" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                         <option value="pdf">PDF Document</option>
                         <option value="docx">Word Document (.docx)</option>
                     </select>
@@ -722,8 +667,8 @@
 
                 <!-- Color Mode -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Color Mode</label>
-                    <select name="color_mode" id="edit-pr-color" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Color Mode</label>
+                    <select name="color_mode" id="edit-pr-color" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                         <option value="bw">Black &amp; White (Monochrome)</option>
                         <option value="color">Full Color</option>
                     </select>
@@ -731,8 +676,8 @@
 
                 <!-- Paper Size -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Paper Size</label>
-                    <select name="paper_size" id="edit-pr-size" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Paper Size</label>
+                    <select name="paper_size" id="edit-pr-size" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                         <option value="letter">Short (Letter - 8.5 x 11 in)</option>
                         <option value="legal">Long (Legal - 8.5 x 13/14 in)</option>
                         <option value="a4">A4 (8.27 x 11.69 in)</option>
@@ -743,8 +688,8 @@
 
                 <!-- Paper Stock -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Paper Stock</label>
-                    <select name="paper_stock" id="edit-pr-stock" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Paper Stock</label>
+                    <select name="paper_stock" id="edit-pr-stock" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                         <option value="standard">Standard 70gsm (Bond Paper)</option>
                         <option value="standard_80gsm">Standard 80gsm (High Quality)</option>
                         <option value="glossy">Glossy Photo Paper</option>
@@ -754,8 +699,8 @@
 
                 <!-- Binding Option -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Binding</label>
-                    <select name="binding" id="edit-pr-binding" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Binding</label>
+                    <select name="binding" id="edit-pr-binding" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                         <option value="none">No Binding (Loose Sheets)</option>
                         <option value="staple">Corner / Side Staple</option>
                         <option value="spiral">Spiral / Ring Binding</option>
@@ -764,35 +709,35 @@
 
                 <!-- Number of Copies -->
                 <div class="space-y-1">
-                    <label class="text-xs font-bold text-on-surface">Number of Sets / Copies</label>
-                    <input type="number" name="copies" id="edit-pr-copies" min="1" max="500" value="1" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-neutral-900 dark:text-white">Number of Sets / Copies</label>
+                    <input type="number" name="copies" id="edit-pr-copies" min="1" max="500" value="1" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green">
                 </div>
             </div>
 
             <!-- Special Instructions & Changes -->
             <div class="space-y-1.5">
-                <label class="text-xs font-bold text-on-surface">Special Instructions &amp; Formatting Notes</label>
-                <textarea name="notes" id="edit-pr-notes" rows="2" placeholder="e.g. Page 1 to 5 only, double sided, landscape orientation..." class="w-full text-xs p-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest text-on-surface focus:ring-2 focus:ring-primary resize-none"></textarea>
+                <label class="text-xs font-bold text-neutral-900 dark:text-white">Special Instructions &amp; Formatting Notes</label>
+                <textarea name="notes" id="edit-pr-notes" rows="2" placeholder="e.g. Page 1 to 5 only, double sided, landscape orientation..." class="w-full text-xs p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white focus:ring-2 focus:ring-terra-green resize-none"></textarea>
             </div>
 
             <!-- Additional Reference Photos Upload -->
             <div class="space-y-1.5">
-                <label class="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-[16px] text-purple-600">photo_library</span>
+                <label class="text-xs font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-terra-earth">photo_library</span>
                     <span>Attach New Reference Photos (Optional)</span>
                 </label>
-                <input type="file" name="reference_photos[]" multiple accept="image/*" id="edit-pr-photos-input" class="block w-full text-xs text-on-surface file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer cursor-pointer border border-outline-variant/30 rounded-xl p-1 bg-surface-container-lowest">
+                <input type="file" name="reference_photos[]" multiple accept="image/*" id="edit-pr-photos-input" class="block w-full text-xs text-neutral-700 dark:text-neutral-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-terra-earth file:text-white hover:file:bg-terra-earth/90 file:cursor-pointer cursor-pointer border border-neutral-200 dark:border-neutral-700 rounded-xl p-1 bg-white dark:bg-neutral-900">
             </div>
 
             <!-- Error Banner -->
-            <div id="edit-pr-error" class="hidden p-3 bg-error-container/20 border border-error-container/50 rounded-xl text-xs text-error font-semibold flex items-center gap-2">
+            <div id="edit-pr-error" class="hidden p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs text-rose-700 dark:text-rose-300 font-semibold flex items-center gap-2">
                 <span class="material-symbols-outlined text-[16px]">error</span>
                 <span id="edit-pr-error-text">Failed to update printing request.</span>
             </div>
 
-            <div class="flex items-center gap-sm pt-sm border-t border-outline-variant/20">
-                <button type="button" id="edit-pr-cancel" class="flex-1 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-button text-xs font-semibold transition-all cursor-pointer">Cancel</button>
-                <button type="submit" id="edit-pr-submit" class="flex-1 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-button text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
+            <div class="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
+                <button type="button" id="edit-pr-cancel" class="flex-1 py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-xl text-xs font-semibold transition-all cursor-pointer">Cancel</button>
+                <button type="submit" id="edit-pr-submit" class="flex-1 py-2.5 bg-terra-green hover:bg-terra-green/90 text-white rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
                     <span id="edit-pr-spinner" class="material-symbols-outlined text-[16px] animate-spin hidden">progress_activity</span>
                     <span id="edit-pr-submit-text">Save Changes &amp; Files</span>
                 </button>
@@ -802,21 +747,21 @@
 </div>
 
 <!-- Customer Lightbox Zoom Modal -->
-<div id="ref-lightbox-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-sm z-[80] flex items-center justify-center p-md">
-    <div class="relative max-w-3xl w-full bg-surface-container-lowest rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        <div class="px-md py-sm bg-surface-container-low border-b border-outline-variant/30 flex justify-between items-center">
-            <span id="ref-lightbox-title" class="text-xs font-bold text-on-surface truncate max-w-md">Reference Photo Preview</span>
+<div id="ref-lightbox-modal" class="hidden fixed inset-0 bg-neutral-950/85 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+    <div class="bento-card relative max-w-3xl w-full bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="px-4 py-3 bg-neutral-50 dark:bg-neutral-800/60 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
+            <span id="ref-lightbox-title" class="text-xs font-bold text-neutral-900 dark:text-white truncate max-w-md">Reference Photo Preview</span>
             <div class="flex items-center gap-2">
-                <a id="ref-lightbox-dl" href="#" target="_blank" download class="py-1 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors flex items-center gap-1 text-xs font-bold" title="Download Image">
+                <a id="ref-lightbox-dl" href="#" target="_blank" download class="py-1 px-3 bg-terra-green/10 hover:bg-terra-green/20 text-terra-green rounded-lg transition-colors flex items-center gap-1 text-xs font-bold" title="Download Image">
                     <span class="material-symbols-outlined text-[16px]">download</span>
                     <span>Download</span>
                 </a>
-                <button type="button" id="ref-lightbox-close" class="p-1 rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors">
+                <button type="button" id="ref-lightbox-close" class="p-1 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors">
                     <span class="material-symbols-outlined text-[20px]">close</span>
                 </button>
             </div>
         </div>
-        <div class="p-3 flex-1 flex items-center justify-center overflow-auto bg-black/40 min-h-[300px]">
+        <div class="p-4 flex-1 flex items-center justify-center overflow-auto bg-neutral-950/40 min-h-[300px]">
             <img id="ref-lightbox-img" src="" alt="Reference Photo Zoom" class="max-w-full max-h-[75vh] object-contain rounded-xl shadow-lg">
         </div>
     </div>
@@ -853,11 +798,11 @@
     tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
             tabs.forEach(function (t) {
-                t.classList.remove('text-primary', 'border-b-2', 'border-primary', 'font-semibold');
-                t.classList.add('text-on-surface-variant', 'font-medium');
+                t.classList.remove('text-terra-green', 'border-b-2', 'border-terra-green');
+                t.classList.add('text-slate-500', 'dark:text-slate-400');
             });
-            tab.classList.remove('text-on-surface-variant', 'font-medium');
-            tab.classList.add('text-primary', 'border-b-2', 'border-primary', 'font-semibold');
+            tab.classList.remove('text-slate-500', 'dark:text-slate-400');
+            tab.classList.add('text-terra-green', 'border-b-2', 'border-terra-green');
             applyFilter(tab.getAttribute('data-filter'));
         });
     });
@@ -870,13 +815,13 @@
     var trackDone = document.getElementById('track-done');
 
     var pillMap = {
-        ready_for_pickup: 'bg-green-100 text-green-700',
-        ready_for_delivery: 'bg-green-100 text-green-700',
-        in_transit: 'bg-blue-100 text-blue-700',
-        in_production: 'bg-primary/10 text-primary',
-        new: 'bg-primary/10 text-primary',
-        completed: 'bg-surface-container-highest text-on-surface-variant',
-        cancelled: 'bg-error/10 text-error'
+        ready_for_pickup: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20',
+        ready_for_delivery: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20',
+        in_transit: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20',
+        in_production: 'bg-terra-green/10 text-terra-green dark:text-emerald-300 border border-terra-green/20',
+        new: 'bg-terra-green/10 text-terra-green dark:text-emerald-300 border border-terra-green/20',
+        completed: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
+        cancelled: 'bg-rose-50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
     };
 
     function openTrack(btn) {
@@ -886,7 +831,7 @@
 
         var statusEl = document.getElementById('track-status');
         statusEl.textContent = btn.dataset.statusLabel || '';
-        statusEl.className = 'self-start px-sm py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ' + (pillMap[btn.dataset.status] || 'bg-surface-variant text-on-surface-variant');
+        statusEl.className = 'self-start px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ' + (pillMap[btn.dataset.status] || 'bg-slate-100 text-slate-700');
 
         var progress = parseInt(btn.dataset.progress || '0', 10);
         document.getElementById('track-progress').textContent = progress + '%';

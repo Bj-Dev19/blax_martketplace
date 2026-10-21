@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt - <?= esc($order['order_number'] ?? $printing['request_number'] ?? 'Sales Receipt') ?></title>
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Outfit, Plus Jakarta Sans, JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <style>
         :root {
-            --primary: #2563eb;
+            --primary: #4A943E;
+            --primary-dark: #3b7632;
+            --earth: #6E3511;
+            --amber: #F4AE52;
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border-color: #cbd5e1;
@@ -28,13 +31,13 @@
 
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             color: var(--text-main);
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 24px 16px;
+            padding: 32px 16px;
         }
 
         .no-print-bar {
@@ -43,7 +46,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             gap: 12px;
         }
 
@@ -51,25 +54,27 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 10px 16px;
-            border-radius: 10px;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 14px;
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             border: none;
             text-decoration: none;
         }
 
         .btn-primary {
-            background-color: #0f172a;
+            background-color: var(--primary);
             color: #ffffff;
             flex: 1;
+            box-shadow: 0 4px 12px rgba(74, 148, 62, 0.25);
         }
         .btn-primary:hover {
-            background-color: #1e293b;
+            background-color: var(--primary-dark);
             transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(74, 148, 62, 0.35);
         }
 
         .btn-secondary {
@@ -85,56 +90,57 @@
             width: 100%;
             max-width: 380px;
             background: var(--bg-paper);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
             border: 1px solid #e2e8f0;
-            padding: 24px 20px;
+            padding: 28px 24px;
             position: relative;
         }
 
         .receipt-header {
             text-align: center;
             border-bottom: 1.5px dashed var(--border-color);
-            padding-bottom: 14px;
-            margin-bottom: 14px;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
         }
 
         .shop-name {
-            font-size: 18px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
             font-weight: 800;
             color: #0f172a;
-            letter-spacing: -0.3px;
+            letter-spacing: -0.4px;
         }
 
         .shop-meta {
             font-size: 11px;
             color: var(--text-muted);
-            margin-top: 3px;
-            line-height: 1.4;
+            margin-top: 4px;
+            line-height: 1.45;
         }
 
         .badge-official {
             display: inline-block;
-            margin-top: 8px;
+            margin-top: 10px;
             font-size: 10px;
             font-weight: 800;
             letter-spacing: 0.8px;
             text-transform: uppercase;
-            padding: 3px 10px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
+            padding: 4px 12px;
+            background: rgba(74, 148, 62, 0.08);
+            border: 1px solid rgba(74, 148, 62, 0.2);
             border-radius: 999px;
-            color: #334155;
+            color: var(--primary-dark);
         }
 
         .meta-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px 12px;
+            gap: 8px 12px;
             font-size: 11.5px;
             border-bottom: 1.5px dashed var(--border-color);
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .meta-item {
@@ -147,14 +153,14 @@
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.5px;
         }
 
         .meta-val {
             font-weight: 700;
             color: #0f172a;
             font-family: 'JetBrains Mono', monospace;
-            margin-top: 1px;
+            margin-top: 1.5px;
         }
 
         /* Products Table */
@@ -162,7 +168,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .items-table th {
@@ -171,12 +177,12 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-muted);
-            padding-bottom: 6px;
+            padding-bottom: 8px;
             border-bottom: 1px solid #e2e8f0;
         }
 
         .items-table td {
-            padding: 8px 0;
+            padding: 9px 0;
             vertical-align: top;
             border-bottom: 1px dashed #f1f5f9;
         }
@@ -184,13 +190,13 @@
         .item-title {
             font-weight: 700;
             color: #0f172a;
-            line-height: 1.3;
+            line-height: 1.35;
         }
 
         .item-variant {
             font-size: 10px;
-            font-weight: 600;
-            color: #2563eb;
+            font-weight: 700;
+            color: var(--primary);
             margin-top: 2px;
         }
 
@@ -212,16 +218,16 @@
         /* Summary section */
         .summary-box {
             border-top: 1.5px dashed var(--border-color);
-            padding-top: 12px;
+            padding-top: 14px;
             margin-bottom: 16px;
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            font-size: 11.5px;
+            font-size: 12px;
             color: var(--text-muted);
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             font-family: 'JetBrains Mono', monospace;
         }
 
@@ -231,36 +237,40 @@
         }
 
         .summary-row.grand-total {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 800;
             color: #0f172a;
             border-top: 1.5px solid #0f172a;
             border-bottom: 1.5px solid #0f172a;
-            padding: 8px 0;
-            margin: 8px 0;
+            padding: 10px 0;
+            margin: 10px 0;
+        }
+
+        .grand-total span:last-child {
+            color: var(--primary);
         }
 
         /* QR Code Container */
         .qr-section {
             text-align: center;
             border-top: 1.5px dashed var(--border-color);
-            padding-top: 14px;
-            margin-top: 10px;
+            padding-top: 16px;
+            margin-top: 12px;
         }
 
         .qr-img {
             width: 140px;
             height: 140px;
-            margin: 0 auto 6px auto;
+            margin: 0 auto 8px auto;
             display: block;
             border: 2px solid #0f172a;
-            border-radius: 12px;
-            padding: 4px;
+            border-radius: 14px;
+            padding: 6px;
             background: #fff;
         }
 
         .qr-label {
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: 700;
             color: #0f172a;
             font-family: 'JetBrains Mono', monospace;
@@ -269,17 +279,17 @@
         .qr-subtext {
             font-size: 9.5px;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 3px;
         }
 
         .receipt-footer {
             text-align: center;
-            margin-top: 14px;
-            padding-top: 12px;
+            margin-top: 16px;
+            padding-top: 14px;
             border-top: 1px dashed var(--border-color);
-            font-size: 10px;
+            font-size: 10.5px;
             color: var(--text-muted);
-            line-height: 1.4;
+            line-height: 1.5;
         }
 
         /* Print Media Styles */
@@ -317,7 +327,7 @@
     <div class="no-print-bar">
         <button class="btn btn-primary" onclick="window.print()">
             <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
-            <span>Print Receipt</span>
+            <span>Print Thermal Receipt</span>
         </button>
         <button class="btn btn-secondary" onclick="window.close()">
             <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
@@ -395,7 +405,7 @@
             </div>
             <div class="meta-item" style="text-align: right;">
                 <span class="meta-label">Status</span>
-                <span class="meta-val" style="color: #059669; font-size: 11px;">
+                <span class="meta-val" style="color: #16a34a; font-size: 11px;">
                     <?= strtoupper($order['payment_status'] ?? 'PAID') ?>
                 </span>
             </div>
@@ -421,7 +431,7 @@
                                         <div class="item-variant"><?= esc($it['variant_label']) ?></div>
                                     <?php endif; ?>
                                     <?php if (!empty($it['is_pos_addition'])): ?>
-                                        <div style="font-size: 8.5px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">+ In-Store Addition</div>
+                                        <div style="font-size: 8.5px; font-weight: 700; color: #6E3511; text-transform: uppercase; letter-spacing: 0.5px;">+ In-Store Addition</div>
                                     <?php endif; ?>
                                     <div class="item-calc">
                                         <?= (int) ($it['quantity'] ?? 1) ?> &times; ₱<?= number_format((float) ($it['unit_price'] ?? 0), 2) ?>
@@ -499,7 +509,7 @@
                                         <div class="item-variant"><?= esc($it['variant_label']) ?></div>
                                     <?php endif; ?>
                                     <?php if (!empty($it['is_pos_addition'])): ?>
-                                        <div style="font-size: 8.5px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px;">+ In-Store Addition</div>
+                                        <div style="font-size: 8.5px; font-weight: 700; color: #6E3511; text-transform: uppercase; letter-spacing: 0.5px;">+ In-Store Addition</div>
                                     <?php endif; ?>
                                     <div class="item-calc">
                                         <?= (int) ($it['quantity'] ?? 1) ?> &times; ₱<?= number_format((float) ($it['unit_price'] ?? 0), 2) ?>
@@ -587,7 +597,6 @@
     </div>
 
     <script>
-        // Automatically trigger print dialog when opened in a new tab
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 window.print();

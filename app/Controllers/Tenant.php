@@ -146,11 +146,17 @@ class Tenant extends BaseController
             'sales_delta'        => $this->deltaPercent($kpis['sales_current'], $kpis['sales_previous']),
             'pending_delta'      => $this->deltaPercent($kpis['pending_current'], $kpis['pending_previous']),
             'printing_delta'     => $this->deltaPercent($kpis['print_current'], $kpis['print_previous']),
-            // Sales Overview chart
+            // Sales Overview chart (Enriched with merchandise vs custom printing breakdown)
             'chart_labels'       => $chart['labels'],
             'chart_values'       => $chart['values'],
+            'chart_merch_values' => $chart['merchandise_values'] ?? [],
+            'chart_print_values' => $chart['printing_values'] ?? [],
             'chart_max'          => $chartMax,
-            'chart_total'        => array_sum($chart['values']),
+            'chart_total'        => (float) ($chart['total_revenue'] ?? array_sum($chart['values'])),
+            'chart_merch_total'  => (float) ($chart['merchandise_total'] ?? 0),
+            'chart_print_total'  => (float) ($chart['printing_total'] ?? 0),
+            'chart_orders_count' => (int) ($chart['total_orders_count'] ?? 0),
+            'chart_trend_pct'    => $chart['trend_percentage'] ?? null,
             // Lists
             'low_stock_items'    => $lowStockItems,
             'low_stock_count'    => $lowStockCount,
@@ -186,14 +192,23 @@ class Tenant extends BaseController
         $orderModel = new OrderModel();
         $chart      = $orderModel->getSalesChartData($shopId, $range);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'range'   => $range,
-            'period'  => $clean !== '' ? $clean : ($range . 'd'),
-            'labels'  => $chart['labels'],
-            'values'  => array_map('floatval', $chart['values']),
-            'total'   => round(array_sum($chart['values']), 2),
-        ]);
+        return $this->response
+            ->setHeader('Cache-Control', 'private, max-age=30, stale-while-revalidate=60')
+            ->setJSON([
+                'success'            => true,
+                'range'              => $range,
+                'period'             => $clean !== '' ? $clean : ($range . 'd'),
+                'labels'             => $chart['labels'],
+                'values'             => array_map('floatval', $chart['values']),
+                'merchandise_values' => array_map('floatval', $chart['merchandise_values'] ?? []),
+                'printing_values'    => array_map('floatval', $chart['printing_values'] ?? []),
+                'order_counts'       => array_map('intval', $chart['order_counts'] ?? []),
+                'total'              => (float) ($chart['total_revenue'] ?? array_sum($chart['values'])),
+                'merchandise_total'  => (float) ($chart['merchandise_total'] ?? 0),
+                'printing_total'     => (float) ($chart['printing_total'] ?? 0),
+                'total_orders_count' => (int) ($chart['total_orders_count'] ?? 0),
+                'trend_percentage'   => $chart['trend_percentage'] ?? null,
+            ]);
     }
 
     /**
@@ -707,6 +722,7 @@ class Tenant extends BaseController
 
         $summary = $orderModel->getOrdersSummary($shopId);
         $printSummary = $printingModel->getPrintSummary($shopId);
+        $inventorySummary = (new ProductModel())->getInventorySummary($shopId);
 
         $maxOrdRow = $orderModel->where('shop_id', $shopId)->selectMax('id')->first();
         $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
@@ -722,18 +738,19 @@ class Tenant extends BaseController
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
-                'success'          => true,
-                'max_order_id'     => $currentMaxOrderId,
-                'max_printing_id'  => $currentMaxPrintId,
-                'has_new_orders'   => !empty($newOrders),
-                'new_orders'       => $newOrders,
-                'has_new_printing' => !empty($newPrinting),
-                'new_printing'     => $newPrinting,
-                'unread_count'     => $unreadCount,
-                'notifications'    => $recentNotifs,
-                'summary'          => $summary,
-                'printing_summary' => $printSummary,
-                'timestamp'        => date('Y-m-d H:i:s'),
+                'success'           => true,
+                'max_order_id'      => $currentMaxOrderId,
+                'max_printing_id'   => $currentMaxPrintId,
+                'has_new_orders'    => !empty($newOrders),
+                'new_orders'        => $newOrders,
+                'has_new_printing'  => !empty($newPrinting),
+                'new_printing'      => $newPrinting,
+                'unread_count'      => $unreadCount,
+                'notifications'     => $recentNotifs,
+                'summary'           => $summary,
+                'printing_summary'  => $printSummary,
+                'inventory_summary' => $inventorySummary,
+                'timestamp'         => date('Y-m-d H:i:s'),
             ]);
     }
 
@@ -1812,66 +1829,95 @@ class Tenant extends BaseController
         $result = (new ArchivedItemModel())->getArchivedForShopPaginated($shopId, $perPage, $page, 'archive', $type, $search);
         $items  = $result['items'];
 
-        // Enrich items with metadata
+        // Batch pre-fetch items to eliminate N+1 queries
+        $invIds = [];
+        $ordIds = [];
+        $prIds  = [];
+        foreach ($items as $it) {
+            $itemType = $it['item_type'] ?? '';
+            $itemId   = (int) ($it['item_id'] ?? 0);
+            if ($itemId <= 0) continue;
+            if ($itemType === 'inventory') {
+                $invIds[] = $itemId;
+            } elseif ($itemType === 'order') {
+                $ordIds[] = $itemId;
+            } elseif ($itemType === 'printing_request') {
+                $prIds[] = $itemId;
+            }
+        }
+
+        $invMap = [];
+        if (!empty($invIds)) {
+            $prods = $db->table('products p')
+                ->select('p.id, p.name, p.price, p.stock_quantity, p.sku, c.name AS category_name, pi.image_url')
+                ->join('categories c', 'c.id = p.category_id', 'left')
+                ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
+                ->whereIn('p.id', array_unique($invIds))
+                ->get()->getResultArray();
+            foreach ($prods as $prod) {
+                $invMap[(int)$prod['id']] = [
+                    'name'      => $prod['name'],
+                    'price'     => (float) $prod['price'],
+                    'stock'     => (int) $prod['stock_quantity'],
+                    'sku'       => $prod['sku'] ?? '',
+                    'category'  => $prod['category_name'] ?? 'General',
+                    'image_url' => $prod['image_url'] ?? null,
+                ];
+            }
+        }
+
+        $ordMap = [];
+        if (!empty($ordIds)) {
+            $ords = $db->table('orders o')
+                ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count')
+                ->join('users u', 'u.id = o.customer_id', 'left')
+                ->whereIn('o.id', array_unique($ordIds))
+                ->get()->getResultArray();
+            foreach ($ords as $ord) {
+                $custName = trim(($ord['first_name'] ?? '') . ' ' . ($ord['last_name'] ?? ''));
+                $ordMap[(int)$ord['id']] = [
+                    'order_number'       => $ord['order_number'] ?? ('#' . $ord['id']),
+                    'total_amount'       => (float) $ord['total_amount'],
+                    'status'             => $ord['status'],
+                    'payment_status'     => $ord['payment_status'],
+                    'fulfillment_method' => $ord['fulfillment_method'],
+                    'customer_name'      => $custName !== '' ? $custName : 'Customer',
+                    'item_count'         => (int) ($ord['item_count'] ?? 1),
+                ];
+            }
+        }
+
+        $prMap = [];
+        if (!empty($prIds)) {
+            $prs = $db->table('printing_requests pr')
+                ->select('pr.id, pr.request_number, pr.file_name, pr.total_price, pr.status, pr.page_count, pr.copies, u.first_name, u.last_name')
+                ->join('users u', 'u.id = pr.customer_id', 'left')
+                ->whereIn('pr.id', array_unique($prIds))
+                ->get()->getResultArray();
+            foreach ($prs as $pr) {
+                $custName = trim(($pr['first_name'] ?? '') . ' ' . ($pr['last_name'] ?? ''));
+                $prMap[(int)$pr['id']] = [
+                    'request_number' => $pr['request_number'] ?? ('PR-' . $pr['id']),
+                    'file_name'      => $pr['file_name'] ?? 'Document.pdf',
+                    'total_price'    => (float) $pr['total_price'],
+                    'status'         => $pr['status'],
+                    'page_count'     => (int) ($pr['page_count'] ?? 1),
+                    'copies'         => (int) ($pr['copies'] ?? 1),
+                    'customer_name'  => $custName !== '' ? $custName : 'Customer',
+                ];
+            }
+        }
+
+        // Enrich items using batched map
         foreach ($items as &$it) {
             $itemType = $it['item_type'] ?? '';
             $itemId   = (int) ($it['item_id'] ?? 0);
-
-            $it['details'] = [];
-            if ($itemType === 'inventory') {
-                $prod = $db->table('products p')
-                    ->select('p.id, p.name, p.price, p.stock_quantity, p.sku, c.name AS category_name, pi.image_url')
-                    ->join('categories c', 'c.id = p.category_id', 'left')
-                    ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
-                    ->where('p.id', $itemId)
-                    ->get()->getRowArray();
-                if ($prod) {
-                    $it['details'] = [
-                        'name'          => $prod['name'],
-                        'price'         => (float) $prod['price'],
-                        'stock'         => (int) $prod['stock_quantity'],
-                        'sku'           => $prod['sku'] ?? '',
-                        'category'      => $prod['category_name'] ?? 'General',
-                        'image_url'     => $prod['image_url'] ?? null,
-                    ];
-                }
-            } elseif ($itemType === 'order') {
-                $ord = $db->table('orders o')
-                    ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count')
-                    ->join('users u', 'u.id = o.customer_id', 'left')
-                    ->where('o.id', $itemId)
-                    ->get()->getRowArray();
-                if ($ord) {
-                    $custName = trim(($ord['first_name'] ?? '') . ' ' . ($ord['last_name'] ?? ''));
-                    $it['details'] = [
-                        'order_number'       => $ord['order_number'] ?? ('#' . $ord['id']),
-                        'total_amount'       => (float) $ord['total_amount'],
-                        'status'             => $ord['status'],
-                        'payment_status'     => $ord['payment_status'],
-                        'fulfillment_method' => $ord['fulfillment_method'],
-                        'customer_name'      => $custName !== '' ? $custName : 'Customer',
-                        'item_count'         => (int) ($ord['item_count'] ?? 1),
-                    ];
-                }
-            } elseif ($itemType === 'printing_request') {
-                $pr = $db->table('printing_requests pr')
-                    ->select('pr.id, pr.request_number, pr.file_name, pr.total_price, pr.status, pr.page_count, pr.copies, u.first_name, u.last_name')
-                    ->join('users u', 'u.id = pr.customer_id', 'left')
-                    ->where('pr.id', $itemId)
-                    ->get()->getRowArray();
-                if ($pr) {
-                    $custName = trim(($pr['first_name'] ?? '') . ' ' . ($pr['last_name'] ?? ''));
-                    $it['details'] = [
-                        'request_number' => $pr['request_number'] ?? ('PR-' . $pr['id']),
-                        'file_name'      => $pr['file_name'] ?? 'Document.pdf',
-                        'total_price'    => (float) $pr['total_price'],
-                        'status'         => $pr['status'],
-                        'page_count'     => (int) ($pr['page_count'] ?? 1),
-                        'copies'         => (int) ($pr['copies'] ?? 1),
-                        'customer_name'  => $custName !== '' ? $custName : 'Customer',
-                    ];
-                }
-            }
+            $it['details'] = match ($itemType) {
+                'inventory'        => $invMap[$itemId] ?? [],
+                'order'            => $ordMap[$itemId] ?? [],
+                'printing_request' => $prMap[$itemId] ?? [],
+                default            => [],
+            };
         }
         unset($it);
 
@@ -3217,8 +3263,24 @@ class Tenant extends BaseController
         // Product variants save/update
         $this->handleProductVariantsSave($targetProductId);
 
-        // Sync embedding for AI search
-        $this->syncProductEmbedding($targetProductId);
+        // Auto-sync product total stock with sum of variant stocks if variants exist
+        $variantCount = (new ProductVariantModel())->where('product_id', $targetProductId)->countAllResults();
+        if ($variantCount > 0) {
+            $variantStocksSum = (new ProductVariantModel())->where('product_id', $targetProductId)->selectSum('stock_quantity')->first();
+            $totalVariantStock = (int) ($variantStocksSum['stock_quantity'] ?? 0);
+            $productModel->update($targetProductId, ['stock_quantity' => $totalVariantStock]);
+        }
+
+        // Sync embedding for AI search only if new or text content changed (avoids slowing down stock/price edits)
+        $needsEmbedding = true;
+        if ($id > 0 && isset($existing)) {
+            $needsEmbedding = ($existing['name'] !== $name)
+                || ($existing['description'] !== $description)
+                || ((int)($existing['category_id'] ?? 0) !== $categoryId);
+        }
+        if ($needsEmbedding) {
+            $this->syncProductEmbedding($targetProductId);
+        }
 
         $msg = $id > 0 ? 'Product updated.' : 'Product added to inventory.';
         return redirect()->back()->with('success', $msg);
