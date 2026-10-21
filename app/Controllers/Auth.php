@@ -15,18 +15,35 @@ class Auth extends BaseController
         }
 
         if ($this->request->getMethod() === 'POST') {
-            $email    = trim($this->request->getPost('email') ?? '');
-            $password = trim($this->request->getPost('password') ?? '');
+            $email        = trim($this->request->getPost('email') ?? '');
+            $password     = trim($this->request->getPost('password') ?? '');
+            $selectedRole = trim($this->request->getPost('role') ?? 'customer');
+            $targetRole   = in_array($selectedRole, ['shop_owner', 'merchant', 'seller'], true) ? 'shop_owner' : 'customer';
+
+            $errorRedirect = '/login' . ($targetRole === 'shop_owner' ? '?role=merchant' : '?role=customer');
 
             if ($email === '' || $password === '') {
                 session()->setFlashdata('error', 'Email and password are required.');
-                return redirect()->to('/login');
+                return redirect()->to($errorRedirect)->withInput();
             }
 
             $userModel = new UserModel();
             $user      = $userModel->findByEmail($email);
 
             if ($user && password_verify($password, $user['password_hash'])) {
+                // Enforce portal role segregation between Customer and Shop Owner accounts
+                if ($user['role'] !== 'admin') {
+                    if ($targetRole === 'customer' && $user['role'] === 'shop_owner') {
+                        session()->setFlashdata('error', 'This account is registered as a Shop Owner. Please select the "Shop Owner" tab to sign in.');
+                        return redirect()->to('/login?role=merchant')->withInput();
+                    }
+
+                    if ($targetRole === 'shop_owner' && $user['role'] === 'customer') {
+                        session()->setFlashdata('error', 'This account is registered as a Customer. Please select the "Customer" tab to sign in.');
+                        return redirect()->to('/login?role=customer')->withInput();
+                    }
+                }
+
                 $shopId = null;
                 if ($user['role'] === 'shop_owner') {
                     $shopModel = new ShopModel();
@@ -41,14 +58,14 @@ class Auth extends BaseController
                         };
                         session()->setFlashdata('error', $message);
 
-                        return redirect()->to('/login');
+                        return redirect()->to('/login?role=merchant')->withInput();
                     }
 
                     $shopId = $shop['id'] ?? null;
                 } elseif (($user['status'] ?? 'active') !== 'active') {
                     session()->setFlashdata('error', 'Your account is not currently active.');
 
-                    return redirect()->to('/login');
+                    return redirect()->to($errorRedirect)->withInput();
                 }
 
                 $session->regenerate();
@@ -66,7 +83,7 @@ class Auth extends BaseController
             }
 
             session()->setFlashdata('error', 'Invalid email or password.');
-            return redirect()->to('/login');
+            return redirect()->to($errorRedirect)->withInput();
         }
 
         $roleParam = (string) ($this->request->getGet('role') ?? 'customer');
