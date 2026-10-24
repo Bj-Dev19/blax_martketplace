@@ -376,7 +376,7 @@ html.dark .bento-pill-stat:hover {
     display: inline-flex;
 }
 
-/* Bulletproof Notification and Profile Dropdown Positioning across Railway & Local */
+/* Bulletproof Notification and Profile Dropdown Positioning across Cloud Container & Local */
 #profile-dropdown,
 #tenant-profile-dropdown,
 #admin-profile-quickmenu {

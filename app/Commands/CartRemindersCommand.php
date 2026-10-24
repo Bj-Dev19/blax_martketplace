@@ -42,10 +42,10 @@ class CartRemindersCommand extends BaseCommand
             ->where('ci.expires_at IS NOT NULL')
             ->where('ci.expires_at >', $now)
             ->where('ci.reminder_count <', 8)
-            ->where("TIMESTAMPDIFF(HOUR, ci.created_at, '{$now}') >=", '(ci.reminder_count + 1) * 8', false)
+            ->where('TIMESTAMPDIFF(HOUR, ci.created_at, NOW()) >=', '(ci.reminder_count + 1) * 8', false)
             ->groupStart()
                 ->where('ci.last_reminder_at IS NULL')
-                ->orWhere("TIMESTAMPDIFF(HOUR, ci.last_reminder_at, '{$now}') >=", 8, false)
+                ->orWhere('TIMESTAMPDIFF(HOUR, ci.last_reminder_at, NOW()) >=', 8, false)
             ->groupEnd()
             ->get()->getResultArray();
 

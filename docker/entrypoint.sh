@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Default PORT to 8080 if not injected by Railway
+# Default PORT to 8080 if not injected by the hosting platform / cloud environment
 export PORT="${PORT:-8080}"
 export CI_ENVIRONMENT="${CI_ENVIRONMENT:-production}"
 
@@ -15,7 +15,7 @@ rm -f /etc/nginx/sites-enabled/default
 
 # Configure PHP-FPM to preserve environment variables (clear_env = no) and tune workers
 if [ -d "/usr/local/etc/php-fpm.d" ]; then
-    cat <<'EOF' > /usr/local/etc/php-fpm.d/zz-railway.conf
+    cat <<'EOF' > /usr/local/etc/php-fpm.d/zz-php-fpm.conf
 [www]
 clear_env = no
 catch_workers_output = yes
@@ -54,6 +54,7 @@ memory_limit=512M
 max_execution_time=300
 max_input_time=300
 default_socket_timeout=300
+expose_php=Off
 EOF
 fi
 

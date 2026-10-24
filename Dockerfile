@@ -1,3 +1,14 @@
+# Stage 1: Compile fresh production CSS
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY tailwind.config.js input.css ./
+COPY app/ ./app/
+COPY public/js/ ./public/js/
+RUN npm run build:css
+
+# Stage 2: Production PHP-FPM + Nginx runtime
 FROM php:8.3-fpm
 
 # Install Nginx, gettext-base (for envsubst), system build tools, poppler-utils (pdfinfo), and PHP extension dependencies
@@ -12,7 +23,6 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libonig-dev \
     unzip \
-    git \
     curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install intl mbstring pdo_mysql mysqli zip gd opcache \
@@ -25,6 +35,9 @@ WORKDIR /var/www/html
 
 # Copy application source code
 COPY . .
+
+# Copy freshly compiled CSS from the node stage
+COPY --from=assets /app/public/css/tailwind.css /var/www/html/public/css/tailwind.css
 
 # Install PHP production dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction

@@ -20,7 +20,7 @@ class MailService
 
     /**
      * Centralized email dispatcher:
-     * 1. Tries Brevo HTTP API (Port 443 - works in Railway / Cloud).
+     * 1. Tries Brevo HTTP API (Port 443 - works in cloud container platforms like Render).
      * 2. Falls back to CodeIgniter SMTP service('email') for local dev if Brevo is not configured or fails.
      */
     private function dispatch(string $toEmail, string $toName, string $subject, string $htmlBody): bool

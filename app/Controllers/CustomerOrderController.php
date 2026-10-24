@@ -362,6 +362,15 @@ class CustomerOrderController extends BaseController
      */
     public function computeRoute()
     {
+        if (defined('ENVIRONMENT') && ENVIRONMENT === 'production') {
+            if (!session()->get('isLoggedIn')) {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'success' => false,
+                    'error'   => 'Authentication required.',
+                ]);
+            }
+        }
+
         $json = [];
         try {
             $parsed = $this->request->getJSON(true);
@@ -398,7 +407,14 @@ class CustomerOrderController extends BaseController
             ];
         }
 
-        if ($origin['lat'] == 0 || $origin['lng'] == 0 || $dest['lat'] == 0 || $dest['lng'] == 0) {
+        if (
+            $origin['lat'] < -90 || $origin['lat'] > 90 ||
+            $origin['lng'] < -180 || $origin['lng'] > 180 ||
+            $dest['lat'] < -90 || $dest['lat'] > 90 ||
+            $dest['lng'] < -180 || $dest['lng'] > 180 ||
+            ($origin['lat'] == 0 && $origin['lng'] == 0) ||
+            ($dest['lat'] == 0 && $dest['lng'] == 0)
+        ) {
             return $this->response->setJSON([
                 'success' => false,
                 'error'   => 'Invalid coordinates provided.',

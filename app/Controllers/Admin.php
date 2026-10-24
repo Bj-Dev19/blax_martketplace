@@ -1559,8 +1559,11 @@ class Admin extends BaseController
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid signature header']);
         }
 
-        $timestamp = $parts['t'];
-        $expectedSignature = hash_hmac('sha256', $timestamp . '.' . $payload, $webhookSecret);
+        $timestamp = (int) $parts['t'];
+        if (!(defined('ENVIRONMENT') && ENVIRONMENT === 'testing') && abs(time() - $timestamp) > 300) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Webhook signature timestamp expired']);
+        }
+        $expectedSignature = hash_hmac('sha256', $parts['t'] . '.' . $payload, $webhookSecret);
 
         $signatures = [];
         if (!empty($parts['te'])) $signatures[] = $parts['te'];
