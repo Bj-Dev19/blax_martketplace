@@ -78,6 +78,20 @@ class Logger extends BaseConfig
     public array $handlers = [
         /*
          * --------------------------------------------------------------------
+         * Container Error Log Streamer (Docker / Render live console)
+         * --------------------------------------------------------------------
+         */
+        \App\Libraries\Log\ErrorLogHandler::class => [
+            'handles' => [
+                'critical',
+                'alert',
+                'emergency',
+                'error',
+            ],
+        ],
+
+        /*
+         * --------------------------------------------------------------------
          * File Handler
          * --------------------------------------------------------------------
          */
