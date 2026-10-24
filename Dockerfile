@@ -40,7 +40,7 @@ COPY . .
 COPY --from=assets /app/public/css/tailwind.css /var/www/html/public/css/tailwind.css
 
 # Install PHP production dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction
 
 # Set correct permissions for CodeIgniter 4 writable storage directory and uploads
 RUN mkdir -p /var/www/html/writable/cache \

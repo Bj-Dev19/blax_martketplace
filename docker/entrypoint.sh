@@ -13,47 +13,59 @@ envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d
 # Remove default Nginx site so only our port-configured site is active
 rm -f /etc/nginx/sites-enabled/default
 
-# Configure PHP-FPM to preserve environment variables (clear_env = no) and tune workers
+# Configure PHP-FPM with tunable defaults suitable for Render 512MB Free instance
+PHP_FPM_PM="${PHP_FPM_PM:-dynamic}"
+PHP_FPM_MAX_CHILDREN="${PHP_FPM_MAX_CHILDREN:-4}"
+PHP_FPM_START_SERVERS="${PHP_FPM_START_SERVERS:-1}"
+PHP_FPM_MIN_SPARE_SERVERS="${PHP_FPM_MIN_SPARE_SERVERS:-1}"
+PHP_FPM_MAX_SPARE_SERVERS="${PHP_FPM_MAX_SPARE_SERVERS:-2}"
+PHP_FPM_MAX_REQUESTS="${PHP_FPM_MAX_REQUESTS:-500}"
+
 if [ -d "/usr/local/etc/php-fpm.d" ]; then
-    cat <<'EOF' > /usr/local/etc/php-fpm.d/zz-php-fpm.conf
+    cat <<EOF > /usr/local/etc/php-fpm.d/zz-php-fpm.conf
 [www]
 clear_env = no
 catch_workers_output = yes
 decorate_workers_output = no
-pm = dynamic
-pm.max_children = 25
-pm.start_servers = 4
-pm.min_spare_servers = 2
-pm.max_spare_servers = 8
-pm.max_requests = 1000
+pm = ${PHP_FPM_PM}
+pm.max_children = ${PHP_FPM_MAX_CHILDREN}
+pm.start_servers = ${PHP_FPM_START_SERVERS}
+pm.min_spare_servers = ${PHP_FPM_MIN_SPARE_SERVERS}
+pm.max_spare_servers = ${PHP_FPM_MAX_SPARE_SERVERS}
+pm.max_requests = ${PHP_FPM_MAX_REQUESTS}
 EOF
 fi
 
-# Configure PHP OPcache and production performance settings
+# Configure PHP OPcache and production performance settings with env overrides
+PHP_MEMORY_LIMIT="${PHP_MEMORY_LIMIT:-192M}"
+PHP_MAX_EXECUTION_TIME="${PHP_MAX_EXECUTION_TIME:-120}"
+PHP_OPCACHE_MEMORY="${PHP_OPCACHE_MEMORY:-64}"
+PHP_OPCACHE_JIT="${PHP_OPCACHE_JIT:-0}"
+
 if [ -d "/usr/local/etc/php/conf.d" ]; then
-    cat <<'EOF' > /usr/local/etc/php/conf.d/zz-opcache.ini
+    cat <<EOF > /usr/local/etc/php/conf.d/zz-opcache.ini
 opcache.enable=1
 opcache.enable_cli=0
-opcache.memory_consumption=128
+opcache.memory_consumption=${PHP_OPCACHE_MEMORY}
 opcache.interned_strings_buffer=16
 opcache.max_accelerated_files=10000
 opcache.validate_timestamps=0
 opcache.revalidate_freq=0
 opcache.save_comments=1
 opcache.fast_shutdown=1
-opcache.jit=1255
-opcache.jit_buffer_size=64M
+opcache.jit=${PHP_OPCACHE_JIT}
+opcache.jit_buffer_size=0
 realpath_cache_size=4096k
 realpath_cache_ttl=600
 EOF
 
-    cat <<'EOF' > /usr/local/etc/php/conf.d/zz-uploads.ini
+    cat <<EOF > /usr/local/etc/php/conf.d/zz-uploads.ini
 upload_max_filesize=50M
 post_max_size=50M
-memory_limit=512M
-max_execution_time=300
-max_input_time=300
-default_socket_timeout=300
+memory_limit=${PHP_MEMORY_LIMIT}
+max_execution_time=${PHP_MAX_EXECUTION_TIME}
+max_input_time=120
+default_socket_timeout=120
 expose_php=Off
 EOF
 fi
@@ -81,22 +93,28 @@ mkdir -p /var/www/html/public/uploads/profiles \
 chown -R www-data:www-data /var/www/html/public/uploads
 chmod -R 775 /var/www/html/public/uploads
 
-# Run automatic database migrations if database environment variables are present
-if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ] || [ -n "$database_default_hostname" ] || [ -n "$DATABASE_DEFAULT_HOSTNAME" ]; then
-    echo "Database environment detected. Checking database connectivity before migrations..."
-    # Brief retry loop (up to 15 seconds) in case MySQL is still booting up on cold start
-    RETRY_COUNT=0
-    MAX_RETRIES=5
-    until php spark migrate --all || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
-        RETRY_COUNT=$((RETRY_COUNT + 1))
-        echo "Database migration attempt $RETRY_COUNT failed or waiting for MySQL readiness... retrying in 3s ($RETRY_COUNT/$MAX_RETRIES)"
-        sleep 3
-    done
-    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-        echo "Warning: Database migrations could not be completed automatically. The application will continue booting."
-    else
-        echo "Database migrations completed successfully."
+# Run automatic database migrations if enabled and database environment variables are present
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
+
+if [ "${RUN_MIGRATIONS}" = "true" ]; then
+    if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ] || [ -n "$database_default_hostname" ] || [ -n "$DATABASE_DEFAULT_HOSTNAME" ]; then
+        echo "Database environment detected. Checking database connectivity before migrations..."
+        # Brief retry loop (up to 6 seconds) in case MySQL is still booting up on cold start
+        RETRY_COUNT=0
+        MAX_RETRIES=3
+        until php spark migrate --all || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Database migration attempt $RETRY_COUNT failed or waiting for MySQL readiness... retrying in 2s ($RETRY_COUNT/$MAX_RETRIES)"
+            sleep 2
+        done
+        if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+            echo "Warning: Database migrations could not be completed automatically. The application will continue booting."
+        else
+            echo "Database migrations completed successfully."
+        fi
     fi
+else
+    echo "RUN_MIGRATIONS=false. Skipping database migrations on boot for fast wake-up."
 fi
 
 # Start PHP-FPM in the background

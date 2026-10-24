@@ -98,6 +98,7 @@ Under your Web Service -> **Environment**, configure the following variables (re
 | `TEXTBEE_API_KEY` | `<your-textbee-key>` | TextBee Dashboard |
 | `TEXTBEE_DEVICE_ID` | `<your-device-id>` | TextBee Dashboard |
 | `TEXTBEE_BASE_URL` | `https://api.textbee.dev/api/v1` | TextBee Default |
+| `RUN_MIGRATIONS` | `true` (or `false` after 1st deploy) | Optional: set `false` to speed up wake-ups |
 
 ---
 
@@ -107,7 +108,7 @@ Under your Web Service -> **Environment**, configure the following variables (re
 2. Watch the deployment logs:
    - Nginx boots and listens on the dynamic `${PORT}` injected by Render.
    - PHP-FPM boots with optimized OPcache and `expose_php = Off`.
-   - Health check queries `/` and reports HTTP 200.
+   - Health check queries `/healthz` and reports HTTP 200 without database overhead.
 
 ---
 
