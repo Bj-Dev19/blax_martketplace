@@ -35,7 +35,7 @@ if (!function_exists('product_image_url')) {
             return cloudinary_transform_url($url, $variant);
         }
 
-        // Validate local file existence on disk (handles Railway container redeployment where local files are wiped)
+        // Validate local file existence on disk (handles ephemeral container redeployment where local files are wiped)
         if (defined('FCPATH')) {
             $localDiskPath = FCPATH . ltrim($url, '/\\');
             if (!is_file($localDiskPath)) {

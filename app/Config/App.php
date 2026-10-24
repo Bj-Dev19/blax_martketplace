@@ -218,7 +218,7 @@ class App extends BaseConfig
             $scheme = $isHttps ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'];
 
-            // Determine if the app is served from a subfolder (e.g. Laragon /blax_inventory/public) or web root (Docker, Railway, Spark)
+            // Determine if the app is served from a subfolder (e.g. Laragon /blax_inventory/public) or web root (Docker, Cloud Container, Spark)
             $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
             $basePath = (trim($scriptDir, '/') !== '') ? '/' . trim($scriptDir, '/') . '/' : '/';
 
@@ -235,13 +235,14 @@ class App extends BaseConfig
             $envBaseURL = (function_exists('env') ? env('app.baseURL') : null)
                 ?: getenv('app.baseURL')
                 ?: getenv('APP_BASEURL')
-                ?: getenv('APP_BASE_URL');
+                ?: getenv('APP_BASE_URL')
+                ?: getenv('RENDER_EXTERNAL_URL');
 
             if (!empty($envBaseURL)) {
                 $this->baseURL = rtrim((string) $envBaseURL, '/') . '/';
                 $this->indexPage = '';
             } else {
-                $this->baseURL = 'https://blaxinventory-production.up.railway.app/';
+                $this->baseURL = 'http://localhost:8080/';
             }
         }
     }

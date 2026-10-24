@@ -67,7 +67,7 @@ class ArchivedItemModel extends Model
      * Records are NEVER deleted; they are logged to archived_items and
      * remain in the shop's archive history indefinitely.
      *
-     * Performance-optimized for Railway: uses a 15-minute cache throttle
+     * Performance-optimized for cloud deployment: uses a 15-minute cache throttle
      * and single-query LEFT JOIN + insertBatch to eliminate 400+ N+1 queries.
      *
      * @return array{archived_orders: int, archived_printing: int}

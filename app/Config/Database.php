@@ -100,14 +100,14 @@ class Database extends Config
         }
 
         // -----------------------------------------------------------
-        // Environment variable resolution for Railway, Vercel, and local
+        // Environment variable resolution for cloud platforms, Vercel, and local
         // -----------------------------------------------------------
-        // Supports Railway native MySQL variables (MYSQLHOST, MYSQLPORT, etc.),
-        // Railway MySQL URLs (MYSQL_URL), CI4 dotted keys (database.default.*),
+        // Supports cloud/platform native MySQL variables (MYSQLHOST, MYSQLPORT, etc.),
+        // MySQL connection URLs (MYSQL_URL), CI4 dotted keys (database.default.*),
         // and uppercase/Vercel keys (DATABASE_DEFAULT_*).
         // -----------------------------------------------------------
 
-        // 1. Connection URL support (Railway MySQL_URL / DATABASE_URL)
+        // 1. Connection URL support (MySQL_URL / DATABASE_URL)
         $dbUrl = $this->firstEnv(['MYSQL_URL', 'DATABASE_URL', 'JAWSDB_URL', 'CLEARDB_DATABASE_URL'], '');
         if ($dbUrl !== '') {
             $parsed = parse_url($dbUrl);
