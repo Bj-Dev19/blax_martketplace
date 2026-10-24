@@ -281,7 +281,7 @@ class ReviewService
     public function recalculateProductRating(int $productId): void
     {
         $row = $this->reviews
-            ->select('AVG(rating) as avg_rating, COUNT(*) as cnt')
+            ->select('AVG(rating) as avg_rating, COUNT(*) as cnt', false)
             ->where('product_id', $productId)
             ->first();
 
@@ -300,7 +300,7 @@ class ReviewService
     public function recalculateShopRating(int $shopId): void
     {
         $row = $this->reviews
-            ->select('AVG(rating) as avg_rating, COUNT(*) as cnt')
+            ->select('AVG(rating) as avg_rating, COUNT(*) as cnt', false)
             ->where('shop_id', $shopId)
             ->first();
 

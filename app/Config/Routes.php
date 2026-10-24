@@ -7,13 +7,16 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // Customer / Public Routes
-$routes->get('healthz', static function () {
+$healthHandler = static function () {
     return service('response')
         ->setStatusCode(200)
         ->setContentType('text/plain')
         ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
         ->setBody('ok');
-});
+};
+$routes->get('healthz', $healthHandler);
+$routes->get('health', $healthHandler);
+$routes->get('ping', $healthHandler);
 $routes->get('/', 'Home::index');
 $routes->post('ai/query', 'Home::aiQuery');
 $routes->post('api/route', 'CustomerOrderController::computeRoute', ['filter' => 'actionThrottle']);

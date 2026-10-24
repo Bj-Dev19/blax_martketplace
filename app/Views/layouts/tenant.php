@@ -702,6 +702,41 @@
                     document.body.classList.remove('mobile-nav-open');
                 }
             });
+        // Global Modal Helpers for robust dialog interactions across all tenant pages
+        window.openModal = function(id) {
+            const modal = typeof id === 'string' ? document.getElementById(id) : id;
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            if (!modal.classList.contains('flex')) {
+                modal.classList.add('flex');
+            }
+            document.body.classList.add('overflow-hidden');
+            const focusTarget = modal.querySelector('input:not([type=hidden]), textarea, button:not([disabled])');
+            if (focusTarget) {
+                setTimeout(() => focusTarget.focus(), 60);
+            }
+        };
+
+        window.closeModal = function(id) {
+            const modal = typeof id === 'string' ? document.getElementById(id) : id;
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            const openModals = document.querySelectorAll('.modal:not(.hidden), [id$="Modal"]:not(.hidden)');
+            if (openModals.length === 0) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        };
+
+        // Global Escape key listener to close active modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                const openModals = document.querySelectorAll('.modal:not(.hidden), [id$="Modal"]:not(.hidden), [id$="Dialog"]:not(.hidden)');
+                if (openModals.length > 0) {
+                    const topModal = openModals[openModals.length - 1];
+                    window.closeModal(topModal);
+                }
+            }
         });
     });
     </script>

@@ -246,7 +246,7 @@ class DeliveryModel extends Model
         string $group = 'tracking'
     ): array {
         $builder = $this->db->table('deliveries d')
-            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, u.first_name, u.last_name, s.shop_name, s.id as shop_id, sa.address_line1, sa.city, sa.province")
+            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, u.first_name, u.last_name, s.shop_name, s.id as shop_id, sa.address_line1, sa.city, sa.province", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('shipping_addresses sa', "sa.id = o.shipping_address_id", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
@@ -548,7 +548,7 @@ class DeliveryModel extends Model
     public function getDeliveryPins(int $shopId): array
     {
         $rows = $this->db->table('deliveries d')
-            ->select("d.id, d.tracking_id, d.status, d.destination_address, d.current_lat, d.current_lng, d.location_updated_at, COALESCE(o.order_number, pr.request_number) AS ref_number, u.first_name, u.last_name, u.phone as customer_phone, sa.address_line1, sa.city, sa.province, sa.label as address_label, s.shop_name, s.latitude as shop_lat, s.longitude as shop_lng")
+            ->select("d.id, d.tracking_id, d.status, d.destination_address, d.current_lat, d.current_lng, d.location_updated_at, COALESCE(o.order_number, pr.request_number) AS ref_number, u.first_name, u.last_name, u.phone as customer_phone, sa.address_line1, sa.city, sa.province, sa.label as address_label, s.shop_name, s.latitude as shop_lat, s.longitude as shop_lng", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('shipping_addresses sa', "sa.id = o.shipping_address_id", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
@@ -606,7 +606,7 @@ class DeliveryModel extends Model
     public function getAllDeliveryPins(?string $search = null, ?string $shopFilter = null): array
     {
         $builder = $this->db->table('deliveries d')
-            ->select("d.id, d.tracking_id, d.status, d.destination_address, d.current_lat, d.current_lng, d.location_updated_at, COALESCE(o.order_number, pr.request_number) AS ref_number, u.first_name, u.last_name, s.shop_name, s.id as shop_id, s.logo_url as shop_logo, s.latitude as shop_lat, s.longitude as shop_lng")
+            ->select("d.id, d.tracking_id, d.status, d.destination_address, d.current_lat, d.current_lng, d.location_updated_at, COALESCE(o.order_number, pr.request_number) AS ref_number, u.first_name, u.last_name, s.shop_name, s.id as shop_id, s.logo_url as shop_logo, s.latitude as shop_lat, s.longitude as shop_lng", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
             ->join('users u', 'u.id = COALESCE(o.customer_id, pr.customer_id)', 'left')
@@ -648,7 +648,7 @@ class DeliveryModel extends Model
     public function resolveShopId(int $deliveryId): ?int
     {
         $row = $this->db->table('deliveries d')
-            ->select('COALESCE(o.shop_id, pr.shop_id) AS shop_id')
+            ->select('COALESCE(o.shop_id, pr.shop_id) AS shop_id', false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
             ->where('d.id', $deliveryId)
@@ -710,7 +710,7 @@ class DeliveryModel extends Model
     public function findWithDetails(int $deliveryId, int $shopId): ?array
     {
         $row = $this->db->table('deliveries d')
-            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, COALESCE(o.status, pr.status) as order_status, u.first_name, u.last_name, u.profile_image_url, u.email")
+            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, COALESCE(o.status, pr.status) as order_status, u.first_name, u.last_name, u.profile_image_url, u.email", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
             ->join('users u', 'u.id = COALESCE(o.customer_id, pr.customer_id)', 'left')
@@ -738,7 +738,7 @@ class DeliveryModel extends Model
 
         // 1. Check existing deliveries linked to shop's orders or printing requests
         $builder = $this->db->table('deliveries d')
-            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, COALESCE(o.status, pr.status) as order_status, u.first_name, u.last_name, u.profile_image_url, u.email")
+            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.fulfillment_method, pr.fulfillment_method) AS fulfillment_method, COALESCE(o.status, pr.status) as order_status, u.first_name, u.last_name, u.profile_image_url, u.email", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
             ->join('users u', 'u.id = COALESCE(o.customer_id, pr.customer_id)', 'left')
@@ -897,7 +897,7 @@ class DeliveryModel extends Model
         }
 
         $builder = $this->db->table('deliveries d')
-            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.shop_id, pr.shop_id) AS shop_id")
+            ->select("d.*, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.shop_id, pr.shop_id) AS shop_id", false)
             ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
             ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
             ->groupStart();
