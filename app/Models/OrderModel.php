@@ -90,7 +90,7 @@ class OrderModel extends Model
         // (orders.*) because Model::paginate() regenerates a count query
         // that strips table aliases.
         $builder = $this->builder()
-            ->select('orders.*, u.first_name, u.last_name, u.email, u.profile_image_url, COALESCE(sa.phone, u.phone) as customer_phone, sa.label as address_label, sa.address_line1, sa.city, sa.province')
+            ->select('orders.*, u.first_name, u.last_name, u.email, u.profile_image_url, COALESCE(sa.phone, u.phone) as customer_phone, sa.label as address_label, sa.address_line1, sa.city, sa.province', false)
             ->join('users u', 'u.id = orders.customer_id', 'left')
             ->join('shipping_addresses sa', 'sa.id = orders.shipping_address_id', 'left')
             ->where('orders.shop_id', $shopId);
@@ -228,7 +228,7 @@ class OrderModel extends Model
             ->where('item_type', 'order');
 
         $orders = $this->db->table('orders')
-            ->select('orders.*, u.first_name, u.last_name, u.email, u.profile_image_url, COALESCE(sa.phone, u.phone) as customer_phone, sa.label as address_label, sa.address_line1, sa.city, sa.province')
+            ->select('orders.*, u.first_name, u.last_name, u.email, u.profile_image_url, COALESCE(sa.phone, u.phone) as customer_phone, sa.label as address_label, sa.address_line1, sa.city, sa.province', false)
             ->join('users u', 'u.id = orders.customer_id', 'left')
             ->join('shipping_addresses sa', 'sa.id = orders.shipping_address_id', 'left')
             ->where('orders.shop_id', $shopId)
@@ -386,7 +386,7 @@ class OrderModel extends Model
     public function getCategorySales(int $shopId, ?string $from = null, ?string $to = null): array
     {
         $builder = $this->db->table('order_items oi')
-            ->select('COALESCE(c.name, "Uncategorized") AS category, SUM(oi.quantity) AS units, SUM(oi.line_total) AS revenue')
+            ->select("COALESCE(c.name, 'Uncategorized') AS category, SUM(oi.quantity) AS units, SUM(oi.line_total) AS revenue", false)
             ->join('orders o', 'o.id = oi.order_id')
             ->join('products p', 'p.id = oi.product_id', 'left')
             ->join('categories c', 'c.id = p.category_id', 'left')
@@ -411,7 +411,7 @@ class OrderModel extends Model
     public function getOrderStatusDistribution(int $shopId): array
     {
         return $this->db->table('orders')
-            ->select('status, COUNT(*) AS count')
+            ->select('status, COUNT(*) AS count', false)
             ->where('shop_id', $shopId)
             ->groupBy('status')
             ->get()->getResultArray();
@@ -425,7 +425,7 @@ class OrderModel extends Model
     public function getTopProductsForShop(int $shopId, int $limit = 5, ?string $from = null, ?string $to = null): array
     {
         $builder = $this->db->table('order_items oi')
-            ->select('MAX(COALESCE(p.name, oi.product_name)) AS name, SUM(oi.quantity) AS units, SUM(oi.line_total) AS revenue, MAX(p.stock_quantity) AS stock_quantity, MAX(p.low_stock_threshold) AS low_stock_threshold, MAX(p.status) AS product_status')
+            ->select('MAX(COALESCE(p.name, oi.product_name)) AS name, SUM(oi.quantity) AS units, SUM(oi.line_total) AS revenue, MAX(p.stock_quantity) AS stock_quantity, MAX(p.low_stock_threshold) AS low_stock_threshold, MAX(p.status) AS product_status', false)
             ->join('orders o', 'o.id = oi.order_id')
             ->join('products p', 'p.id = oi.product_id', 'left')
             ->where('o.shop_id', $shopId)
@@ -597,7 +597,7 @@ class OrderModel extends Model
             $prevYear = $curYear - 1;
 
             $rows = $this->db->table('orders')
-                ->select('MONTH(COALESCE(orders.completed_at, orders.placed_at)) AS m, SUM(total_amount) AS rev')
+                ->select('MONTH(COALESCE(orders.completed_at, orders.placed_at)) AS m, SUM(total_amount) AS rev', false)
                 ->where('shop_id', $shopId)
                 ->groupStart()
                     ->whereIn('orders.status', ['completed', 'paid', 'delivered', 'COMPLETED', 'PAID', 'DELIVERED'])
@@ -610,7 +610,7 @@ class OrderModel extends Model
                 ->get()->getResultArray();
 
             $prRows = $this->db->table('printing_requests')
-                ->select('MONTH(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS m, SUM(total_price) AS rev')
+                ->select('MONTH(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS m, SUM(total_price) AS rev', false)
                 ->where('shop_id', $shopId)
                 ->whereIn('printing_requests.status', ['completed', 'paid', 'released', 'COMPLETED', 'PAID', 'RELEASED'])
                 ->whereNotIn('printing_requests.status', ['cancelled'])
@@ -622,7 +622,7 @@ class OrderModel extends Model
             $prevPrRows = [];
             if ($withPrevious) {
                 $prevRows = $this->db->table('orders')
-                    ->select('MONTH(COALESCE(orders.completed_at, orders.placed_at)) AS m, SUM(total_amount) AS rev')
+                    ->select('MONTH(COALESCE(orders.completed_at, orders.placed_at)) AS m, SUM(total_amount) AS rev', false)
                     ->where('shop_id', $shopId)
                     ->groupStart()
                         ->whereIn('orders.status', ['completed', 'paid', 'delivered', 'COMPLETED', 'PAID', 'DELIVERED'])
@@ -635,7 +635,7 @@ class OrderModel extends Model
                     ->get()->getResultArray();
 
                 $prevPrRows = $this->db->table('printing_requests')
-                    ->select('MONTH(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS m, SUM(total_price) AS rev')
+                    ->select('MONTH(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS m, SUM(total_price) AS rev', false)
                     ->where('shop_id', $shopId)
                     ->whereIn('printing_requests.status', ['completed', 'paid', 'released', 'COMPLETED', 'PAID', 'RELEASED'])
                     ->whereNotIn('printing_requests.status', ['cancelled'])
@@ -686,7 +686,7 @@ class OrderModel extends Model
         $prevStartInclusive = $prevStart . ' 00:00:00';
 
         $rows = $this->db->table('orders')
-            ->select('DATE(COALESCE(orders.completed_at, orders.placed_at)) AS d, SUM(total_amount) AS rev')
+            ->select('DATE(COALESCE(orders.completed_at, orders.placed_at)) AS d, SUM(total_amount) AS rev', false)
             ->where('shop_id', $shopId)
             ->groupStart()
                 ->whereIn('orders.status', ['completed', 'paid', 'delivered', 'COMPLETED', 'PAID', 'DELIVERED'])
@@ -700,7 +700,7 @@ class OrderModel extends Model
             ->get()->getResultArray();
 
         $prRows = $this->db->table('printing_requests')
-            ->select('DATE(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS d, SUM(total_price) AS rev')
+            ->select('DATE(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS d, SUM(total_price) AS rev', false)
             ->where('shop_id', $shopId)
             ->whereIn('printing_requests.status', ['completed', 'paid', 'released', 'COMPLETED', 'PAID', 'RELEASED'])
             ->whereNotIn('printing_requests.status', ['cancelled'])
@@ -713,7 +713,7 @@ class OrderModel extends Model
         $prevPrRows = [];
         if ($withPrevious) {
             $prevRows = $this->db->table('orders')
-                ->select('DATE(COALESCE(orders.completed_at, orders.placed_at)) AS d, SUM(total_amount) AS rev')
+                ->select('DATE(COALESCE(orders.completed_at, orders.placed_at)) AS d, SUM(total_amount) AS rev', false)
                 ->where('shop_id', $shopId)
                 ->groupStart()
                     ->whereIn('orders.status', ['completed', 'paid', 'delivered', 'COMPLETED', 'PAID', 'DELIVERED'])
@@ -727,7 +727,7 @@ class OrderModel extends Model
                 ->get()->getResultArray();
 
             $prevPrRows = $this->db->table('printing_requests')
-                ->select('DATE(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS d, SUM(total_price) AS rev')
+                ->select('DATE(COALESCE(printing_requests.completed_at, printing_requests.created_at)) AS d, SUM(total_price) AS rev', false)
                 ->where('shop_id', $shopId)
                 ->whereIn('printing_requests.status', ['completed', 'paid', 'released', 'COMPLETED', 'PAID', 'RELEASED'])
                 ->whereNotIn('printing_requests.status', ['cancelled'])

@@ -129,7 +129,7 @@
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Withdraw earnings to your registered GCash account (minimum ₱20.00). Standard <?= number_format($deduction_percent ?? 3.00, 2) ?>% administrative fee applies to cover gateway disbursement.</p>
         </div>
         <?php if (!empty($is_gcash_complete)): ?>
-            <button onclick="document.getElementById('withdrawModal').classList.remove('hidden')" class="px-5 py-2.5 bg-terra-green text-white rounded-xl font-bold text-xs hover:bg-terra-green/90 transition-all shadow-xs flex items-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer">
+            <button onclick="window.openModal('withdrawModal')" class="px-5 py-2.5 bg-terra-green text-white rounded-xl font-bold text-xs hover:bg-terra-green/90 transition-all shadow-xs flex items-center gap-1.5 whitespace-nowrap active:scale-95 cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">payments</span>
                 <span>Request Withdrawal</span>
             </button>
@@ -561,13 +561,13 @@
 </div>
 
 <!-- Withdraw Modal -->
-<div id="withdrawModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+<div id="withdrawModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4" onclick="if(event.target===this)window.closeModal('withdrawModal')">
 
     <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full space-y-4 border border-slate-200/80 dark:border-slate-800 shadow-2xl">
 
         <div class="flex justify-between items-center border-b border-slate-200/80 dark:border-slate-800 pb-3">
             <h3 class="text-base font-bold text-slate-900 dark:text-white font-display">Request Withdrawal</h3>
-            <button onclick="document.getElementById('withdrawModal').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" onclick="window.closeModal('withdrawModal')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <form action="<?= base_url('tenant/withdrawals/request') ?>" method="POST" class="space-y-4">

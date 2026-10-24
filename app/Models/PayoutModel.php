@@ -62,7 +62,7 @@ class PayoutModel extends Model
         $today = $this->getLocalToday();
         if ($range === 'year') {
             $rows = $this->db->table('payout_requests')
-                ->select('MONTH(completed_at) AS m, SUM(fee) AS rev')
+                ->select('MONTH(completed_at) AS m, SUM(fee) AS rev', false)
                 ->where('status', $status)
                 ->where('YEAR(completed_at) = YEAR(CURDATE())', null, false)
                 ->groupBy('m')
@@ -76,7 +76,7 @@ class PayoutModel extends Model
         $days = $range === '7' ? 7 : 30;
         $start = date('Y-m-d', strtotime($today.' -'.($days-1).' days'));
         $rows = $this->db->table('payout_requests')
-            ->select('DATE(completed_at) AS d, SUM(fee) AS rev')
+            ->select('DATE(completed_at) AS d, SUM(fee) AS rev', false)
             ->where('status', $status)
             ->where('completed_at >=', $start.' 00:00:00')
             ->groupBy('d')

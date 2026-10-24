@@ -148,7 +148,7 @@ class PrintingRequestModel extends Model
     public function getPrintSummary(int $shopId): array
     {
         $rows = $this->db->table('printing_requests')
-            ->select('status, COUNT(*) AS c')
+            ->select('status, COUNT(*) AS c', false)
             ->where('shop_id', $shopId)
             ->groupBy('status')
             ->get()->getResultArray();

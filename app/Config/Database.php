@@ -212,11 +212,22 @@ class Database extends Config
         // -----------------------------------------------------------
         // Production safety: disable DBDebug so DB errors become
         // logged/handled failures instead of raw exceptions dumped
-        // to visitors. pConnect remains false (correct for serverless).
+        // to visitors.
         // -----------------------------------------------------------
         $ciEnv = $this->firstEnv(['CI_ENVIRONMENT'], ENVIRONMENT);
         if ($ciEnv === 'production' || $this->readEnv('VERCEL') === '1') {
             $this->default['DBDebug'] = false;
+        }
+
+        // Connection persistence:
+        // On serverless (Vercel) pConnect must be false.
+        // On long-running containers (Render / Docker PHP-FPM), persistent
+        // connections eliminate 200ms+ cross-region TLS/TCP handshakes per request.
+        $pConnectEnv = $this->firstEnv(['DATABASE_DEFAULT_PCONNECT', 'DB_PCONNECT', 'database.default.pConnect', 'database_default_pconnect'], '');
+        if ($pConnectEnv !== '') {
+            $this->default['pConnect'] = filter_var($pConnectEnv, FILTER_VALIDATE_BOOLEAN);
+        } elseif ($this->readEnv('RENDER') !== null || $this->readEnv('RENDER_SERVICE_ID') !== null) {
+            $this->default['pConnect'] = true;
         }
     }
 
