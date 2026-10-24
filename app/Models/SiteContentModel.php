@@ -233,7 +233,7 @@ class SiteContentModel extends Model
 
         $defaults = [
             'base_shipping_fee'        => 50.00,
-            'included_distance_km'     => 3.00,
+            'included_distance_km'     => 2.00,
             'additional_fee_per_km'    => 10.00,
             'max_delivery_distance_km' => 25.00,
         ];
@@ -280,12 +280,12 @@ class SiteContentModel extends Model
                 'sort'  => 10,
             ],
             'shipping_included_km' => [
-                'label' => 'Included Distance (km)',
-                'value' => round(max(0.0, (float) ($settings['included_distance_km'] ?? 3.00)), 2),
+                'label' => 'Shipping Fee KM Limit (km)',
+                'value' => round(max(0.5, (float) ($settings['included_distance_km'] ?? 2.00)), 2),
                 'sort'  => 11,
             ],
             'shipping_per_km_fee' => [
-                'label' => 'Additional Fee per Kilometer (PHP)',
+                'label' => 'Additional Shipping Fee per KM Limit (PHP)',
                 'value' => round(max(0.0, (float) ($settings['additional_fee_per_km'] ?? 10.00)), 2),
                 'sort'  => 12,
             ],

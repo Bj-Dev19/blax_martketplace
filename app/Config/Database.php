@@ -65,7 +65,7 @@ class Database extends Config
         'hostname'    => '127.0.0.1',
         'username'    => 'root',
         'password'    => '',
-        'database'    => 'blax_marketplace',
+        'database'    => 'blax_inventory',
         'DBDriver'    => 'MySQLi',
         'DBPrefix'    => '',
         'pConnect'    => false,
@@ -148,7 +148,7 @@ class Database extends Config
 
         $this->default['database'] = $this->firstEnv(
             ['MYSQLDATABASE', 'MYSQL_DATABASE', 'DATABASE_DEFAULT_DATABASE', 'DB_DATABASE', 'DB_NAME', 'database.default.database', 'database_default_database'],
-            $this->default['database'] ?: 'blax_marketplace'
+            $this->default['database'] ?: 'blax_inventory'
         );
 
         $driver = $this->firstEnv(

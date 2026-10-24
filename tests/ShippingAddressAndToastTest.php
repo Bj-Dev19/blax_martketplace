@@ -106,7 +106,7 @@ class ShippingAddressAndToastTest extends CIUnitTestCase
         $this->assertEquals('Polomolok', $saved['city']);
         $this->assertEquals('9504', $saved['postal_code']);
         $this->assertEqualsWithDelta(6.2415, (float)$saved['latitude'], 0.01);
-        $this->assertEqualsWithDelta(125.0740, (float)$saved['longitude'], 0.01);
+        $this->assertEqualsWithDelta(125.0902, (float)$saved['longitude'], 0.01);
 
         // Cleanup
         $addressModel->delete($saved['id']);

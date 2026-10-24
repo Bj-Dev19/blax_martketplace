@@ -83,22 +83,35 @@
                     </button>
                 </div>
 
-                <?php if (!empty($businessHours)): ?>
+                <?php
+                    $operationalStatus = $operationalStatus ?? ['is_closed_today' => false, 'note' => '', 'status_label' => 'Open Today'];
+                    $isShopClosedToday = !empty($operationalStatus['is_closed_today']);
+                    $closureNoteText   = trim((string) ($operationalStatus['note'] ?? ''));
+                ?>
+                <?php if (!empty($businessHours) || !empty($operationalStatus)): ?>
                     <?php
                         $todayName = strtolower(date('l'));
                         $currentStatusText = 'Open Today';
                         $isOpenNow = true;
-                        foreach ($businessHours as $h) {
-                            $label = strtolower($h['label'] ?? '');
-                            if (str_contains($label, $todayName) || $label === 'daily') {
-                                if (!empty($h['is_closed'])) {
-                                    $currentStatusText = 'Closed Today';
-                                    $isOpenNow = false;
-                                } else {
-                                    $currentStatusText = 'Open Today • ' . ($h['open'] ?? '8:00 AM') . ' – ' . ($h['close'] ?? '5:00 PM');
-                                    $isOpenNow = true;
+                        if ($isShopClosedToday) {
+                            $currentStatusText = !empty($operationalStatus['status_label']) ? $operationalStatus['status_label'] : 'Closed Today';
+                            $isOpenNow = false;
+                        } elseif (!empty($businessHours)) {
+                            foreach ($businessHours as $h) {
+                                $label = strtolower($h['label'] ?? '');
+                                if (str_contains($label, $todayName) || $label === 'daily') {
+                                    if (!empty($h['is_closed'])) {
+                                        $currentStatusText = 'Closed Today';
+                                        $isOpenNow = false;
+                                    } else {
+                                        $currentStatusText = 'Open Today • ' . ($h['open'] ?? '8:00 AM') . ' – ' . ($h['close'] ?? '5:00 PM');
+                                        $isOpenNow = true;
+                                    }
+                                    break;
                                 }
-                                break;
+                            }
+                            if ($closureNoteText !== '') {
+                                $currentStatusText .= ' • ' . $closureNoteText;
                             }
                         }
                     ?>
@@ -122,6 +135,12 @@
                                     <?= $isOpenNow ? 'Open Now' : 'Closed' ?>
                                 </span>
                             </div>
+                            <?php if ($closureNoteText !== ''): ?>
+                                <div class="p-2.5 rounded-xl <?= $isShopClosedToday ? 'bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300' : 'bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200' ?> text-[11px] font-semibold">
+                                    <span class="font-extrabold uppercase tracking-wider block text-[10px]">Today's Calendar Note:</span>
+                                    <?= esc($closureNoteText) ?>
+                                </div>
+                            <?php endif; ?>
                             <div class="space-y-1">
                                 <?php foreach ($businessHours as $hours): 
                                     $labelLower = strtolower($hours['label'] ?? '');
@@ -152,6 +171,23 @@
         </div>
 
     </section>
+
+    <?php if ($isShopClosedToday): ?>
+        <div class="mb-6 rounded-2xl border border-rose-500/35 bg-rose-500/10 p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
+            <span class="material-symbols-outlined text-rose-600 dark:text-rose-400 text-2xl shrink-0">event_busy</span>
+            <div class="space-y-1 text-xs sm:text-sm">
+                <p class="font-extrabold text-rose-700 dark:text-rose-300 font-display">
+                    <?= esc($shop['shop_name'] ?? 'This store') ?> is Closed Today (<?= date('M j, Y') ?>)
+                    <?php if ($closureNoteText !== ''): ?>
+                        — <span class="underline decoration-rose-400/60"><?= esc($closureNoteText) ?></span>
+                    <?php endif; ?>
+                </p>
+                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    You can still browse the store catalog and save items to your cart for later, but placing new orders and submitting printing requests are paused until the store reopens.
+                </p>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <!-- Report Shop Modal -->
     <div id="report-shop-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-4">
@@ -624,10 +660,17 @@
                                 </div>
 
                                 <!-- Primary Submit Button -->
-                                <button type="submit" id="btnSubmitPrinting" class="w-full py-3 bg-[#007DFE] hover:bg-[#006bd6] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                                    <span class="material-symbols-outlined text-[18px]">payments</span>
-                                    <span id="submitBtnText">Pay <?= round($dpPercent) ?>% Down Payment via GCash</span>
-                                </button>
+                                <?php if (!empty($isShopClosedToday)): ?>
+                                    <button type="button" disabled class="w-full py-3 bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-2xl font-bold text-xs sm:text-sm cursor-not-allowed flex items-center justify-center gap-2">
+                                        <span class="material-symbols-outlined text-[18px]">lock</span>
+                                        <span>Store Closed Today<?= $closureNoteText !== '' ? ' (' . esc($closureNoteText) . ')' : '' ?> — Cannot Submit Printing Order</span>
+                                    </button>
+                                <?php else: ?>
+                                    <button type="submit" id="btnSubmitPrinting" class="w-full py-3 bg-[#007DFE] hover:bg-[#006bd6] text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                        <span class="material-symbols-outlined text-[18px]">payments</span>
+                                        <span id="submitBtnText">Pay <?= round($dpPercent) ?>% Down Payment via GCash</span>
+                                    </button>
+                                <?php endif; ?>
 
                             </div>
 
@@ -705,18 +748,24 @@
 
                                 <span class="text-xs sm:text-base font-black text-terra-green dark:text-emerald-400 font-mono">₱<?= number_format($p['price'], 2) ?></span>
 
-                                <form action="<?= base_url('cart/add') ?>" method="POST">
-
-                                    <?= csrf_field() ?>
-
-                                    <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                                    <input type="hidden" name="quantity" value="1">
-
-                                    <button type="submit" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-terra-green dark:hover:text-white flex items-center justify-center transition-all shadow-2xs active:scale-95" aria-label="Add to cart" title="Add to Cart">
+                                <?php if ((int) ($p['variant_count'] ?? 0) > 0): ?>
+                                    <a href="<?= base_url('product/' . $p['id'] . '?select_option=1#variants-section') ?>" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-terra-green dark:hover:text-white flex items-center justify-center transition-all shadow-2xs active:scale-95" aria-label="Select product option" title="Select Product Option">
                                         <span class="material-symbols-outlined text-[16px] sm:text-[18px]">add_shopping_cart</span>
-                                    </button>
+                                    </a>
+                                <?php else: ?>
+                                    <form action="<?= base_url('cart/add') ?>" method="POST">
 
-                                </form>
+                                        <?= csrf_field() ?>
+
+                                        <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
+                                        <input type="hidden" name="quantity" value="1">
+
+                                        <button type="submit" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-terra-green dark:hover:text-white flex items-center justify-center transition-all shadow-2xs active:scale-95" aria-label="Add to cart" title="Add to Cart">
+                                            <span class="material-symbols-outlined text-[16px] sm:text-[18px]">add_shopping_cart</span>
+                                        </button>
+
+                                    </form>
+                                <?php endif; ?>
 
                             </div>
 

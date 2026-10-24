@@ -1,7 +1,15 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html class="light auth-page" lang="en" data-theme="light">
 <head>
-    <?= view('components/head', ['title' => $title ?? 'Blax | Marketplace Authentication']) ?>
+    <script>
+        // Immediately enforce light theme on auth pages to prevent FOUC, without modifying saved localStorage
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+    </script>
+    <?= view('components/head', [
+        'title' => $title ?? 'Blax | Marketplace Authentication',
+        'disableDarkTheme' => true
+    ]) ?>
     <!-- Google Fonts: Literata (Headlines) & Nunito Sans (Body) for Terra Design System -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +35,22 @@
         .glass-card-dark:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        /* Strict Light Mode Enforcement for Auth / Login Pages */
+        html.auth-page,
+        html.auth-page body {
+            background-color: #faf6f0 !important;
+            color: #2e3230 !important;
+        }
+        html.auth-page .bg-white\/80 {
+            background-color: rgba(255, 255, 255, 0.85) !important;
+        }
+        html.auth-page input {
+            color: #2e3230 !important;
+        }
+        html.auth-page input::placeholder {
+            color: #a0a59a !important;
         }
     </style>
 </head>

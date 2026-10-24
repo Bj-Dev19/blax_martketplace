@@ -5,9 +5,18 @@
 
 <title><?= esc($title ?? 'Blax') ?></title>
 
+<?php $disableDarkTheme = $disableDarkTheme ?? false; ?>
 <!-- Early Theme Switcher Initializer (Defaults to Light Mode, Prevents FOUC) -->
 <script>
 (function() {
+    <?php if ($disableDarkTheme): ?>
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    window.setBlaxTheme = function() {};
+    window.toggleBlaxTheme = function() {};
+    window.updateThemeToggleIcons = function() {};
+    return;
+    <?php endif; ?>
     window.updateThemeToggleIcons = function() {
         const isDark = document.documentElement.classList.contains('dark');
         document.querySelectorAll('.theme-toggle-btn').forEach(function(btn) {
@@ -222,6 +231,7 @@
         }
     });
 
+    <?php if (!$disableDarkTheme): ?>
     try {
         const savedTheme = localStorage.getItem('blax_theme');
         if (savedTheme === 'dark') {
@@ -232,6 +242,10 @@
             document.documentElement.classList.remove('dark');
         }
     } catch(e) {}
+    <?php else: ?>
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    <?php endif; ?>
 })();
 </script>
 

@@ -534,45 +534,83 @@ class GoogleMapsService
         }
 
         $baseFee     = round(max(0.0, (float) ($settings['base_shipping_fee'] ?? 50.00)), 2);
-        $includedKm  = round(max(0.0, (float) ($settings['included_distance_km'] ?? 3.00)), 2);
+        $includedKm  = round(max(0.5, (float) ($settings['included_distance_km'] ?? 2.00)), 2);
         $perKmFee    = round(max(0.0, (float) ($settings['additional_fee_per_km'] ?? 10.00)), 2);
         $maxDistKm   = round(max(0.5, (float) ($settings['max_delivery_distance_km'] ?? 25.00)), 2);
+
+        // Enforce Polomolok-only delivery eligibility
+        $addrCity = trim((string) ($address['city'] ?? ''));
+        $rawLat   = (float) ($address['latitude'] ?? $address['lat'] ?? 0);
+        $rawLng   = (float) ($address['longitude'] ?? $address['lng'] ?? 0);
+
+        $isPolomolokAddress = true;
+        if ($addrCity !== '' && stripos($addrCity, 'Polomolok') === false) {
+            $isPolomolokAddress = false;
+        } elseif ($rawLat != 0.0 && $rawLng != 0.0 && !\App\Models\DeliveryModel::isPolomolokCoordinate($rawLat, $rawLng)) {
+            $isPolomolokAddress = false;
+        }
 
         $origin = $this->resolveEntityCoordinates($shop);
         $dest   = $this->resolveEntityCoordinates($address);
 
-        $route = $this->computeRoute(
-            ['lat' => $origin['lat'], 'lng' => $origin['lng']],
-            ['lat' => $dest['lat'], 'lng' => $dest['lng']],
-            'DRIVE'
-        );
-
-        if ($route !== null && !empty($route['distanceMeters'])) {
-            $distanceMeters = (int) $route['distanceMeters'];
-            $durationText   = (string) ($route['duration_text'] ?? '15 mins');
-            $routeSource    = (string) ($route['source'] ?? 'google_routes');
-        } else {
-            // Road-winding adjusted Haversine fallback (1.25x straight-line distance)
-            $straightMeters = self::haversineDistanceMeters($origin['lat'], $origin['lng'], $dest['lat'], $dest['lng']);
-            $distanceMeters = (int) round($straightMeters * 1.25);
-            $estMins        = max(5, (int) round(($distanceMeters / 1000) * 2.5));
+        if (isset($settings['override_distance_km']) && is_numeric($settings['override_distance_km'])) {
+            $distanceKm     = round(max(0.0, (float) $settings['override_distance_km']), 2);
+            $distanceMeters = (int) round($distanceKm * 1000);
+            $estMins        = max(5, (int) round($distanceKm * 2.5));
             $durationText   = $estMins . ' mins';
-            $routeSource    = 'estimated_road';
+            $routeSource    = 'simulated_distance';
+        } else {
+            $route = $this->computeRoute(
+                ['lat' => $origin['lat'], 'lng' => $origin['lng']],
+                ['lat' => $dest['lat'], 'lng' => $dest['lng']],
+                'DRIVE'
+            );
+
+            if ($route !== null && !empty($route['distanceMeters'])) {
+                $distanceMeters = (int) $route['distanceMeters'];
+                $durationText   = (string) ($route['duration_text'] ?? '15 mins');
+                $routeSource    = (string) ($route['source'] ?? 'google_routes');
+            } else {
+                // Road-winding adjusted Haversine fallback (1.25x straight-line distance)
+                $straightMeters = self::haversineDistanceMeters($origin['lat'], $origin['lng'], $dest['lat'], $dest['lng']);
+                $distanceMeters = (int) round($straightMeters * 1.25);
+                $estMins        = max(5, (int) round(($distanceMeters / 1000) * 2.5));
+                $durationText   = $estMins . ' mins';
+                $routeSource    = 'estimated_road';
+            }
+
+            $distanceKm = round($distanceMeters / 1000, 2);
         }
 
-        $distanceKm   = round($distanceMeters / 1000, 2);
         $distanceText = number_format($distanceKm, 1) . ' km';
 
-        $deliverable = ($distanceKm <= $maxDistKm);
-        $extraKm     = max(0.0, round($distanceKm - $includedKm, 2));
-        $extraFee    = round($extraKm * $perKmFee, 2);
+        $withinRadius = ($distanceKm <= $maxDistKm);
+        $deliverable  = $isPolomolokAddress && $withinRadius;
+
+        // KM-Limit Step Calculation:
+        // Within $includedKm (e.g. <= 2.0 km), fee stays at $baseFee (does not increase).
+        // When $distanceKm exceeds $includedKm, automatically add $perKmFee per exceeded $includedKm step bracket.
+        $rawExtraKm = max(0.0, round($distanceKm - $includedKm, 2));
+        if ($distanceKm <= $includedKm || $rawExtraKm <= 0.0) {
+            $extraSteps = 0;
+            $extraKm    = 0.0;
+            $extraFee   = 0.00;
+        } else {
+            $stepSize   = $includedKm > 0.0 ? $includedKm : 1.0;
+            $extraSteps = (int) ceil(($rawExtraKm - 1e-6) / $stepSize);
+            $extraKm    = $rawExtraKm;
+            $extraFee   = round($extraSteps * $perKmFee, 2);
+        }
+
         $shippingFee = round($baseFee + $extraFee, 2);
 
         $shopName = trim((string) ($shop['shop_name'] ?? 'the shop'));
         $error = null;
-        if (!$deliverable) {
+        if (!$isPolomolokAddress) {
+            $error = 'Doorstep delivery and additional shipping fee calculation are available around Polomolok, South Cotabato only. Please select a Polomolok address or choose Store Pick-up.';
+        } elseif (!$withinRadius) {
             $error = sprintf(
-                'Delivery address is %.1f km away from %s, which exceeds the maximum delivery distance of %.1f km. Please choose Store Pick-up or select a closer address.',
+                'Delivery address is %.1f km away from %s, which exceeds the maximum Polomolok delivery distance of %.1f km. Please choose Store Pick-up or select a closer address.',
                 $distanceKm,
                 $shopName,
                 $maxDistKm
@@ -581,6 +619,7 @@ class GoogleMapsService
 
         return [
             'deliverable'              => $deliverable,
+            'is_polomolok'             => $isPolomolokAddress,
             'distance_meters'          => $distanceMeters,
             'distance_km'              => $distanceKm,
             'distance_text'            => $distanceText,
@@ -589,6 +628,7 @@ class GoogleMapsService
             'base_shipping_fee'        => $baseFee,
             'included_distance_km'     => $includedKm,
             'additional_fee_per_km'    => $perKmFee,
+            'extra_steps'              => $extraSteps,
             'extra_distance_km'        => $extraKm,
             'extra_distance_fee'       => $extraFee,
             'max_delivery_distance_km' => $maxDistKm,

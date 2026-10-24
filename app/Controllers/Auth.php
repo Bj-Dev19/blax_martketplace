@@ -410,7 +410,18 @@ class Auth extends BaseController
 
     public function logout()
     {
-        session()->destroy();
+        $session = session();
+        $session->remove([
+            'user_id',
+            'user_name',
+            'user_email',
+            'user_role',
+            'shop_id',
+            'profile_image_url',
+            'isLoggedIn',
+        ]);
+        $session->destroy();
+
         return redirect()->to('/login');
     }
 

@@ -172,21 +172,23 @@ function inv_stock_pill(int $stock, int $threshold): array {
         </form>
     </div>
 
-    <!-- Product Table Container -->
+    <!-- Product Dataset Container (Modern Table on Desktop, Responsive Cards on Mobile) -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div class="responsive-table">
+        
+        <!-- Desktop / Tablet Table View (hidden on mobile < md) -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
+                <thead class="bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-xs">
                     <tr>
-                        <th class="py-3 px-4 w-10">
+                        <th class="py-3.5 px-4 w-10">
                             <input type="checkbox" id="selectAll" class="rounded border-slate-300 dark:border-slate-600 text-terra-green focus:ring-terra-green h-4 w-4">
                         </th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Product Info &amp; Preview</th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">SKU &amp; Variations</th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Category</th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Price</th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Stock Health</th>
-                        <th class="py-3 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Product Info &amp; Details</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">SKU &amp; Variations</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Category</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Price</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Stock Level</th>
+                        <th class="py-3.5 px-4 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
@@ -202,12 +204,12 @@ function inv_stock_pill(int $stock, int $threshold): array {
                             $descPreview = trim(strip_tags($p['description'] ?? ''));
                             ?>
                             <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group" id="row-<?= (int) $p['id'] ?>">
-                                <td class="py-3.5 px-4 align-top pt-4">
+                                <td class="py-4 px-4 align-top pt-4">
                                     <input type="checkbox" name="selected_products[]" value="<?= esc($p['id']) ?>" class="product-checkbox rounded border-slate-300 dark:border-slate-700 text-terra-green focus:ring-terra-green h-4 w-4">
                                 </td>
                                 
-                                <!-- Product Info & Inline Description Preview -->
-                                <td class="py-3.5 px-4 max-w-xs md:max-w-md">
+                                <!-- Product Info & Preview -->
+                                <td class="py-4 px-4 max-w-xs md:max-w-sm">
                                     <div class="flex items-start gap-3">
                                         <div class="relative w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0 mt-0.5">
                                             <?php if (!empty($p['image_url'])): ?>
@@ -238,8 +240,8 @@ function inv_stock_pill(int $stock, int $threshold): array {
                                     </div>
                                 </td>
 
-                                <!-- SKU & Variations Popover/Details -->
-                                <td class="py-3.5 px-4 align-top pt-4">
+                                <!-- SKU & Variations Details -->
+                                <td class="py-4 px-4 align-top pt-4">
                                     <div class="space-y-1">
                                         <span class="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 inline-block">
                                             <?= esc($p['sku'] ?: 'NO-SKU') ?>
@@ -256,40 +258,40 @@ function inv_stock_pill(int $stock, int $threshold): array {
                                 </td>
 
                                 <!-- Category -->
-                                <td class="py-3.5 px-4 align-top pt-4">
+                                <td class="py-4 px-4 align-top pt-4">
                                     <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 inline-block">
-                                        <?= esc($p['category_name'] ?? 'General') ?>
+                                        <?= esc($p['category_name'] ?? 'Uncategorized') ?>
                                     </span>
                                 </td>
 
                                 <!-- Price -->
-                                <td class="py-3.5 px-4 text-right align-top pt-4">
+                                <td class="py-4 px-4 text-right align-top pt-4">
                                     <div class="font-bold text-slate-900 dark:text-white text-sm font-mono">₱<?= number_format((float) $p['price'], 2) ?></div>
                                     <?php if (!empty($p['compare_at_price']) && (float)$p['compare_at_price'] > (float)$p['price']): ?>
                                         <div class="text-[10px] text-slate-400 line-through font-mono">₱<?= number_format((float) $p['compare_at_price'], 2) ?></div>
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Stock Health & Stepper -->
-                                <td class="py-3.5 px-4 text-center align-top pt-4">
+                                <!-- Stock Health & Threshold -->
+                                <td class="py-4 px-4 text-center align-top pt-4">
                                     <div class="inline-flex flex-col items-center gap-1">
-                                        <div class="flex items-center gap-1">
-                                            <span id="stock-pill-<?= (int) $p['id'] ?>" class="px-2.5 py-0.5 rounded-full <?= $pill ?> text-xs font-bold inline-flex items-center gap-1 border font-mono">
-                                                <span class="material-symbols-outlined text-[13px]"><?= $icon ?></span>
-                                                <span id="stock-val-<?= (int) $p['id'] ?>"><?= number_format($stock) ?></span>
-                                            </span>
-                                        </div>
-                                        <span class="text-[10px] text-slate-400 font-mono">Threshold: <?= $thr ?></span>
+                                        <span id="stock-pill-<?= (int) $p['id'] ?>" class="px-2.5 py-1 rounded-xl <?= $pill ?> text-xs font-bold inline-flex items-center gap-1.5 border font-mono shadow-2xs">
+                                            <span class="material-symbols-outlined text-[15px]"><?= $icon ?></span>
+                                            <span id="stock-val-<?= (int) $p['id'] ?>"><?= number_format($stock) ?></span>
+                                            <span class="text-[10px] font-sans font-normal opacity-75">(<?= $statusLabel ?>)</span>
+                                        </span>
+                                        <span class="text-[10px] text-slate-400 font-mono">Alert below: <?= $thr ?></span>
                                     </div>
                                 </td>
 
-                                <!-- Actions -->
-                                <td class="py-3.5 px-4 text-right align-top pt-3.5">
-                                    <div class="flex items-center justify-end gap-1.5">
+                                <!-- Clear Labeled Actions (No Confusion) -->
+                                <td class="py-4 px-4 text-right align-top pt-3.5">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- Primary Edit Button with Text Label -->
                                         <button type="button"
                                                 onclick="openProductModal(this)"
-                                                class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-terra-green/10 text-slate-600 dark:text-slate-300 hover:text-terra-green dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                                                title="Edit Product"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-terra-green hover:text-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                                title="Edit Product Details"
                                                 data-id="<?= (int) $p['id'] ?>"
                                                 data-name="<?= esc($p['name']) ?>"
                                                 data-sku="<?= esc($p['sku']) ?>"
@@ -302,20 +304,50 @@ function inv_stock_pill(int $stock, int $threshold): array {
                                                 data-description="<?= esc($p['description'] ?? '') ?>"
                                                 data-images="<?= esc(json_encode($images), 'attr') ?>"
                                                 data-variants="<?= esc(json_encode($variants), 'attr') ?>">
-                                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                                            <span class="material-symbols-outlined text-[15px]">edit</span>
+                                            <span>Edit</span>
                                         </button>
+
+                                        <!-- Direct Restock Action Button -->
                                         <button type="button"
                                                 onclick="openStockModal(<?= (int) $p['id'] ?>, <?= (int) $p['stock_quantity'] ?>, '<?= esc($p['name'], 'js') ?>')"
-                                                class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-amber-500/10 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-                                                title="Adjust / Restock Quantity">
-                                            <span class="material-symbols-outlined text-[18px]">autorenew</span>
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-500/20 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                                title="Quick Adjust Stock Quantity">
+                                            <span class="material-symbols-outlined text-[15px]">autorenew</span>
+                                            <span>Restock</span>
                                         </button>
-                                        <form action="<?= base_url('tenant/products/archive/' . (int) $p['id']) ?>" method="POST" onsubmit="return confirm('Archive this product? It will be hidden from your storefront and can be restored anytime from the Archive page.')">
-                                            <?= csrf_field() ?>
-                                            <button type="submit" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-500/10 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer" title="Archive Product">
-                                                <span class="material-symbols-outlined text-[18px]">archive</span>
+
+                                        <!-- More Actions Dropdown Menu -->
+                                        <div class="relative inline-block text-left">
+                                            <button type="button"
+                                                    onclick="toggleActionMenu(<?= (int) $p['id'] ?>, event)"
+                                                    class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                                                    title="More Actions">
+                                                <span class="material-symbols-outlined text-[18px]">more_vert</span>
                                             </button>
-                                        </form>
+                                            <div id="action-menu-<?= (int) $p['id'] ?>" class="hidden action-menu absolute right-0 top-full mt-1.5 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100">
+                                                <button type="button"
+                                                        onclick="openProductModalFromMenu(<?= (int) $p['id'] ?>)"
+                                                        class="w-full px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors">
+                                                    <span class="material-symbols-outlined text-[16px] text-terra-green">edit_note</span>
+                                                    <span>Edit Details</span>
+                                                </button>
+                                                <button type="button"
+                                                        onclick="openStockModal(<?= (int) $p['id'] ?>, <?= (int) $p['stock_quantity'] ?>, '<?= esc($p['name'], 'js') ?>')"
+                                                        class="w-full px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors">
+                                                    <span class="material-symbols-outlined text-[16px] text-amber-500">inventory</span>
+                                                    <span>Adjust Stock</span>
+                                                </button>
+                                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                                <form action="<?= base_url('tenant/products/archive/' . (int) $p['id']) ?>" method="POST" onsubmit="return confirm('Archive this product? It will be hidden from your storefront and can be restored anytime from the Archive page.')">
+                                                    <?= csrf_field() ?>
+                                                    <button type="submit" class="w-full px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl flex items-center gap-2 transition-colors">
+                                                        <span class="material-symbols-outlined text-[16px]">archive</span>
+                                                        <span>Archive Product</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -333,6 +365,84 @@ function inv_stock_pill(int $stock, int $threshold): array {
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Mobile Card View (shown only on mobile < md) -->
+        <div class="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            <?php if (!empty($products)): ?>
+                <?php foreach ($products as $p): ?>
+                    <?php
+                    $stock = (int) $p['stock_quantity'];
+                    $thr   = (int) ($p['low_stock_threshold'] ?? 5);
+                    [$pill, $icon, $statusLabel] = inv_stock_pill($stock, $thr);
+                    $variants = $productVariants[$p['id']] ?? [];
+                    $hasVariants = !empty($variants);
+                    $images = $productImages[$p['id']] ?? [];
+                    $descPreview = trim(strip_tags($p['description'] ?? ''));
+                    ?>
+                    <div class="p-4 space-y-3" id="mobile-row-<?= (int) $p['id'] ?>">
+                        <div class="flex items-start gap-3">
+                            <input type="checkbox" name="selected_products[]" value="<?= esc($p['id']) ?>" class="product-checkbox rounded border-slate-300 dark:border-slate-700 text-terra-green focus:ring-terra-green h-4 w-4 mt-1">
+                            <div class="relative w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
+                                <?php if (!empty($p['image_url'])): ?>
+                                    <?php $imgSrc = product_image_url($p['image_url'], 'thumbnail'); ?>
+                                    <img src="<?= esc($imgSrc) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-cover">
+                                <?php else: ?>
+                                    <span class="material-symbols-outlined text-[24px] text-slate-400">inventory_2</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-2">
+                                    <h4 class="font-bold text-slate-900 dark:text-white text-sm truncate"><?= esc($p['name']) ?></h4>
+                                    <span class="font-mono font-bold text-slate-900 dark:text-white text-sm">₱<?= number_format((float) $p['price'], 2) ?></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-wrap mt-1">
+                                    <span class="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                        <?= esc($p['sku'] ?: 'NO-SKU') ?>
+                                    </span>
+                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                                        <?= esc($p['category_name'] ?? 'Uncategorized') ?>
+                                    </span>
+                                    <?php if ($hasVariants): ?>
+                                        <span class="text-[10px] font-bold text-terra-green bg-terra-green/10 px-1.5 py-0.5 rounded">
+                                            <?= count($variants) ?> Variants
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stock and Actions Row on Mobile -->
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <div>
+                                <span class="px-2.5 py-1 rounded-xl <?= $pill ?> text-xs font-bold inline-flex items-center gap-1 border font-mono">
+                                    <span class="material-symbols-outlined text-[14px]"><?= $icon ?></span>
+                                    <span><?= number_format($stock) ?> in stock</span>
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                        onclick="openProductModal(document.querySelector('#row-<?= (int) $p['id'] ?> button[data-id]'))"
+                                        class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-terra-green hover:text-white text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[15px]">edit</span>
+                                    <span>Edit</span>
+                                </button>
+                                <button type="button"
+                                        onclick="openStockModal(<?= (int) $p['id'] ?>, <?= (int) $p['stock_quantity'] ?>, '<?= esc($p['name'], 'js') ?>')"
+                                        class="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-500/20 transition-colors flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[15px]">autorenew</span>
+                                    <span>Restock</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="py-12 text-center p-4">
+                    <p class="text-sm font-bold text-slate-800 dark:text-slate-200">No products found</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Try modifying your search or clearing active filters.</p>
+                </div>
+            <?php endif; ?>
         </div>
 
         <?php
@@ -438,8 +548,8 @@ function inv_stock_pill(int $stock, int $threshold): array {
                         <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
                             Category <span class="text-rose-500">*</span>
                         </label>
-                        <select name="category_id" id="p_category" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terra-green font-semibold">
-                            <option value="0">General / Uncategorized</option>
+                        <select name="category_id" id="p_category" required class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terra-green font-semibold">
+                            <option value="" disabled selected>Select Category...</option>
                             <?php foreach ($all_categories as $c): ?>
                                 <option value="<?= (int) $c['id'] ?>"><?= esc($c['name']) ?></option>
                             <?php endforeach; ?>
@@ -821,7 +931,7 @@ function inv_stock_pill(int $stock, int $threshold): array {
         document.getElementById('product_id').value = '';
         document.getElementById('p_name').value = '';
         document.getElementById('p_sku').value = '';
-        document.getElementById('p_category').value = '0';
+        document.getElementById('p_category').value = '';
         document.getElementById('p_price').value = '';
         document.getElementById('p_compare').value = '';
         document.getElementById('p_stock').value = '';
@@ -840,7 +950,7 @@ function inv_stock_pill(int $stock, int $threshold): array {
             document.getElementById('product_id').value = btn.dataset.id;
             document.getElementById('p_name').value = btn.dataset.name || '';
             document.getElementById('p_sku').value = btn.dataset.sku || '';
-            document.getElementById('p_category').value = btn.dataset.category || '0';
+            document.getElementById('p_category').value = btn.dataset.category || '';
             document.getElementById('p_price').value = btn.dataset.price || '';
             document.getElementById('p_compare').value = btn.dataset.compare || '';
             document.getElementById('p_shipping_fee').value = btn.dataset.shippingFee || '0.00';
@@ -1449,6 +1559,33 @@ function inv_stock_pill(int $stock, int $threshold): array {
             alert('Network error while archiving products.');
         }
     }
+
+    /* =========================================================================
+       Action Menu Handlers
+       ========================================================================= */
+    function toggleActionMenu(id, event) {
+        event.stopPropagation();
+        const targetMenu = document.getElementById('action-menu-' + id);
+        document.querySelectorAll('.action-menu').forEach(menu => {
+            if (menu !== targetMenu) menu.classList.add('hidden');
+        });
+        if (targetMenu) {
+            targetMenu.classList.toggle('hidden');
+        }
+    }
+
+    function openProductModalFromMenu(id) {
+        const btn = document.querySelector('#row-' + id + ' button[data-id]');
+        if (btn) {
+            openProductModal(btn);
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.action-menu')) {
+            document.querySelectorAll('.action-menu').forEach(menu => menu.classList.add('hidden'));
+        }
+    });
 </script>
 
 <?= $this->endSection() ?>

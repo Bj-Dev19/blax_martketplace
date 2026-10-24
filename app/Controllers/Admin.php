@@ -404,7 +404,7 @@ class Admin extends BaseController
                     'total_amount_fmt'   => number_format((float) ($ord['total_amount'] ?? 0), 2),
                     'fulfillment_method' => strtolower($ord['fulfillment_method'] ?? 'delivery'),
                     'status'             => $ord['status'] ?? 'pending',
-                    'created_at'         => $ord['created_at'],
+                    'created_at'         => $ord['placed_at'] ?? $ord['created_at'] ?? date('Y-m-d H:i:s'),
                 ];
             }
         }
@@ -898,13 +898,41 @@ class Admin extends BaseController
         $auth = $this->checkAdminAuth();
         if ($auth !== true) return $auth;
 
+        $model = new SiteContentModel();
+        $userId = (int)session()->get('user_id');
+
+        // Check if multiple fields are submitted simultaneously
+        $fields = $this->request->getPost('fields');
+        if (is_array($fields) && !empty($fields)) {
+            foreach ($fields as $fieldIdentifier => $val) {
+                if (is_numeric($fieldIdentifier)) {
+                    $row = $model->find((int)$fieldIdentifier);
+                    if ($row && $row['content_type'] !== 'image') {
+                        $model->update((int)$fieldIdentifier, [
+                            'text_value' => is_string($val) ? $val : (string)$val,
+                            'updated_by' => $userId,
+                        ]);
+                    }
+                } elseif (is_string($fieldIdentifier)) {
+                    $row = $model->where('content_key', $fieldIdentifier)->first();
+                    if ($row && $row['content_type'] !== 'image') {
+                        $model->update($row['id'], [
+                            'text_value' => is_string($val) ? $val : (string)$val,
+                            'updated_by' => $userId,
+                        ]);
+                    }
+                }
+            }
+            SiteContentModel::clearCache();
+            return redirect()->back()->with('success', 'Content section saved successfully.');
+        }
+
         $id = (int)$this->request->getPost('id');
         $page = trim((string)$this->request->getPost('page'));
         $key = trim((string)$this->request->getPost('content_key'));
         $textValue = $this->request->getPost('text_value');
         $label = trim((string)$this->request->getPost('label'));
 
-        $model = new SiteContentModel();
         if ($id > 0) {
             $row = $model->find($id);
             if (!$row) return redirect()->back()->with('error','Content not found.');
@@ -913,7 +941,7 @@ class Admin extends BaseController
                 $data['text_value'] = $textValue;
             }
             if ($label !== '') $data['label'] = $label;
-            $data['updated_by'] = (int)session()->get('user_id');
+            $data['updated_by'] = $userId;
             $model->update($id, $data);
             SiteContentModel::clearCache();
         } else {
@@ -926,7 +954,7 @@ class Admin extends BaseController
                 'content_type'=>$contentType,
                 'text_value'=> $contentType !== 'image' ? $textValue : null,
                 'sort_order'=> (int)$this->request->getPost('sort_order'),
-                'updated_by'=> (int)session()->get('user_id'),
+                'updated_by'=> $userId,
             ]);
             SiteContentModel::clearCache();
         }
@@ -1915,8 +1943,8 @@ class Admin extends BaseController
         if ($baseFee < 0 || $baseFee > 5000) {
             return redirect()->back()->withInput()->with('error', 'Base shipping fee must be between ₱0.00 and ₱5,000.00.');
         }
-        if ($includedKm < 0 || $includedKm > 100) {
-            return redirect()->back()->withInput()->with('error', 'Included distance must be between 0 km and 100 km.');
+        if ($includedKm < 0.5 || $includedKm > 100) {
+            return redirect()->back()->withInput()->with('error', 'Shipping fee KM limit must be between 0.5 km and 100 km.');
         }
         if ($perKmFee < 0 || $perKmFee > 1000) {
             return redirect()->back()->withInput()->with('error', 'Additional fee per kilometer must be between ₱0.00 and ₱1,000.00.');

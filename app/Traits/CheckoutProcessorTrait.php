@@ -53,19 +53,24 @@ trait CheckoutProcessorTrait
                 return redirect()->to($failureRedirectUrl)->with('error', 'Invalid shipping address selected.');
             }
             $cityStr = (string) ($addr['city'] ?? '');
-            $provStr = (string) ($addr['province'] ?? '');
-            $cityOk  = stripos($cityStr, 'Polomolok') !== false || stripos($cityStr, 'Tupi') !== false;
-            $provOk  = stripos($provStr, 'South Cotabato') !== false;
-            if (!$cityOk && !$provOk) {
-                return redirect()->to($failureRedirectUrl)->with('error', 'Doorstep delivery is available within Polomolok and Tupi, South Cotabato.');
+            $cityOk  = stripos($cityStr, 'Polomolok') !== false;
+            if (!$cityOk) {
+                return redirect()->to($failureRedirectUrl)->with('error', 'Doorstep delivery is available within Polomolok, South Cotabato only.');
             }
         }
 
-        // Validate each merchant's service module availability & max delivery distance for the chosen fulfillment method
+        // Validate each merchant's operational schedule (closed today check), service module availability & max delivery distance
         $shopModel = new ShopModel();
+        $calModel  = new \App\Models\ShopCalendarScheduleModel();
         foreach (array_keys($itemsByShop) as $shopId) {
             $shop = $shopModel->find((int) $shopId);
             if ($shop) {
+                $opStatus = $calModel->getShopOperationalStatus((int) $shopId);
+                if (!empty($opStatus['is_closed_today'])) {
+                    $shopName = esc($shop['shop_name'] ?? 'The merchant');
+                    $noteStr  = !empty($opStatus['note']) ? ' (' . esc($opStatus['note']) . ')' : '';
+                    return redirect()->to($failureRedirectUrl)->with('error', "\"{$shopName}\" is closed today{$noteStr} and cannot accept new orders right now. Please try again when the store reopens.");
+                }
                 if ($fulfillmentMethod === 'delivery' && isset($shop['offers_delivery']) && (int) $shop['offers_delivery'] === 0) {
                     $shopName = esc($shop['shop_name'] ?? 'The merchant');
                     return redirect()->to($failureRedirectUrl)->with('error', "Ang tindahan na \"{$shopName}\" ay kasalukuyang hindi nag-aalok ng Doorstep Delivery service.");

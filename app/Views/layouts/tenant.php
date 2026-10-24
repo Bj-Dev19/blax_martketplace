@@ -31,6 +31,18 @@
         $unread_count = $notifModel->getUnreadCount($tenantUserId);
         $notifications = $notifModel->getRecent($tenantUserId, 8);
     }
+
+    $tenantShopId = (int) (session()->get('shop_id') ?? ($shop['id'] ?? 0));
+    $todayClosedStatus = null;
+    if ($tenantShopId > 0) {
+        try {
+            $calScheduleModel = new \App\Models\ShopCalendarScheduleModel();
+            $statusInfo = $calScheduleModel->getShopOperationalStatus($tenantShopId);
+            if (!empty($statusInfo['is_closed_today'])) {
+                $todayClosedStatus = $statusInfo;
+            }
+        } catch (\Throwable $e) {}
+    }
 ?>
 
 <!DOCTYPE html>
@@ -299,7 +311,7 @@
         <!-- Main Content -->
         <main id="tenant-main-content" class="flex-1 ml-0 md:ml-64 overflow-y-auto bg-slate-50 dark:bg-slate-950 relative min-h-screen">
 
-            <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 md:px-8 py-3 flex justify-between items-center transition-all">
+            <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 md:px-8 py-3 flex justify-between items-center transition-all">
 
                 <!-- Left: Mobile Toggle, Desktop Toggle & Breadcrumbs -->
                 <div class="flex items-center gap-2 sm:gap-3">
@@ -468,6 +480,108 @@
 
     <!-- Real-time Order & Printing Notification Toast Container -->
     <div id="blax-tenant-toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full"></div>
+
+    <?php if (!empty($todayClosedStatus)): ?>
+    <!-- Store Closed Sign-In Alert Modal (English) -->
+    <div id="storeClosedAlertModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-200">
+        <div class="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xl p-6 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header with Amber/Rose Alert Icon -->
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[28px]">storefront_off</span>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase font-mono bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                            Store Status: Closed Today
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight">Your Shop is Currently Closed Today</h3>
+                </div>
+            </div>
+
+            <!-- Description in English -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
+                    Notice: Your store counter is currently marked as <strong>Closed for today</strong>. Customers on the marketplace cannot place orders, buy items, or request printing services while your shop is closed.
+                </p>
+                <?php if (!empty($todayClosedStatus['note'])): ?>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-amber-900 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-500/15 p-2.5 rounded-xl border border-amber-500/30">
+                        <span class="material-symbols-outlined text-[16px] text-amber-600">info</span>
+                        <span>Reason / Note: <?= esc($todayClosedStatus['note']) ?></span>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
+                <button type="button" onclick="quickReopenStoreToday()" id="quickReopenStoreBtn" class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-terra-green hover:bg-terra-green/90 text-white text-xs font-bold transition shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">lock_open</span>
+                    <span id="quickReopenBtnText">Open Store Today</span>
+                </button>
+                <a href="<?= base_url('tenant/settings?tab=hours') ?>" class="w-full sm:w-auto py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200/70 dark:hover:bg-slate-700 transition text-center cursor-pointer">
+                    Manage in Settings
+                </a>
+                <button type="button" onclick="dismissClosedAlertModal()" class="w-full sm:w-auto py-3 px-3 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xs font-semibold transition cursor-pointer">
+                    Keep Closed
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const todayKey = <?= json_encode(date('Y-m-d')) ?>;
+        const dismissedKey = 'blax_closed_alert_dismissed_' + todayKey;
+        const modal = document.getElementById('storeClosedAlertModal');
+
+        // Show modal on login/load if closed and not dismissed in current browser session
+        if (modal && !sessionStorage.getItem(dismissedKey)) {
+            modal.classList.remove('hidden');
+        }
+
+        window.dismissClosedAlertModal = function() {
+            sessionStorage.setItem(dismissedKey, 'true');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.quickReopenStoreToday = async function() {
+            const btn = document.getElementById('quickReopenStoreBtn');
+            const btnText = document.getElementById('quickReopenBtnText');
+            if (btnText) btnText.textContent = 'Opening...';
+            if (btn) btn.disabled = true;
+
+            const fd = new FormData();
+            const csrfInput = document.querySelector('input[name="csrf_test_name"]') || document.querySelector('#settingsCsrfForm [name="csrf_test_name"]');
+            if (csrfInput) {
+                fd.append('csrf_test_name', csrfInput.value);
+            }
+            fd.append('section', 'calendar_schedule');
+            fd.append('calendar_action', 'delete');
+            fd.append('schedule_date', todayKey);
+
+            try {
+                const resp = await fetch("<?= base_url('tenant/settings/save') ?>", {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: fd
+                });
+                const data = await resp.json();
+                if (modal) modal.classList.add('hidden');
+                sessionStorage.setItem(dismissedKey, 'true');
+                if (typeof showToast === 'function') {
+                    showToast('Store is now OPEN today! Customers can now order.', false);
+                }
+                setTimeout(() => window.location.reload(), 800);
+            } catch (err) {
+                if (btnText) btnText.textContent = 'Open Store Today';
+                if (btn) btn.disabled = false;
+                alert('Could not update store status. Please manage operating hours in Settings.');
+            }
+        };
+    })();
+    </script>
+    <?php endif; ?>
 
     <script>
     function toggleTenantSidebar() {

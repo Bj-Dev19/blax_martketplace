@@ -90,15 +90,21 @@
                                 <span class="text-sm sm:text-base font-black text-slate-900 dark:text-white"><?= number_format($p['price'], 2) ?></span>
                             </div>
 
-                            <form action="<?= base_url('cart/add') ?>" method="POST">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                                <input type="hidden" name="quantity" value="1">
-
-                                <button type="submit" class="bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white p-2 rounded-xl transition-all flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 active:scale-95 shadow-2xs" aria-label="Add to cart" title="Add to cart">
+                            <?php if ((int) ($p['variant_count'] ?? 0) > 0): ?>
+                                <a href="<?= base_url('product/' . $p['id'] . '?select_option=1#variants-section') ?>" class="bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white p-2 rounded-xl transition-all flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 active:scale-95 shadow-2xs" aria-label="Select product option" title="Select product option">
                                     <span class="material-symbols-outlined text-[16px] sm:text-[18px]">add_shopping_cart</span>
-                                </button>
-                            </form>
+                                </a>
+                            <?php else: ?>
+                                <form action="<?= base_url('cart/add') ?>" method="POST">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
+                                    <input type="hidden" name="quantity" value="1">
+
+                                    <button type="submit" class="bg-terra-green/10 hover:bg-terra-green text-terra-green hover:text-white p-2 rounded-xl transition-all flex items-center justify-center shrink-0 w-8 h-8 sm:w-9 sm:h-9 active:scale-95 shadow-2xs" aria-label="Add to cart" title="Add to cart">
+                                        <span class="material-symbols-outlined text-[16px] sm:text-[18px]">add_shopping_cart</span>
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

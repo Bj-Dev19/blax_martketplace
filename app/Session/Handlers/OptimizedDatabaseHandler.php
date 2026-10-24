@@ -130,9 +130,20 @@ class OptimizedDatabaseHandler extends DatabaseHandler
         $escapedTable = $this->db->protectIdentifiers($this->table, true);
 
         try {
-            $sql = "INSERT INTO {$escapedTable} (`id`, `ip_address`, `timestamp`, `data`)
-                    VALUES (?, ?, NOW(), ?)
-                    ON DUPLICATE KEY UPDATE `ip_address` = VALUES(`ip_address`), `timestamp` = NOW(), `data` = VALUES(`data`)";
+            // If this request started without an existing DB row and is an unauthenticated
+            // guest request without flash/temp vars, avoid overwriting `data` (and its CSRF token)
+            // if a concurrent request already inserted the session row first.
+            $preserveExistingGuestData = (! $this->rowExists && ! $isAuthenticated && ! str_contains($data, '__ci_vars'));
+
+            if ($preserveExistingGuestData) {
+                $sql = "INSERT INTO {$escapedTable} (`id`, `ip_address`, `timestamp`, `data`)
+                        VALUES (?, ?, NOW(), ?)
+                        ON DUPLICATE KEY UPDATE `ip_address` = VALUES(`ip_address`), `timestamp` = NOW()";
+            } else {
+                $sql = "INSERT INTO {$escapedTable} (`id`, `ip_address`, `timestamp`, `data`)
+                        VALUES (?, ?, NOW(), ?)
+                        ON DUPLICATE KEY UPDATE `ip_address` = VALUES(`ip_address`), `timestamp` = NOW(), `data` = VALUES(`data`)";
+            }
 
             $this->db->query($sql, [$fullId, $this->ipAddress, $preparedData]);
 
@@ -158,7 +169,7 @@ class OptimizedDatabaseHandler extends DatabaseHandler
     }
 
     /**
-     * Destroys session row.
+     * Destroys session row and expires the client session cookie.
      */
     public function destroy($id): bool
     {
@@ -176,6 +187,12 @@ class OptimizedDatabaseHandler extends DatabaseHandler
         $this->fingerprint      = md5('');
         $this->wasAuthenticated = false;
 
-        return true;
+        if ($this->close()) {
+            $this->destroyCookie();
+
+            return true;
+        }
+
+        return $this->fail();
     }
 }

@@ -4,7 +4,7 @@
 <div class="space-y-6 max-w-7xl mx-auto pb-12">
 
     <!-- Top Navigation & Action Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+    <div id="topDetailHeader" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div class="flex items-center gap-3">
             <a href="<?= base_url('tenant/delivery') ?>" class="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center shadow-2xs">
                 <span class="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -16,20 +16,34 @@
                     <span class="font-mono text-terra-green font-bold">#<?= esc($delivery['tracking_id']) ?></span>
                 </div>
                 <h1 class="text-xl sm:text-2xl font-black font-display text-slate-900 dark:text-white tracking-tight mt-0.5 flex items-center gap-2.5 flex-wrap">
-                    <span>Delivery Route &amp; GPS</span>
+                    <span>Live Route &amp; GPS</span>
                     <?= status_badge($delivery['status']) ?>
                 </h1>
             </div>
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-3.5 py-1.5 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <!-- External Turn-by-Turn Navigation (Google Maps App) -->
+            <a href="https://www.google.com/maps/dir/?api=1&destination=<?= esc($destLat) ?>,<?= esc($destLng) ?>" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="px-3.5 py-2 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">turn_sharp_right</span>
+                <span>Turn-by-Turn Navigation</span>
+            </a>
+
+            <!-- Fullscreen Navigation Mode Toggle -->
+            <button type="button" 
+                    id="btnToggleFullscreenHeader"
+                    onclick="toggleFullscreenNavigation()"
+                    class="px-3.5 py-2 rounded-2xl text-xs font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                <span id="fullscreenHeaderIcon" class="material-symbols-outlined text-[16px]">fullscreen</span>
+                <span id="fullscreenHeaderText">Fullscreen Map</span>
+            </button>
+
+            <span class="px-3.5 py-2 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px] text-terra-green">local_shipping</span>
                 <span>Type: <?= esc(ucfirst(str_replace('_', ' ', $delivery['deliverable_type'] ?? 'Order'))) ?></span>
-            </span>
-            <span class="px-3.5 py-1.5 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
-                <span><?= date('M d, Y h:i A', strtotime($delivery['created_at'])) ?></span>
             </span>
         </div>
     </div>
@@ -51,163 +65,194 @@
     <!-- Main Grid: Left 7 cols Map, Right 5 cols Info & Status -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <!-- Map Column (7 cols) -->
-        <div class="lg:col-span-7 space-y-4">
-            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs">
-                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/40">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-9 h-9 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold">
-                            <span class="material-symbols-outlined text-[20px]">near_me</span>
-                        </span>
-                        <div>
-                            <h3 class="text-sm font-bold font-display text-slate-900 dark:text-white">Live Route &amp; GPS Tracking</h3>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400">Polomolok, South Cotabato &bull; Direct Waypoint Route</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700' ?>">
-                            <span class="w-2 h-2 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?>"></span>
-                            <span><?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'GPS Live Active' : 'Passive Tracking' ?></span>
-                        </span>
-                    </div>
-                </div>
+        <!-- Map Column (7 cols / or Fullscreen on toggle or mobile) -->
+        <div id="mapOuterCol" class="lg:col-span-7 space-y-4">
 
-                <!-- Live GPS Broadcasting & Telemetry Bar -->
-                <div id="liveTrackingBar" class="p-3 px-4 bg-slate-50/80 dark:bg-slate-850 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs flex-wrap">
-                    <div class="flex items-center gap-2">
-                        <span id="gpsIndicatorDot" class="w-2.5 h-2.5 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?>"></span>
-                        <span class="font-bold text-slate-900 dark:text-white">GPS Status:</span>
-                        <span id="gpsStatusText" class="text-slate-500 dark:text-slate-400 font-medium">
-                            <?php if (in_array($delivery['status'], ['shipped', 'in_transit'])): ?>
-                                Connecting to device GPS...
-                            <?php elseif ($delivery['status'] === 'delivered'): ?>
-                                Delivery completed
-                            <?php elseif ($delivery['status'] === 'cancelled'): ?>
-                                Delivery cancelled
-                            <?php else: ?>
-                                Awaiting dispatch
-                            <?php endif; ?>
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span id="gpsLastUpdated" class="font-mono text-slate-400 text-[11px]"></span>
+            <!-- Map Container Wrapper (Supports Fullscreen Viewport Mode) -->
+            <div id="deliveryMapWrapper" class="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-md transition-all duration-300">
+                
+                <!-- TOP FLOATING CONTROLS WRAPPER (Stacked cleanly in both normal and fullscreen modes) -->
+                <div id="fullscreenTopOverlay" class="w-full relative z-20">
+
+                    <!-- Map Header Overlay Bar -->
+                    <div id="mapTopBar" class="p-3 sm:p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-850/90 backdrop-blur-md">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold shrink-0">
+                                <span class="material-symbols-outlined text-[19px]">near_me</span>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-xs sm:text-sm font-bold font-display text-slate-900 dark:text-white truncate">Live Courier GPS &amp; Route</h3>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">Polomolok, South Cotabato &bull; Direct Waypoint Route</p>
+                            </div>
+                        </div>
                         
-                        <!-- Quick Action: Scan Delivery QR -->
-                        <button type="button" 
-                                onclick="openDeliveryScanner()"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-terra-green hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-                                title="Open QR Scanner to verify delivery">
-                            <span class="material-symbols-outlined text-[15px]">qr_code_scanner</span>
-                            <span>Scan QR</span>
-                        </button>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700' ?>">
+                                <span class="w-2 h-2 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?>"></span>
+                                <span class="hidden sm:inline"><?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'GPS Live Active' : 'Passive Tracking' ?></span>
+                                <span class="sm:hidden">GPS Live</span>
+                            </span>
 
-                        <!-- Satellite / Roadmap Toggle Button -->
-                        <button type="button" 
-                                id="btn-tenant-map-type"
-                                onclick="toggleTenantMapType()"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
-                                title="Toggle Satellite / Roadmap View">
-                            <span id="tenantMapTypeIcon" class="material-symbols-outlined text-[15px] text-terra-green">satellite_alt</span>
-                            <span id="tenantMapTypeText">Satellite</span>
-                        </button>
+                            <!-- Quick Scan QR Action in Header -->
+                            <button type="button" 
+                                    onclick="openDeliveryScanner()" 
+                                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer"
+                                    title="Open Delivery QR Scanner">
+                                <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+                                <span class="hidden sm:inline">Scan QR</span>
+                            </button>
 
-                        <!-- Auto-Follow Camera Button -->
-                        <button type="button" 
-                                id="btn-tenant-autofollow"
-                                onclick="toggleTenantAutoFollow()"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-terra-green hover:text-white text-xs font-bold transition-all">
-                            <span id="tenantAutoFollowDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span id="tenantAutoFollowText">Auto-Follow: ON</span>
-                        </button>
-
-                        <!-- Center Map on Rider Button -->
-                        <button type="button" 
-                                onclick="centerOnTenantRider()"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold shadow-xs transition-all">
-                            <span class="material-symbols-outlined text-[14px]">my_location</span>
-                            <span>Center</span>
-                        </button>
-
-                        <!-- Force GPS Sync Button -->
-                        <button type="button" 
-                                onclick="refreshTenantGps()"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
-                                title="Force GPS Location Re-detect">
-                            <span class="material-symbols-outlined text-[14px] text-terra-green">sync</span>
-                            <span>Sync</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- GPS Telemetry HUD Bar -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-slate-50/60 dark:bg-slate-850/60 border-b border-slate-100 dark:border-slate-800 text-xs">
-                    <!-- Live Speedometer -->
-                    <div class="flex items-center gap-2.5 p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                        <div class="p-1.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">speed</span>
-                        </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Speed</span>
-                            <span id="hudSpeed" class="font-bold text-slate-900 dark:text-white font-mono text-xs truncate">0 km/h</span>
+                            <!-- Fullscreen Map Action Icon Button -->
+                            <button type="button" 
+                                    id="btnToggleMapFullscreenIcon"
+                                    onclick="toggleFullscreenNavigation()" 
+                                    class="p-1.5 sm:p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-all cursor-pointer"
+                                    title="Toggle Fullscreen Delivery Map">
+                                <span id="fullscreenBtnInnerIcon" class="material-symbols-outlined text-[18px]">fullscreen</span>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Compass Heading -->
-                    <div class="flex items-center gap-2.5 p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                        <div class="p-1.5 bg-purple-500/10 text-purple-600 rounded-xl shrink-0">
-                            <span id="hudCompassIcon" class="material-symbols-outlined text-[18px] inline-block transition-transform duration-300">explore</span>
+                    <!-- Live GPS Broadcasting & Quick Controls Bar -->
+                    <div id="liveTrackingBar" class="p-2.5 px-3.5 sm:px-4 bg-slate-50/90 dark:bg-slate-850/95 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2.5 text-xs flex-wrap">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span id="gpsIndicatorDot" class="w-2.5 h-2.5 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?> shrink-0"></span>
+                            <span class="font-bold text-slate-900 dark:text-white shrink-0">GPS:</span>
+                            <span id="gpsStatusText" class="text-slate-500 dark:text-slate-400 font-medium truncate text-[11px] sm:text-xs">
+                                <?php if (in_array($delivery['status'], ['shipped', 'in_transit'])): ?>
+                                    Connecting to device GPS...
+                                <?php elseif ($delivery['status'] === 'delivered'): ?>
+                                    Delivery completed
+                                <?php elseif ($delivery['status'] === 'cancelled'): ?>
+                                    Delivery cancelled
+                                <?php else: ?>
+                                    Awaiting dispatch
+                                <?php endif; ?>
+                            </span>
                         </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Heading</span>
-                            <span id="hudHeading" class="font-bold text-slate-900 dark:text-white font-mono text-xs truncate">0° N</span>
+
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span id="gpsLastUpdated" class="font-mono text-slate-400 text-[10px] hidden md:inline"></span>
+                            
+                            <!-- Satellite / Roadmap Toggle Button -->
+                            <button type="button" 
+                                    id="btn-tenant-map-type"
+                                    onclick="toggleTenantMapType()"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+                                    title="Toggle Satellite / Roadmap View">
+                                <span id="tenantMapTypeIcon" class="material-symbols-outlined text-[14px] text-terra-green">satellite_alt</span>
+                                <span id="tenantMapTypeText">Satellite</span>
+                            </button>
+
+                            <!-- Auto-Follow Camera Button -->
+                            <button type="button" 
+                                    id="btn-tenant-autofollow"
+                                    onclick="toggleTenantAutoFollow()"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-terra-green hover:text-white text-[11px] font-bold transition-all cursor-pointer">
+                                <span id="tenantAutoFollowDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span id="tenantAutoFollowText">Auto: ON</span>
+                            </button>
+
+                            <!-- Center Map on Rider Button -->
+                            <button type="button" 
+                                    onclick="centerOnTenantRider()"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold shadow-2xs transition-all cursor-pointer">
+                                <span class="material-symbols-outlined text-[13px]">my_location</span>
+                                <span>Center</span>
+                            </button>
+
+                            <!-- Force GPS Sync Button -->
+                            <button type="button" 
+                                    onclick="refreshTenantGps()"
+                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+                                    title="Force GPS Location Re-detect">
+                                <span class="material-symbols-outlined text-[13px] text-terra-green">sync</span>
+                                <span>Sync</span>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- GPS Accuracy -->
-                    <div class="flex items-center gap-2.5 p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                        <div class="p-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">satellite_alt</span>
+                    <!-- GPS Telemetry HUD Bar (Driver Dashboard) -->
+                    <div id="hudTelemetryBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2.5 bg-slate-50/70 dark:bg-slate-850/80 border-b border-slate-100 dark:border-slate-800 text-xs">
+                        <!-- Live Speedometer -->
+                        <div class="flex items-center gap-2 p-1.5 sm:p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <div class="p-1 bg-blue-500/10 text-blue-600 rounded-lg shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">speed</span>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider leading-none">Speed</span>
+                                <span id="hudSpeed" class="font-bold text-slate-900 dark:text-white font-mono text-xs truncate mt-0.5 block">0 km/h</span>
+                            </div>
                         </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Accuracy</span>
-                            <span id="hudAccuracy" class="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs truncate">±5m (High)</span>
-                        </div>
-                    </div>
 
-                    <!-- Remaining Route & ETA -->
-                    <div class="flex items-center gap-2.5 p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                        <div class="p-1.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">timer</span>
+                        <!-- Compass Heading -->
+                        <div class="flex items-center gap-2 p-1.5 sm:p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <div class="p-1 bg-purple-500/10 text-purple-600 rounded-lg shrink-0">
+                                <span id="hudCompassIcon" class="material-symbols-outlined text-[16px] inline-block transition-transform duration-300">explore</span>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider leading-none">Heading</span>
+                                <span id="hudHeading" class="font-bold text-slate-900 dark:text-white font-mono text-xs truncate mt-0.5 block">0° N</span>
+                            </div>
                         </div>
-                        <div class="min-w-0">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Route & ETA</span>
-                            <span id="hudEta" class="font-bold text-amber-700 dark:text-amber-400 font-mono text-xs truncate">Calculating...</span>
+
+                        <!-- GPS Accuracy -->
+                        <div class="flex items-center gap-2 p-1.5 sm:p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <div class="p-1 bg-emerald-500/10 text-emerald-600 rounded-lg shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">satellite_alt</span>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider leading-none">Accuracy</span>
+                                <span id="hudAccuracy" class="font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs truncate mt-0.5 block">±5m (High)</span>
+                            </div>
+                        </div>
+
+                        <!-- Remaining Route & ETA -->
+                        <div class="flex items-center gap-2 p-1.5 sm:p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+                            <div class="p-1 bg-amber-500/10 text-amber-600 rounded-lg shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">timer</span>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider leading-none">Route &amp; ETA</span>
+                                <span id="hudEta" class="font-bold text-amber-700 dark:text-amber-400 font-mono text-xs truncate mt-0.5 block">Calculating...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Google Maps Canvas with Floating QR Code Scanner -->
-                <div class="relative w-full overflow-hidden">
-                    <div id="singleDeliveryMap" class="w-full h-[480px] sm:h-[520px] bg-slate-100 dark:bg-slate-800 z-0 relative" style="min-height:480px;"></div>
+                <div class="relative w-full" id="mapCanvasContainer">
+                    <div id="singleDeliveryMap" class="w-full h-[480px] sm:h-[540px] bg-slate-100 dark:bg-slate-800 z-0 relative transition-all duration-300" style="min-height:480px;"></div>
 
-                    <!-- Floating QR Code Scanner Action Pill Button on Map -->
-                    <div class="absolute top-4 left-4 z-30 pointer-events-auto">
+                    <!-- PROMINENT FLOATING "SCAN DELIVERY QR" BUTTON (Always Visible, Unclipped) -->
+                    <div id="floatingQrContainer" class="absolute bottom-5 left-5 z-40 pointer-events-auto">
                         <button type="button" 
                                 id="btnFloatingQrScan"
                                 onclick="openDeliveryScanner()" 
-                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-terra-green hover:bg-emerald-700 text-white font-bold text-xs shadow-xl hover:scale-105 active:scale-95 transition-all border border-white/40 cursor-pointer group">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-80"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                                class="inline-flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-terra-green hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-xs sm:text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-white/80 cursor-pointer group ring-4 ring-emerald-500/25">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-200 opacity-90"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
                             </span>
-                            <span class="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">qr_code_scanner</span>
-                            <span class="tracking-wide font-bold">Scan Delivery QR</span>
+                            <span class="material-symbols-outlined text-[20px] sm:text-[22px] group-hover:rotate-12 transition-transform">qr_code_scanner</span>
+                            <span class="tracking-wide uppercase font-black">Scan Delivery QR</span>
                         </button>
+                    </div>
+
+                    <!-- Turn-by-Turn Quick Floating Pill Button (Lower Right) -->
+                    <div id="btnFloatingDirections" class="absolute bottom-5 right-5 z-40 pointer-events-auto">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=<?= esc($destLat) ?>,<?= esc($destLng) ?>" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-white/20 transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-[16px] text-blue-400">directions</span>
+                            <span class="hidden sm:inline">Directions</span>
+                        </a>
                     </div>
                 </div>
 
                 <!-- Map Legend Banner -->
-                <div class="p-3.5 bg-slate-50/70 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 flex-wrap gap-2">
+                <div id="mapLegendBanner" class="p-3 px-4 bg-slate-50/70 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 flex-wrap gap-2">
                     <div class="flex items-center gap-4">
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded-full bg-orange-600 inline-block shadow-2xs"></span>
@@ -218,22 +263,37 @@
                             <strong class="text-slate-800 dark:text-slate-200">Destination (Customer)</strong>
                         </span>
                     </div>
+
+                    <!-- Destination Coordinates -->
+                    <div class="text-[11px] font-mono text-slate-400">
+                        Dest: <?= number_format($destLat, 5) ?>, <?= number_format($destLng, 5) ?>
+                    </div>
                 </div>
             </div>
 
-            <!-- Destination Address Card -->
-            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 flex items-start gap-3.5 shadow-xs">
-                <span class="p-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded-2xl material-symbols-outlined shrink-0 text-xl">home_pin</span>
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Delivery Destination Address</h4>
-                    <p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5"><?= esc($delivery['destination_address'] ?: 'Customer Delivery Address, Polomolok') ?></p>
-                    <p class="text-xs font-mono text-slate-400 mt-1">Coordinates: <?= number_format($destLat, 6) ?>, <?= number_format($destLng, 6) ?></p>
+            <!-- Destination Address Card (Below Map in Standard Mode) -->
+            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 flex items-start justify-between gap-3.5 shadow-xs">
+                <div class="flex items-start gap-3.5 min-w-0">
+                    <span class="p-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 rounded-2xl material-symbols-outlined shrink-0 text-xl">home_pin</span>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Delivery Destination Address</h4>
+                        <p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 leading-snug"><?= esc($delivery['destination_address'] ?: 'Customer Delivery Address, Polomolok') ?></p>
+                        <p class="text-xs font-mono text-slate-400 mt-1">Coordinates: <?= number_format($destLat, 6) ?>, <?= number_format($destLng, 6) ?></p>
+                    </div>
                 </div>
+
+                <a href="https://www.google.com/maps/dir/?api=1&destination=<?= esc($destLat) ?>,<?= esc($destLng) ?>" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors shrink-0 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">navigation</span>
+                    <span class="hidden sm:inline">Directions</span>
+                </a>
             </div>
         </div>
 
-        <!-- Details Column (5 cols) -->
-        <div class="lg:col-span-5 space-y-4">
+        <!-- Details Column (5 cols / Standard Desktop View) -->
+        <div id="detailsDesktopCol" class="lg:col-span-5 space-y-5">
 
             <!-- Status Updater & Timeline Card -->
             <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
@@ -289,17 +349,17 @@
                             <option value="returned" <?= $curStatus === 'returned' ? 'selected' : '' ?>>Returned</option>
                             <option value="cancelled" <?= $curStatus === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
                         </select>
-                        <button type="submit" class="px-4 py-2.5 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shadow-xs shrink-0">
+                        <button type="submit" class="px-4 py-2.5 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shadow-xs shrink-0 cursor-pointer">
                             Apply
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Customer Card -->
+            <!-- Customer Profile Card -->
             <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Information</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Customer Profile &amp; Contact</h4>
                     <?php if ($customer): ?>
                         <span class="text-[11px] text-slate-400 font-mono">ID: #<?= (int)$customer['id'] ?></span>
                     <?php endif; ?>
@@ -323,14 +383,21 @@
                             <p class="text-[11px] text-slate-400 truncate"><?= esc($customer['email']) ?></p>
                         <?php endif; ?>
                     </div>
+                    <?php if (!empty($customer['phone'])): ?>
+                        <a href="tel:<?= esc(preg_replace('/[^0-9+]/', '', $customer['phone'])) ?>" 
+                           class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors shrink-0" 
+                           title="Call Customer">
+                            <span class="material-symbols-outlined text-[18px]">call</span>
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Deliverable Details (Order or Printing Job) -->
-            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+            <!-- Full Details of Customer Order Items (100x Better Design) -->
+            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                     <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        <?= $order ? 'Order Items' : 'Printing Job Specs' ?>
+                        <?= $order ? 'Order Items Breakdown' : 'Printing Job Specs' ?>
                     </h4>
                     <?php if ($order): ?>
                         <a href="<?= base_url('tenant/orders') ?>" class="text-xs font-bold text-terra-green hover:underline font-mono">#<?= esc($order['order_number']) ?></a>
@@ -340,7 +407,7 @@
                 </div>
 
                 <?php if (!empty($orderItems)): ?>
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-64 overflow-y-auto pr-1">
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-72 overflow-y-auto pr-1 space-y-1">
                         <?php foreach ($orderItems as $it): ?>
                             <?php
                                 $img = !empty($it['gallery_image']) ? $it['gallery_image'] : (!empty($it['product_image']) ? $it['product_image'] : '');
@@ -349,20 +416,20 @@
                                 }
                             ?>
                             <div class="py-2.5 flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="flex items-center gap-3 min-w-0">
                                     <?php if ($img): ?>
-                                        <img src="<?= esc($img) ?>" class="w-10 h-10 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" alt="<?= esc($it['product_name']) ?>">
+                                        <img src="<?= esc($img) ?>" class="w-11 h-11 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" alt="<?= esc($it['product_name']) ?>">
                                     <?php else: ?>
-                                        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
-                                            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                                        <div class="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200/60 dark:border-slate-700">
+                                            <span class="material-symbols-outlined text-[20px]">inventory_2</span>
                                         </div>
                                     <?php endif; ?>
                                     <div class="min-w-0">
                                         <p class="text-xs font-bold text-slate-900 dark:text-white truncate"><?= esc($it['product_name']) ?></p>
                                         <?php if (!empty($it['variant_label'])): ?>
-                                            <span class="text-[10px] text-terra-green font-semibold"><?= esc($it['variant_label']) ?></span>
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 mt-0.5"><?= esc($it['variant_label']) ?></span>
                                         <?php endif; ?>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Qty: <?= (int)$it['quantity'] ?> &times; ₱<?= number_format((float)$it['unit_price'], 2) ?></p>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Qty: <strong class="text-slate-800 dark:text-slate-200"><?= (int)$it['quantity'] ?></strong> &times; ₱<?= number_format((float)$it['unit_price'], 2) ?></p>
                                     </div>
                                 </div>
                                 <span class="font-mono font-bold text-xs text-slate-900 dark:text-white shrink-0">₱<?= number_format((float)$it['line_total'], 2) ?></span>
@@ -371,10 +438,31 @@
                     </div>
 
                     <?php if ($order): ?>
-                        <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1 text-xs">
-                            <div class="flex justify-between text-slate-500 dark:text-slate-400"><span>Subtotal:</span><span class="font-mono">₱<?= number_format((float)$order['subtotal'], 2) ?></span></div>
-                            <div class="flex justify-between text-slate-500 dark:text-slate-400"><span>Shipping Fee:</span><span class="font-mono">₱<?= number_format((float)$order['shipping_fee'], 2) ?></span></div>
-                            <div class="flex justify-between text-sm font-bold text-slate-900 dark:text-white pt-1.5 border-t border-slate-100 dark:border-slate-800"><span>Total:</span><span class="font-mono text-terra-green">₱<?= number_format((float)$order['total_amount'], 2) ?></span></div>
+                        <div class="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1.5 text-xs">
+                            <div class="flex justify-between text-slate-500 dark:text-slate-400">
+                                <span>Subtotal:</span>
+                                <span class="font-mono font-medium">₱<?= number_format((float)$order['subtotal'], 2) ?></span>
+                            </div>
+                            <div class="flex justify-between text-slate-500 dark:text-slate-400">
+                                <span>Shipping Fee:</span>
+                                <span class="font-mono font-medium">₱<?= number_format((float)$order['shipping_fee'], 2) ?></span>
+                            </div>
+                            <?php if (!empty($order['discount_amount']) && (float)$order['discount_amount'] > 0): ?>
+                                <div class="flex justify-between text-emerald-600 dark:text-emerald-400">
+                                    <span>Discount:</span>
+                                    <span class="font-mono font-medium">-₱<?= number_format((float)$order['discount_amount'], 2) ?></span>
+                                </div>
+                            <?php endif; ?>
+                            <div class="flex justify-between text-sm font-bold text-slate-900 dark:text-white pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span>Grand Total:</span>
+                                <span class="font-mono text-terra-green font-black text-base">₱<?= number_format((float)$order['total_amount'], 2) ?></span>
+                            </div>
+                            <div class="flex items-center justify-between pt-1 text-[11px]">
+                                <span class="text-slate-400">Payment Status:</span>
+                                <span class="px-2 py-0.5 rounded-full font-bold text-[10px] <?= ($order['payment_status'] ?? '') === 'paid' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' ?>">
+                                    <?= strtoupper($order['payment_method'] ?? 'COD') ?> &bull; <?= strtoupper($order['payment_status'] ?? 'PENDING') ?>
+                                </span>
+                            </div>
                         </div>
                     <?php endif; ?>
 
@@ -398,15 +486,17 @@
 </div>
 
 <script>
-    let mapInstance     = null;
-    let shopMarker      = null;
-    let destMarker      = null;
-    let riderMarker     = null;
-    let routePolyline   = null;
-    let routePathPoints = [];
-    let watchId         = null;
-    let lastSentTime    = 0;
-    let lastSentCoords  = null;
+    let mapInstance       = null;
+    let shopMarker        = null;
+    let destMarker        = null;
+    let riderMarker       = null;
+    let riderInfoWindow   = null;
+    let routePolyline     = null;
+    let routePathPoints   = [];
+    let watchId           = null;
+    let lastSentTime      = 0;
+    let lastSentCoords    = null;
+    let isFullscreenMode  = false;
 
     // Handle Google Maps API authentication / activation failure
     window.gm_authFailure = function() {
@@ -448,16 +538,16 @@
         const div = document.createElement('div');
         if (type === 'dest') {
             div.innerHTML = `
-                <div style="background-color:#16a34a;color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,0.3);border:2.5px solid white;cursor:pointer;">
-                    <span class="material-symbols-outlined" style="font-size:18px;line-height:1;">home</span>
+                <div style="background-color:#16a34a;color:white;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.35);border:2.5px solid white;cursor:pointer;">
+                    <span class="material-symbols-outlined" style="font-size:20px;line-height:1;">home</span>
                 </div>
             `;
         } else if (type === 'rider') {
             div.innerHTML = `
-                <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                    <div style="position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(234,88,12,0.25);animation:pulse 1.8s infinite;"></div>
-                    <div id="tenantRiderIconRotate" style="background-color:#ea580c;color:white;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(234,88,12,0.5);border:2.5px solid white;z-index:2;transition:transform 0.4s ease-out;">
-                        <span class="material-symbols-outlined" style="font-size:20px;line-height:1;">two_wheeler</span>
+                <div style="position:relative;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                    <div style="position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(234,88,12,0.3);animation:pulse 1.8s infinite;"></div>
+                    <div id="tenantRiderIconRotate" style="background-color:#ea580c;color:white;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(234,88,12,0.6);border:2.5px solid white;z-index:2;transition:transform 0.4s ease-out;">
+                        <span class="material-symbols-outlined" style="font-size:21px;line-height:1;">two_wheeler</span>
                     </div>
                 </div>
             `;
@@ -513,13 +603,13 @@
         if (!dot || !text || !btn) return;
 
         if (isTenantAutoFollow) {
-            dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
-            text.textContent = 'Auto-Follow: ON';
-            btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-terra-green text-terra-green text-xs font-bold transition-all';
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+            text.textContent = 'Auto: ON';
+            btn.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-terra-green text-terra-green text-[11px] font-bold transition-all';
         } else {
-            dot.className = 'w-2 h-2 rounded-full bg-slate-400';
-            text.textContent = 'Auto-Follow: OFF';
-            btn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 text-xs font-bold transition-all';
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+            text.textContent = 'Auto: OFF';
+            btn.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 text-[11px] font-bold transition-all';
         }
     }
 
@@ -539,6 +629,126 @@
         mapInstance.setZoom(16);
         if (riderInfoWindow && riderMarker) {
             riderInfoWindow.open(mapInstance, riderMarker);
+        }
+    }
+
+    /* ========================================================
+     * FULLSCREEN REAL-WORLD DELIVERY MAP & BOTTOM SHEET LOGIC
+     * ======================================================== */
+    function isNativeFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+
+    function toggleFullscreenNavigation() {
+        if (isFullscreenMode) {
+            exitFullscreenNavigation();
+        } else {
+            enterFullscreenNavigation();
+        }
+    }
+
+    function enterFullscreenNavigation() {
+        isFullscreenMode = true;
+        const wrapper = document.getElementById('deliveryMapWrapper');
+        const headerIcon = document.getElementById('fullscreenHeaderIcon');
+        const headerText = document.getElementById('fullscreenHeaderText');
+        const innerIcon = document.getElementById('fullscreenBtnInnerIcon');
+
+        if (wrapper) {
+            wrapper.classList.add('delivery-map-fullscreen');
+            document.body.style.overflow = 'hidden';
+
+            if (headerIcon) headerIcon.textContent = 'fullscreen_exit';
+            if (headerText) headerText.textContent = 'Exit Fullscreen';
+            if (innerIcon) innerIcon.textContent = 'fullscreen_exit';
+
+            // Attempt HTML5 native fullscreen on wrapper
+            try {
+                if (!isNativeFullscreen()) {
+                    if (wrapper.requestFullscreen) {
+                        wrapper.requestFullscreen().catch(() => {});
+                    } else if (wrapper.webkitRequestFullscreen) {
+                        wrapper.webkitRequestFullscreen();
+                    } else if (wrapper.mozRequestFullScreen) {
+                        wrapper.mozRequestFullScreen();
+                    } else if (wrapper.msRequestFullscreen) {
+                        wrapper.msRequestFullscreen();
+                    }
+                }
+            } catch(e) {}
+
+            // Trigger Google Maps resize recalculation
+            setTimeout(triggerMapResize, 50);
+            setTimeout(triggerMapResize, 200);
+            setTimeout(triggerMapResize, 500);
+        }
+    }
+
+    function exitFullscreenNavigation() {
+        isFullscreenMode = false;
+        const wrapper = document.getElementById('deliveryMapWrapper');
+        const headerIcon = document.getElementById('fullscreenHeaderIcon');
+        const headerText = document.getElementById('fullscreenHeaderText');
+        const innerIcon = document.getElementById('fullscreenBtnInnerIcon');
+
+        if (wrapper) {
+            wrapper.classList.remove('delivery-map-fullscreen');
+            document.body.style.overflow = '';
+
+            if (headerIcon) headerIcon.textContent = 'fullscreen';
+            if (headerText) headerText.textContent = 'Fullscreen Map';
+            if (innerIcon) innerIcon.textContent = 'fullscreen';
+
+            // Exit HTML5 native fullscreen if active
+            try {
+                if (isNativeFullscreen()) {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            } catch(e) {}
+
+            // Trigger Google Maps resize recalculation
+            setTimeout(triggerMapResize, 50);
+            setTimeout(triggerMapResize, 200);
+        }
+    }
+
+    function triggerMapResize() {
+        if (mapInstance && typeof google !== 'undefined' && google.maps) {
+            google.maps.event.trigger(mapInstance, 'resize');
+            mapInstance.panTo(currentRiderLatLng);
+        }
+    }
+
+    // Listen for browser native fullscreen exit (e.g. user pressed ESC key)
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+        document.addEventListener(evt, () => {
+            if (!isNativeFullscreen() && isFullscreenMode) {
+                exitFullscreenNavigation();
+            }
+        });
+    });
+
+    // Fallback ESC key listener
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isFullscreenMode) {
+            exitFullscreenNavigation();
+        }
+    });
+
+    function submitQuickStatus(statusVal) {
+        const sel = document.getElementById('deliveryStatusSelect');
+        const form = document.getElementById('deliveryStatusForm');
+        if (sel && form) {
+            sel.value = statusVal;
+            form.submit();
         }
     }
 
@@ -562,7 +772,7 @@
             zoomControl: true,
             mapTypeControl: false,
             streetViewControl: false,
-            fullscreenControl: true
+            fullscreenControl: false
         });
 
         updateTenantMapTypeToggleUI();
@@ -636,6 +846,11 @@
         if (IS_ACTIVE_DELIVERY) {
             startGpsBroadcasting();
         }
+
+        // Automatic mobile detection -> enter fullscreen navigation
+        if (window.innerWidth < 768) {
+            enterFullscreenNavigation();
+        }
     };
 
     let lastPositionTimestamp = 0;
@@ -666,7 +881,7 @@
             const accVal = Math.round(accuracy || 5);
             let rating = accVal <= 10 ? 'High' : (accVal <= 25 ? 'Good' : 'Weak');
             accEl.textContent = `±${accVal}m (${rating})`;
-            accEl.className = accVal <= 10 ? 'font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs truncate' : 'font-bold text-amber-600 font-mono text-xs truncate';
+            accEl.className = accVal <= 10 ? 'font-bold text-emerald-700 dark:text-emerald-400 font-mono text-xs truncate mt-0.5 block' : 'font-bold text-amber-600 font-mono text-xs truncate mt-0.5 block';
         }
     }
 
@@ -718,8 +933,8 @@
                 path: path,
                 geodesic: true,
                 strokeColor: '#4A943E',
-                strokeOpacity: 0.85,
-                strokeWeight: 4,
+                strokeOpacity: 0.9,
+                strokeWeight: 5,
                 map: mapInstance
             });
         })
@@ -731,8 +946,8 @@
                 path: [origin, destination],
                 geodesic: true,
                 strokeColor: '#4A943E',
-                strokeOpacity: 0.85,
-                strokeWeight: 4,
+                strokeOpacity: 0.9,
+                strokeWeight: 5,
                 map: mapInstance
             });
         });
@@ -1212,7 +1427,7 @@
                 btnContainer.innerHTML = `
                     <button type="button" 
                             onclick="confirmDeliveryCompletion()" 
-                            class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95">
+                            class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer">
                         <span class="material-symbols-outlined text-[18px]">task_alt</span>
                         <span>Confirm &amp; Mark as Delivered</span>
                     </button>
@@ -1234,7 +1449,7 @@
             btnContainer.innerHTML = `
                 <button type="button" 
                         onclick="resetScanResult(); if(currentDeliveryScanMode==='camera') startDeliveryCamera();" 
-                        class="w-full py-2 px-3 bg-amber-600 text-white font-bold text-xs rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-1.5">
+                        class="w-full py-2 px-3 bg-amber-600 text-white font-bold text-xs rounded-xl hover:bg-amber-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                     <span class="material-symbols-outlined text-[16px]">restart_alt</span>
                     <span>Scan Again</span>
                 </button>
@@ -1252,8 +1467,8 @@
     }
 </script>
 
-<!-- Floating Delivery QR Code Scanner Modal -->
-<div id="deliveryDetailQrScannerModal" class="hidden fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+<!-- Floating Delivery QR Code Scanner Modal (z-[100000] so it stays above fullscreen map) -->
+<div id="deliveryDetailQrScannerModal" class="hidden fixed inset-0 bg-black/80 z-[100000] flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 relative">
         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div class="flex items-center gap-3">
@@ -1265,18 +1480,18 @@
                     <p class="text-xs text-slate-400 font-mono">Expected: <strong class="text-terra-green">#<?= esc($delivery['tracking_id']) ?></strong></p>
                 </div>
             </div>
-            <button type="button" onclick="closeDeliveryScanner()" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <button type="button" onclick="closeDeliveryScanner()" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
         <!-- Scan Mode Tabs -->
         <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white dark:bg-slate-900 text-terra-green shadow-xs flex items-center justify-center gap-1.5">
+            <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white dark:bg-slate-900 text-terra-green shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">photo_camera</span>
                 <span>Live Camera</span>
             </button>
-            <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5">
+            <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">add_photo_alternate</span>
                 <span>Scan from Photo</span>
             </button>
@@ -1328,7 +1543,7 @@
                        type="text" 
                        placeholder="e.g. <?= esc($delivery['tracking_id']) ?>" 
                        class="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:outline-none">
-                <button type="button" onclick="submitManualTracking()" class="px-4 py-2 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shrink-0">
+                <button type="button" onclick="submitManualTracking()" class="px-4 py-2 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shrink-0 cursor-pointer">
                     Verify
                 </button>
             </div>
@@ -1337,6 +1552,116 @@
 </div>
 
 <style>
+/* Real-world Navigation Fullscreen Takeover */
+.delivery-map-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: #0f172a !important;
+    overflow: hidden !important;
+}
+
+.delivery-map-fullscreen #mapCanvasContainer {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 1 !important;
+}
+
+.delivery-map-fullscreen #singleDeliveryMap {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+}
+
+/* Structured Non-Overlapping Top Controls in Fullscreen */
+.delivery-map-fullscreen #fullscreenTopOverlay {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 30 !important;
+    pointer-events: none !important;
+    background: transparent !important;
+}
+
+.delivery-map-fullscreen #fullscreenTopOverlay > * {
+    pointer-events: auto !important;
+}
+
+.delivery-map-fullscreen #mapTopBar {
+    background: rgba(15, 23, 42, 0.90) !important;
+    backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+.delivery-map-fullscreen #mapTopBar h3 {
+    color: #ffffff !important;
+}
+
+.delivery-map-fullscreen #liveTrackingBar {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #f1f5f9 !important;
+}
+
+.delivery-map-fullscreen #liveTrackingBar span.font-bold {
+    color: #ffffff !important;
+}
+
+.delivery-map-fullscreen #hudTelemetryBar {
+    background: rgba(15, 23, 42, 0.82) !important;
+    backdrop-filter: blur(14px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+}
+
+.delivery-map-fullscreen #hudTelemetryBar > div {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.delivery-map-fullscreen #hudTelemetryBar span.font-bold {
+    color: #ffffff !important;
+}
+
+.delivery-map-fullscreen #mapLegendBanner {
+    display: none !important;
+}
+
+/* Floating Action Buttons Placed Cleanly on Screen (Guaranteed Visible in Fullscreen) */
+.delivery-map-fullscreen #floatingQrContainer {
+    position: absolute !important;
+    bottom: 24px !important;
+    left: 24px !important;
+    z-index: 50 !important;
+}
+
+.delivery-map-fullscreen #btnFloatingDirections {
+    position: absolute !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 50 !important;
+}
+
+#deliveryDetailQrScannerModal {
+    z-index: 100000 !important;
+}
+
 #delivery-detail-qr-reader #qr-shaded-region {
     display: none !important;
 }

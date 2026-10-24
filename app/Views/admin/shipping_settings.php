@@ -3,7 +3,7 @@
 
 <?php
 $baseFee     = (float) old('base_shipping_fee', $settings['base_shipping_fee'] ?? 50.00);
-$includedKm  = (float) old('included_distance_km', $settings['included_distance_km'] ?? 3.00);
+$includedKm  = (float) old('included_distance_km', $settings['included_distance_km'] ?? 2.00);
 $perKmFee    = (float) old('additional_fee_per_km', $settings['additional_fee_per_km'] ?? 10.00);
 $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_distance_km'] ?? 25.00);
 ?>
@@ -45,7 +45,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
             <div>
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Base Shipping Fee</p>
                 <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">₱<?= number_format($baseFee, 2) ?></p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Covers first <span class="font-semibold text-slate-700 dark:text-slate-200"><?= number_format($includedKm, 1) ?> km</span></p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Fixed up to <span class="font-semibold text-slate-700 dark:text-slate-200"><?= number_format($includedKm, 1) ?> km</span> limit</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/60 dark:border-emerald-800/50">
                 <span class="material-symbols-outlined text-[20px]">payments</span>
@@ -54,9 +54,9 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-start justify-between gap-3">
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Additional Distance Rate</p>
-                <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">+₱<?= number_format($perKmFee, 2) ?><span class="text-xs font-semibold text-slate-400"> / km</span></p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Beyond <?= number_format($includedKm, 1) ?> km road distance</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Additional Shipping Fee</p>
+                <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">+₱<?= number_format($perKmFee, 2) ?><span class="text-xs font-semibold text-slate-400"> / <?= number_format($includedKm, 1) ?> km</span></p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Auto-added when exceeding <?= number_format($includedKm, 1) ?> km</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-sky-200/60 dark:border-sky-800/50">
                 <span class="material-symbols-outlined text-[20px]">add_road</span>
@@ -65,9 +65,9 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-2xs flex items-start justify-between gap-3">
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Max Delivery Radius</p>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Polomolok Max Radius</p>
                 <p class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1"><?= number_format($maxDistKm, 1) ?> <span class="text-xs font-semibold text-slate-400">km</span></p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Auto-switches beyond limit to Pick-up</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Around Polomolok only (Pick-up beyond)</p>
             </div>
             <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200/60 dark:border-amber-800/50">
                 <span class="material-symbols-outlined text-[20px]">radar</span>
@@ -100,8 +100,8 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                         <span class="material-symbols-outlined text-[22px]">local_shipping</span>
                     </div>
                     <div>
-                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Distance-Based Shipping Rates</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Calculated automatically via Google Maps Routes API from each merchant shop to the customer's delivery pin.</p>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Polomolok KM-Limit Shipping Rates</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Set the KM limit where the base shipping fee stays fixed, and automatically add the additional shipping fee when distance exceeds that limit around Polomolok only.</p>
                     </div>
                 </div>
             </div>
@@ -130,20 +130,20 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                             >
                         </div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Flat starting fee charged for doorstep delivery within the included kilometer threshold.
+                            Flat starting fee charged for doorstep delivery. Does not increase while within the KM limit.
                         </p>
                     </div>
 
-                    <!-- 2. Included Distance (km) -->
+                    <!-- 2. Shipping Fee KM Limit (km) -->
                     <div class="space-y-1.5">
                         <label for="inputIncludedKm" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            Included Distance (km)
+                            Shipping Fee KM Limit (km)
                         </label>
                         <div class="relative">
                             <input
                                 type="number"
                                 step="0.1"
-                                min="0"
+                                min="0.5"
                                 max="100"
                                 required
                                 id="inputIncludedKm"
@@ -154,14 +154,14 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                             <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">km</span>
                         </div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Road distance covered by the base fee before per-kilometer surcharges begin.
+                            Distance limit (e.g. 2 km) where the shipping fee will not increase. Exceeding this limit adds the additional fee per step.
                         </p>
                     </div>
 
-                    <!-- 3. Additional Fee per Kilometer -->
+                    <!-- 3. Additional Shipping Fee -->
                     <div class="space-y-1.5">
                         <label for="inputPerKmFee" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            Additional Fee per Kilometer
+                            Additional Shipping Fee (PHP)
                         </label>
                         <div class="relative">
                             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 font-mono">₱</span>
@@ -176,17 +176,17 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                                 value="<?= esc(number_format($perKmFee, 2, '.', '')) ?>"
                                 class="w-full pl-8 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/70 text-sm font-bold font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-terra-green/30 focus:border-terra-green transition-all"
                             >
-                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">/ km</span>
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">/ step</span>
                         </div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Added for each kilometer of actual road travel beyond the included distance.
+                            Automatically added per KM-limit bracket whenever the delivery distance exceeds the KM limit around Polomolok.
                         </p>
                     </div>
 
                     <!-- 4. Maximum Delivery Distance (km) -->
                     <div class="space-y-1.5">
                         <label for="inputMaxDistKm" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                            Maximum Delivery Distance
+                            Maximum Delivery Distance (Polomolok)
                         </label>
                         <div class="relative">
                             <input
@@ -203,7 +203,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                             <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">km</span>
                         </div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Destinations further than this road distance cannot use Doorstep Delivery (Store Pick-up remains available).
+                            Destinations outside Polomolok or further than this road distance cannot use Doorstep Delivery (Store Pick-up remains available).
                         </p>
                     </div>
                 </div>
@@ -212,12 +212,12 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                 <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex items-start gap-3">
                     <span class="material-symbols-outlined text-terra-green text-[20px] shrink-0 mt-0.5">functions</span>
                     <div class="text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                        <p class="font-bold text-slate-900 dark:text-white">How Checkout Calculates Shipping Fee</p>
+                        <p class="font-bold text-slate-900 dark:text-white">How Checkout Calculates Shipping Fee (Around Polomolok Only)</p>
                         <p class="font-mono text-[11px] bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-200/70 dark:border-slate-700 inline-block">
-                            Fee = Base Fee + max(0, Road Distance − Included Distance) × Per-KM Rate
+                            If Distance ≤ KM Limit: Fee = Base Fee &nbsp;|&nbsp; If Distance &gt; KM Limit: Fee = Base Fee + ceil((Distance − KM Limit) / KM Limit) × Additional Fee
                         </p>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                            For multi-shop Cart checkouts, the route distance is calculated per merchant shop so each courier dispatch receives an accurate delivery fee. Store Pick-up orders are always ₱0.00.
+                            Within the set KM limit (e.g. 2.0 km), the shipping fee does not increase. When distance exceeds the limit around Polomolok, the system automatically adds the additional shipping fee per KM-limit step without fractional decimal creep. Store Pick-up orders are always ₱0.00.
                         </p>
                     </div>
                 </div>
@@ -259,7 +259,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                     </span>
                     <div>
                         <h3 class="text-sm font-bold text-slate-900 dark:text-white">Live Checkout Fee Simulator</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Preview how rates behave across Polomolok &amp; Tupi</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Preview how rates behave across Polomolok, South Cotabato</p>
                     </div>
                 </div>
                 <span id="simStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -272,8 +272,8 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                 <!-- Distance Slider -->
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <label for="simDistanceRange" class="text-xs font-bold text-slate-700 dark:text-slate-300">Simulated Road Distance</label>
-                        <span id="simDistanceLabel" class="text-base font-extrabold text-terra-green font-mono">4.5 km</span>
+                        <label for="simDistanceRange" class="text-xs font-bold text-slate-700 dark:text-slate-300">Simulated Road Distance (Polomolok)</label>
+                        <span id="simDistanceLabel" class="text-base font-extrabold text-terra-green font-mono">2.0 km</span>
                     </div>
                     <input
                         type="range"
@@ -281,25 +281,28 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                         min="0.5"
                         max="35"
                         step="0.5"
-                        value="4.5"
+                        value="2.0"
                         class="w-full accent-terra-green cursor-pointer"
                     >
                     <div class="flex justify-between text-[10px] font-mono text-slate-400">
-                        <span>0.5 km (Town Center)</span>
-                        <span>15 km (Tupi)</span>
+                        <span>0.5 km (Poblacion)</span>
+                        <span>10 km (Outskirts)</span>
                         <span>35 km</span>
                     </div>
                 </div>
 
                 <!-- Sample Route Presets -->
                 <div class="space-y-1.5">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quick Route Presets (From Poblacion Hub)</p>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Quick Route Presets (Around Polomolok Only)</p>
                     <div class="flex flex-wrap gap-1.5">
                         <button type="button" data-km="1.4" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
                             Poblacion (1.4 km)
                         </button>
+                        <button type="button" data-km="2.0" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
+                            Magsaysay (2.0 km)
+                        </button>
                         <button type="button" data-km="3.2" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
-                            Magsaysay (3.2 km)
+                            Lumakil (3.2 km)
                         </button>
                         <button type="button" data-km="5.8" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
                             Cannery Site (5.8 km)
@@ -307,8 +310,8 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                         <button type="button" data-km="9.5" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
                             Glamang (9.5 km)
                         </button>
-                        <button type="button" data-km="14.8" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
-                            Tupi Poblacion (14.8 km)
+                        <button type="button" data-km="13.5" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
+                            Landan (13.5 km)
                         </button>
                         <button type="button" data-km="28.0" class="sim-preset-btn px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer">
                             Beyond Limit (28.0 km)
@@ -319,16 +322,16 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                 <!-- Breakdown Receipt Card -->
                 <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 p-4 space-y-3">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="text-slate-500 dark:text-slate-400">Base Fee (<span id="simBreakIncluded">first 3.0 km</span>)</span>
+                        <span class="text-slate-500 dark:text-slate-400">Base Fee (<span id="simBreakIncluded">up to 2.0 km limit</span>)</span>
                         <span id="simBreakBase" class="font-bold font-mono text-slate-900 dark:text-white">₱50.00</span>
                     </div>
                     <div class="flex items-center justify-between text-xs">
-                        <span class="text-slate-500 dark:text-slate-400">Extra Distance (<span id="simBreakExtraKm">1.5 km × ₱10.00</span>)</span>
-                        <span id="simBreakExtraFee" class="font-bold font-mono text-slate-900 dark:text-white">₱15.00</span>
+                        <span class="text-slate-500 dark:text-slate-400">Exceeded Limit (<span id="simBreakExtraKm">Within limit — no increase</span>)</span>
+                        <span id="simBreakExtraFee" class="font-bold font-mono text-slate-900 dark:text-white">₱0.00</span>
                     </div>
                     <div class="pt-2.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                         <span class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Calculated Shipping Fee</span>
-                        <span id="simTotalFee" class="text-xl font-extrabold font-mono text-terra-green">₱65.00</span>
+                        <span id="simTotalFee" class="text-xl font-extrabold font-mono text-terra-green">₱50.00</span>
                     </div>
                 </div>
 
@@ -369,7 +372,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
 
     function updateSimulator() {
         const baseFee    = Math.max(0, parseFloat(inputBase.value) || 0);
-        const includedKm = Math.max(0, parseFloat(inputIncluded.value) || 0);
+        const includedKm = Math.max(0.5, parseFloat(inputIncluded.value) || 0.5);
         const perKmFee   = Math.max(0, parseFloat(inputPerKm.value) || 0);
         const maxDistKm  = Math.max(0.5, parseFloat(inputMaxDist.value) || 0.5);
         const distKm     = Math.max(0.5, parseFloat(simRange.value) || 0.5);
@@ -386,14 +389,21 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
         }
 
         simDistLabel.textContent = distKm.toFixed(1) + ' km';
-        simBreakInc.textContent  = 'first ' + includedKm.toFixed(1) + ' km';
+        simBreakInc.textContent  = 'up to ' + includedKm.toFixed(1) + ' km limit';
         simBreakBase.textContent = '₱' + baseFee.toFixed(2);
 
-        const extraKm  = Math.max(0, distKm - includedKm);
-        const extraFee = extraKm * perKmFee;
-        const totalFee = baseFee + extraFee;
+        const rawExtraKm = Math.max(0, distKm - includedKm);
+        const extraSteps = (distKm <= includedKm || rawExtraKm <= 0)
+            ? 0
+            : Math.ceil((rawExtraKm - 1e-6) / (includedKm > 0 ? includedKm : 1));
+        const extraFee   = extraSteps * perKmFee;
+        const totalFee   = baseFee + extraFee;
 
-        simBreakExKm.textContent  = extraKm.toFixed(1) + ' km × ₱' + perKmFee.toFixed(2);
+        if (extraSteps === 0) {
+            simBreakExKm.textContent = 'Within ' + includedKm.toFixed(1) + ' km limit (no increase)';
+        } else {
+            simBreakExKm.textContent = '+' + rawExtraKm.toFixed(1) + ' km (' + extraSteps + (extraSteps === 1 ? ' step' : ' steps') + ' × ₱' + perKmFee.toFixed(2) + ')';
+        }
         simBreakExFee.textContent = '₱' + extraFee.toFixed(2);
         simTotalFee.textContent   = '₱' + totalFee.toFixed(2);
 
@@ -416,7 +426,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
 
     document.querySelectorAll('.sim-preset-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const km = parseFloat(this.getAttribute('data-km')) || 3.0;
+            const km = parseFloat(this.getAttribute('data-km')) || 2.0;
             simRange.value = km;
             updateSimulator();
         });
@@ -425,7 +435,7 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
     if (resetBtn) {
         resetBtn.addEventListener('click', function() {
             inputBase.value     = '50.00';
-            inputIncluded.value = '3.00';
+            inputIncluded.value = '2.00';
             inputPerKm.value    = '10.00';
             inputMaxDist.value  = '25.00';
             updateSimulator();

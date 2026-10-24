@@ -180,10 +180,15 @@ $isShopOwner = ($initialRole ?? 'customer') === 'shop_owner';
                 </div>
 
                 <!-- Flash Messages -->
-                <?php if (session()->getFlashdata('error')): ?>
+                <?php if ($flashError = session()->getFlashdata('error')): ?>
+                    <?php
+                    if ($flashError === 'The action you requested is not allowed.') {
+                        $flashError = 'Your session expired or was refreshed. Please sign in again.';
+                    }
+                    ?>
                     <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold flex items-center gap-2.5">
                         <span class="material-symbols-outlined text-[20px] text-rose-600 shrink-0">error</span>
-                        <span><?= session()->getFlashdata('error') ?></span>
+                        <span><?= esc($flashError) ?></span>
                     </div>
                 <?php endif; ?>
 
@@ -370,6 +375,41 @@ document.addEventListener('DOMContentLoaded', () => {
             togglePasswordBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
         });
     }
+
+    // Keep CSRF token fresh when returning to an idle login tab
+    let csrfRefreshInFlight = false;
+    function syncLoginCsrfToken() {
+        if (csrfRefreshInFlight || document.visibilityState === 'hidden') return;
+        csrfRefreshInFlight = true;
+        fetch(window.location.href, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-store'
+        })
+        .then(res => res.ok ? res.text() : null)
+        .then(html => {
+            if (!html) return;
+            const match = html.match(/<meta\s+name=["']csrf-token["']\s+content=["']([a-f0-9]+)["']/i);
+            if (match && match[1]) {
+                const freshToken = match[1];
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) meta.setAttribute('content', freshToken);
+                const csrfInput = document.querySelector('#login-form input[name="<?= csrf_token() ?>"]');
+                if (csrfInput) csrfInput.value = freshToken;
+            }
+        })
+        .catch(() => {})
+        .finally(() => {
+            csrfRefreshInFlight = false;
+        });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            syncLoginCsrfToken();
+        }
+    });
+    window.addEventListener('focus', syncLoginCsrfToken);
 });
 </script>
 <?= $this->endSection() ?>

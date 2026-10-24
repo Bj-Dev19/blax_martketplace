@@ -79,8 +79,11 @@ class Cart extends BaseController
                         'distance_text'            => '—',
                         'shipping_fee'             => (float) ($shippingSettings['base_shipping_fee'] ?? 50.00),
                         'base_shipping_fee'        => (float) ($shippingSettings['base_shipping_fee'] ?? 50.00),
-                        'included_distance_km'     => (float) ($shippingSettings['included_distance_km'] ?? 3.00),
+                        'included_distance_km'     => (float) ($shippingSettings['included_distance_km'] ?? 2.00),
                         'additional_fee_per_km'    => (float) ($shippingSettings['additional_fee_per_km'] ?? 10.00),
+                        'extra_steps'              => 0,
+                        'extra_distance_km'        => 0.0,
+                        'extra_distance_fee'       => 0.0,
                         'max_delivery_distance_km' => (float) ($shippingSettings['max_delivery_distance_km'] ?? 25.00),
                         'error'                    => null,
                     ];
@@ -225,11 +228,16 @@ class Cart extends BaseController
 
         if (!empty($variants)) {
             if (!$variantId) {
-                $msg = 'Please select a product option to continue.';
+                $detailUrl = base_url('product/' . $productId . '?select_option=1#variants-section');
+                $msg = 'Please select a product option to add this item to your cart.';
                 if ($this->request->isAJAX()) {
-                    return $this->response->setJSON(['status' => 'error', 'message' => $msg]);
+                    return $this->response->setJSON([
+                        'status'       => 'redirect',
+                        'redirect_url' => $detailUrl,
+                        'message'      => $msg,
+                    ]);
                 }
-                return redirect()->back()->with('error', $msg);
+                return redirect()->to($detailUrl)->with('info', $msg);
             }
 
             foreach ($variants as $v) {
@@ -365,10 +373,9 @@ class Cart extends BaseController
             if (!$addr || (int) ($addr['user_id'] ?? 0) !== (int) $userId) {
                 return redirect()->back()->with('error', 'Invalid delivery address selected.');
             }
-            $cityOk = (stripos($addr['city'] ?? '', 'Polomolok') !== false) || (stripos($addr['city'] ?? '', 'Tupi') !== false);
-            $provOk = stripos($addr['province'] ?? '', 'South Cotabato') !== false;
-            if (!$cityOk && !$provOk) {
-                return redirect()->back()->with('error', 'Delivery is available only within Polomolok and Tupi, South Cotabato.');
+            $cityOk = (stripos($addr['city'] ?? '', 'Polomolok') !== false);
+            if (!$cityOk) {
+                return redirect()->back()->with('error', 'Delivery is available only within Polomolok, South Cotabato.');
             }
         }
 

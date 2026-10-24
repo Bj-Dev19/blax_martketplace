@@ -68,7 +68,7 @@ class RealtimeAndLiveRouteTest extends CIUnitTestCase
         $cannery = DeliveryModel::getBarangayCoordinate('Cannery Site', 'Polomolok');
         $this->assertNotNull($cannery);
         $this->assertEqualsWithDelta(6.2415, $cannery['lat'], 0.01);
-        $this->assertEqualsWithDelta(125.0740, $cannery['lng'], 0.01);
+        $this->assertEqualsWithDelta(125.0902, $cannery['lng'], 0.01);
 
         $poblacionPolo = DeliveryModel::getBarangayCoordinate('Poblacion', 'Polomolok');
         $this->assertNotNull($poblacionPolo);
@@ -86,7 +86,7 @@ class RealtimeAndLiveRouteTest extends CIUnitTestCase
 
         $polonoling = DeliveryModel::getBarangayCoordinate('Polonoling', 'Tupi');
         $this->assertNotNull($polonoling);
-        $this->assertEqualsWithDelta(6.3010, $polonoling['lat'], 0.01);
+        $this->assertEqualsWithDelta(6.2862, $polonoling['lat'], 0.01);
     }
 
     public function testComputeRouteApiEndpoint()

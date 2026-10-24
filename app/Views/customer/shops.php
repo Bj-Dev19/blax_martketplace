@@ -125,83 +125,119 @@
     <section>
         <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             <?php if (!empty($shops)): ?>
+                <?php
+                    $curatedCovers = [
+                        'the-thread'          => 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=700&q=80',
+                        'inkmaster'           => 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80',
+                        'rhk-general'         => 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80',
+                        'national-book-store' => 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=700&q=80',
+                        'fastprint'           => 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=700&q=80',
+                    ];
+                    $curatedCategories = [
+                        'the-thread'          => 'Custom Embroidery & Apparel',
+                        'inkmaster'           => 'Rush Printing & Photocopying',
+                        'rhk-general'         => 'School & Office Merchandise',
+                        'national-book-store' => 'Books, Art & School Supplies',
+                        'fastprint'           => 'Digital Printing & Document Press',
+                    ];
+                ?>
                 <?php foreach ($shops as $s): ?>
-                    <div class="bento-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-lg hover:-translate-y-1 hover:border-terra-green/50 rounded-2xl overflow-hidden flex flex-col justify-between group transition-all duration-300">
+                    <?php
+                        $slug = $s['slug'] ?? '';
+                        $coverUrl = $curatedCovers[$slug] 
+                            ?? (!empty($s['offers_printing'])
+                                ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80'
+                                : 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80');
+                        $categoryName = $curatedCategories[$slug]
+                            ?? (!empty($s['offers_printing']) ? 'Printing & Digital Services' : 'Retail General Merchandise');
+                        $location = !empty($s['barangay']) ? $s['barangay'] . ', ' . ($s['city'] ?? 'Polomolok') : ($s['city'] ?? 'Polomolok');
+                        $sLogo = logo_url($s['logo_url'] ?? null);
+                    ?>
+                    <a href="<?= base_url('shop/' . ($s['slug'] ?? $s['id'])) ?>" class="bento-card bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:shadow-lg hover:-translate-y-1 hover:border-terra-green/50 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col justify-between group transition-all duration-300">
                         
                         <div>
-                            <!-- Header Cover Banner -->
-                            <div class="h-16 sm:h-22 w-full bg-gradient-to-r from-emerald-600/10 via-amber-500/10 to-teal-600/10 dark:from-emerald-950/40 dark:via-amber-950/30 dark:to-slate-900 relative p-2 sm:p-3 flex justify-between items-start">
-                                
-                                <span class="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md text-slate-800 dark:text-slate-200 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs border border-white/20 dark:border-slate-700">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-terra-green animate-pulse"></span>
-                                    <span>Verified</span>
-                                </span>
+                            <!-- Real-World Storefront Cover Image -->
+                            <div class="h-24 sm:h-32 md:h-36 w-full overflow-hidden relative bg-slate-100 dark:bg-slate-800">
+                                <img src="<?= esc($coverUrl) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/25 pointer-events-none"></div>
 
-                                <?php if (!empty($s['offers_printing'])): ?>
-                                    <span class="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-terra-green dark:text-emerald-400 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs border border-emerald-500/20">
-                                        <span class="material-symbols-outlined text-[10px] sm:text-[12px]">print</span>
-                                        <span>Print</span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-700 dark:text-slate-300 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-2xs border border-slate-200/80 dark:border-slate-700">
-                                        <span class="material-symbols-outlined text-[10px] sm:text-[12px]">storefront</span>
-                                        <span>Retail</span>
-                                    </span>
-                                <?php endif; ?>
+                                <!-- Floating Status Badges -->
+                                <div class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                                    <?php if (!empty($s['is_closed_today'])): ?>
+                                        <span class="inline-flex items-center gap-1 bg-rose-600/95 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-2xs">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                            <span>Closed Today</span>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-slate-800 dark:text-slate-100 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs border border-white/40 dark:border-slate-700/60">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-terra-green animate-pulse"></span>
+                                            <span>Verified</span>
+                                        </span>
+                                    <?php endif; ?>
 
-                            </div>
+                                    <?php if (!empty($s['offers_printing'])): ?>
+                                        <span class="inline-flex items-center gap-0.5 bg-black/60 backdrop-blur-md text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs border border-emerald-400/30">
+                                            <span class="material-symbols-outlined text-[10px]">print</span>
+                                            <span>Print</span>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-0.5 bg-black/60 backdrop-blur-md text-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs border border-amber-300/30">
+                                            <span class="material-symbols-outlined text-[10px]">storefront</span>
+                                            <span>Retail</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
 
-                            <!-- Shop Info Body with Squircle Avatar -->
-                            <div class="p-3 sm:p-4 pt-0 flex flex-col items-center text-center -mt-7 sm:-mt-10">
-                                
-                                <div class="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl p-0.5 sm:p-1 bg-white dark:bg-slate-850 shadow-md border border-slate-100 dark:border-slate-750 overflow-hidden mb-2 sm:mb-2.5 group-hover:scale-105 transition-transform shrink-0">
-                                    <div class="w-full h-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
-                                        <?php $sLogo = logo_url($s['logo_url'] ?? null); ?>
+                                <!-- Brand Logo / Avatar Inset -->
+                                <div class="absolute bottom-2 left-2">
+                                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg p-0.5 bg-white dark:bg-slate-900 shadow-md ring-2 ring-white/90 dark:ring-slate-900 overflow-hidden shrink-0">
                                         <?php if (!empty($sLogo)): ?>
-                                            <img class="w-full h-full object-cover" src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?> logo" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
-                                            <div class="hidden w-full h-full bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex flex-col items-center justify-center text-terra-green font-bold">
-                                                <span class="material-symbols-outlined text-[18px] sm:text-[24px]">storefront</span>
-                                                <span class="text-[8px] sm:text-[9px] uppercase tracking-wider font-mono"><?= esc(substr($s['shop_name'], 0, 3)) ?></span>
+                                            <img src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover rounded-md" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                            <div class="hidden w-full h-full bg-emerald-600 rounded-md flex items-center justify-center text-white font-extrabold text-[10px] font-mono">
+                                                <?= esc(substr($s['shop_name'], 0, 2)) ?>
                                             </div>
                                         <?php else: ?>
-                                            <div class="w-full h-full bg-emerald-50 dark:bg-emerald-950/40 rounded-xl flex flex-col items-center justify-center text-terra-green font-bold">
-                                                <span class="material-symbols-outlined text-[18px] sm:text-[24px]">storefront</span>
-                                                <span class="text-[8px] sm:text-[9px] uppercase tracking-wider font-mono"><?= esc(substr($s['shop_name'], 0, 3)) ?></span>
+                                            <div class="w-full h-full bg-emerald-700 dark:bg-emerald-800 rounded-md flex items-center justify-center text-white font-extrabold text-[10px] font-mono tracking-wider shadow-inner">
+                                                <?= esc(strtoupper(substr($s['shop_name'], 0, 2))) ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Shop Title -->
-                                <h3 class="font-display text-xs sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-terra-green transition-colors line-clamp-1 w-full" title="<?= esc($s['shop_name']) ?>">
-                                    <a href="<?= base_url('shop/' . ($s['slug'] ?? $s['id'])) ?>">
+                            <!-- Card Body Information -->
+                            <div class="p-2.5 sm:p-3.5 flex flex-col gap-0.5">
+                                <div class="flex items-center justify-between gap-1">
+                                    <h3 class="font-display text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-terra-green transition-colors truncate tracking-tight" title="<?= esc($s['shop_name']) ?>">
                                         <?= esc($s['shop_name']) ?>
-                                    </a>
-                                </h3>
-
-                                <!-- Rating & Reviews (Monospace) -->
-                                <div class="inline-flex items-center gap-1 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-0.5 rounded-full border border-amber-200/50 dark:border-amber-900/40 text-[10px] sm:text-xs mt-1.5 font-mono">
-                                    <span class="material-symbols-outlined text-[12px] sm:text-[14px] text-amber-500 fill-icon">star</span>
-                                    <span class="font-bold text-slate-800 dark:text-slate-200"><?= number_format($s['rating_average'] ?? 5.0, 1) ?></span>
-                                    <span class="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px]">(<?= $compactCount($s['rating_count'] ?? 0) ?>)</span>
+                                    </h3>
+                                    <span class="material-symbols-outlined text-[14px] text-terra-green shrink-0 fill-icon" title="Certified Polomolok Merchant">verified</span>
                                 </div>
 
-                                <!-- Description -->
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed font-normal hidden sm:block">
-                                    <?= esc($s['description'] ?? 'Verified Polomolok merchant offering quality merchandise and services.') ?>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                                    <?= esc($categoryName) ?>
                                 </p>
+                                <?php if (!empty($s['is_closed_today']) && !empty($s['closure_note'])): ?>
+                                    <p class="text-[10px] text-rose-600 dark:text-rose-400 font-semibold truncate" title="<?= esc($s['closure_note']) ?>">
+                                        Note: <?= esc($s['closure_note']) ?>
+                                    </p>
+                                <?php endif; ?>
 
+                                <div class="flex items-center justify-between gap-1 pt-1.5 mt-1 border-t border-slate-100 dark:border-slate-800/80 text-[10px] sm:text-[11px]">
+                                    <div class="flex items-center gap-0.5 font-mono font-bold text-slate-800 dark:text-slate-200 shrink-0">
+                                        <span class="material-symbols-outlined text-[12px] text-amber-500 fill-icon">star</span>
+                                        <span><?= number_format($s['rating_average'] ?? 5.0, 1) ?></span>
+                                        <span class="text-slate-400 dark:text-slate-500 text-[9px] font-normal">(<?= number_format($s['rating_count'] ?? 0) ?>)</span>
+                                    </div>
+                                    <div class="flex items-center gap-0.5 truncate text-slate-500 dark:text-slate-400 text-[10px]" title="<?= esc($location) ?>">
+                                        <span class="material-symbols-outlined text-[11px] text-terra-green shrink-0">location_on</span>
+                                        <span class="truncate"><?= esc(explode(',', $location)[0]) ?></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Card Action -->
-                        <div class="p-2.5 sm:p-4 pt-0">
-                            <a href="<?= base_url('shop/' . ($s['slug'] ?? $s['id'])) ?>" class="w-full py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] sm:text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs hover:shadow-sm active:scale-95 cursor-pointer">
-                                <span>Visit Store</span>
-                                <span class="material-symbols-outlined text-[13px] sm:text-[15px]">arrow_forward</span>
-                            </a>
-                        </div>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="col-span-full text-center py-12 bento-card bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-8 shadow-sm">

@@ -201,148 +201,140 @@
                     $variantLabel = esc($d['variant_label'] ?? '');
                     $searchIndex = strtolower($productName . ' ' . $allProductsList . ' ' . $trackingClean . ' ' . $refClean . ' ' . $fullName . ' ' . $destAddress . ' ' . $d['status']);
                 ?>
-                <div class="shipment-card bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs hover:shadow-md hover:border-terra-green/50 transition-all flex flex-col justify-between group relative"
+                <div class="shipment-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 shadow-xs hover:shadow-lg hover:border-terra-green/50 transition-all flex flex-col justify-between group relative space-y-4"
                      data-tracking="<?= $trackingClean ?>"
                      data-status="<?= esc($d['status']) ?>"
                      data-search="<?= esc($searchIndex) ?>">
 
-                    <!-- Top Bar: Status Badge & Fulfillment Badge -->
-                    <div>
-                        <div class="flex items-center justify-between gap-2 mb-3">
-                            <div class="flex items-center gap-1.5 flex-wrap">
+                    <div class="space-y-3.5">
+                        <!-- Top Header: Status & Tracking Number & Menu -->
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <div class="flex items-center gap-2 flex-wrap min-w-0">
                                 <?= status_badge($d['status']) ?>
-                                <?php if ($d['status'] === 'shipped'): ?>
-                                    <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" class="inline" onclick="event.stopPropagation();" onsubmit="return confirm('Set package #<?= esc($d['tracking_id']) ?> to In Transit?');">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="delivery_id" value="<?= (int) $d['id'] ?>">
-                                        <input type="hidden" name="delivery_status" value="in_transit">
-                                        <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-2xs transition-all active:scale-95 cursor-pointer" title="Advance status to In Transit">
-                                            <span class="material-symbols-outlined text-[13px]">navigation</span>
-                                            <span>In Transit</span>
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-terra-green bg-terra-green/10 border border-terra-green/20 px-2.5 py-0.5 rounded-full">
-                                    <span class="material-symbols-outlined text-[13px]">local_shipping</span>
-                                    <span>Doorstep Delivery</span>
-                                </span>
+                                <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-terra-green bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 truncate" title="Tracking Number">
+                                    #<?= $trackingClean ?>
+                                </a>
                             </div>
 
-                            <!-- More Menu / Quick Status Dropdown -->
-                            <div class="relative">
+                            <!-- More Action Dropdown -->
+                            <div class="relative shrink-0">
                                 <button type="button" 
                                         data-row="<?= (int) $d['id'] ?>" 
                                         onclick="toggleDropdown(this, event)" 
-                                        class="more-toggle p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                        title="Quick Actions">
+                                        class="more-toggle w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+                                        title="Quick Status Actions">
                                     <span class="material-symbols-outlined text-[18px]">more_vert</span>
                                 </button>
-                                <div id="more-menu-<?= (int) $d['id'] ?>" class="hidden more-menu z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 min-w-[200px] absolute right-0 top-full mt-1" role="menu">
-                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 pb-1">Change Status</p>
-                                    <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" class="space-y-1.5 px-2 pb-2" onclick="event.stopPropagation();">
+                                <div id="more-menu-<?= (int) $d['id'] ?>" class="hidden more-menu z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-3 min-w-[210px] absolute right-0 top-full mt-1.5 animate-in fade-in zoom-in-95 duration-100" role="menu">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 pb-1.5">Change Delivery Status</p>
+                                    <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" class="space-y-2 px-1 pb-2" onclick="event.stopPropagation();">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="delivery_id" value="<?= (int) $d['id'] ?>">
-                                        <select name="delivery_status" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-terra-green">
+                                        <select name="delivery_status" class="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-terra-green">
                                             <?php foreach ($statusOptions as $val => $label): ?>
                                                 <option value="<?= esc($val) ?>" <?= $d['status'] === $val ? 'selected' : '' ?>><?= esc($label) ?></option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="submit" class="w-full py-1.5 bg-terra-green text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors mt-1">Apply</button>
+                                        <button type="submit" class="w-full py-1.5 bg-terra-green text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors cursor-pointer">Update Status</button>
                                     </form>
-                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
-                                    <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="w-full text-left px-2 py-1.5 rounded-xl text-terra-green text-xs font-bold hover:bg-terra-green/10 flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-[16px]">near_me</span> View Full Map
+                                    <div class="border-t border-slate-100 dark:border-slate-800 my-1.5"></div>
+                                    <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="w-full text-left px-2 py-1.5 rounded-xl text-terra-green text-xs font-bold hover:bg-terra-green/10 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px]">near_me</span>
+                                        <span>Open Route &amp; Map</span>
                                     </a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Product Name & Order ID Header -->
-                        <div class="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-3">
-                            <div class="flex items-start justify-between gap-2">
+                        <!-- Product & Order Reference Details -->
+                        <div class="space-y-2">
+                            <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
-                                    <!-- Primary Product Name Header -->
                                     <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" 
-                                       class="text-sm font-bold font-display text-slate-900 dark:text-white hover:text-terra-green transition-colors flex items-center gap-1.5 leading-snug group/title" 
+                                       class="text-sm font-bold font-display text-slate-900 dark:text-white hover:text-terra-green transition-colors flex items-center gap-2 leading-snug group/title" 
                                        title="<?= $allProductsList ?>">
-                                        <span class="material-symbols-outlined text-[18px] text-terra-green shrink-0">inventory_2</span>
+                                        <div class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0">
+                                            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                                        </div>
                                         <span class="truncate"><?= $productName ?></span>
                                     </a>
-
-                                    <!-- Product Quantities / Extra Items Pill -->
-                                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                        <?php if ($extraItems > 0): ?>
-                                            <span class="inline-flex items-center text-[10px] font-extrabold text-terra-green bg-terra-green/10 border border-terra-green/20 px-2 py-0.5 rounded-lg" title="<?= $allProductsList ?>">
-                                                +<?= $extraItems ?> more item<?= $extraItems > 1 ? 's' : '' ?> (<?= $totalQty ?> total pcs)
-                                            </span>
-                                        <?php elseif ($totalQty > 0): ?>
-                                            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                                Qty: <strong class="text-slate-800 dark:text-slate-200"><?= $totalQty ?></strong><?= $variantLabel !== '' ? ' &bull; ' . $variantLabel : '' ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
                                 </div>
-
-                                <!-- Order ID / Reference -->
                                 <div class="flex flex-col items-end shrink-0">
-                                    <span class="text-[11px] font-mono font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg" title="Order Reference Number">
+                                    <span class="text-[11px] font-mono font-extrabold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg">
                                         <?= $refClean ?>
                                     </span>
-                                    <span class="text-[9px] uppercase tracking-wider text-slate-400 font-bold mt-0.5">Order Ref</span>
                                 </div>
                             </div>
 
-                            <!-- Tracking ID and Deliverable Type Row -->
-                            <div class="flex items-center justify-between gap-2 text-[11px] pt-1 text-slate-500 dark:text-slate-400 font-medium">
-                                <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" class="font-mono font-bold text-terra-green hover:underline flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[15px]">local_shipping</span>
-                                    <span>#<?= $trackingClean ?></span>
-                                </a>
-                                <span class="text-[11px] text-slate-400">
-                                    <?= esc(ucfirst(str_replace('_', ' ', $d['deliverable_type'] ?? 'order'))) ?> &bull; <?= date('M d, Y h:i A', strtotime($d['created_at'])) ?>
+                            <!-- Quantity & Variant Chips -->
+                            <div class="flex items-center gap-1.5 flex-wrap pl-10 text-xs">
+                                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                                    Qty: <strong class="text-slate-900 dark:text-white"><?= $totalQty ?></strong><?= $variantLabel !== '' ? ' &bull; ' . $variantLabel : '' ?>
                                 </span>
+                                <?php if ($extraItems > 0): ?>
+                                    <span class="inline-flex items-center text-[10px] font-bold text-terra-green bg-terra-green/10 px-2 py-0.5 rounded-md">
+                                        +<?= $extraItems ?> more items
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <!-- Customer & Destination Information -->
-                        <div class="space-y-2.5 text-xs">
-                            <!-- Customer Row -->
-                            <div class="flex items-center gap-2.5">
-                                <?php if ($profileImage !== ''): ?>
-                                    <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="Customer">
-                                <?php else: ?>
-                                    <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs shrink-0 ring-2 ring-slate-100 dark:ring-slate-800">
-                                        <?= esc($initials) ?>
-                                    </div>
-                                <?php endif; ?>
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-bold text-slate-900 dark:text-white truncate"><?= esc($fullName ?: 'Online Customer') ?></p>
-                                    <?php if (!empty($d['customer_phone'])): ?>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5 font-mono">
-                                            <span class="material-symbols-outlined text-[13px] text-terra-green">phone</span>
-                                            <span><?= esc($d['customer_phone']) ?></span>
-                                        </p>
+                        <!-- Customer Details & Quick Contact -->
+                        <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <?php if ($profileImage !== ''): ?>
+                                        <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="Customer">
+                                    <?php else: ?>
+                                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-terra-green/30">
+                                            <?= esc($initials) ?>
+                                        </div>
                                     <?php endif; ?>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-slate-900 dark:text-white text-xs truncate"><?= esc($fullName ?: 'Online Customer') ?></p>
+                                        <p class="text-[10px] text-slate-400 font-sans">Recipient</p>
+                                    </div>
                                 </div>
+
+                                <?php if (!empty($d['customer_phone'])): ?>
+                                    <a href="tel:<?= esc(preg_replace('/[^0-9+]/', '', $d['customer_phone'])) ?>" 
+                                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-terra-green/10 hover:bg-terra-green hover:text-white text-terra-green text-xs font-bold transition-colors shrink-0"
+                                       title="Call customer directly">
+                                        <span class="material-symbols-outlined text-[14px]">phone</span>
+                                        <span>Call</span>
+                                    </a>
+                                <?php endif; ?>
                             </div>
 
-                            <!-- Destination Address Row -->
-                            <div class="flex items-start gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-                                <span class="material-symbols-outlined text-[16px] text-emerald-600 shrink-0 mt-0.5">location_on</span>
-                                <p class="text-[11px] text-slate-700 dark:text-slate-300 leading-tight line-clamp-2" title="<?= $destAddress ?>">
+                            <!-- Address Line -->
+                            <div class="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                                <span class="material-symbols-outlined text-[15px] text-emerald-600 shrink-0 mt-0.5">location_on</span>
+                                <span class="text-[11px] leading-tight line-clamp-2" title="<?= $destAddress ?>">
                                     <?= $destAddress ?>
-                                </p>
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Card Action Footer: Direct Navigation to Dedicated Live Route Map -->
-                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <!-- Card Actions Footer -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                        <?php if ($d['status'] === 'shipped'): ?>
+                            <form action="<?= base_url('tenant/deliveries/update-status') ?>" method="POST" onsubmit="return confirm('Dispatch package #<?= esc($d['tracking_id']) ?> to In Transit?');">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="delivery_id" value="<?= (int) $d['id'] ?>">
+                                <input type="hidden" name="delivery_status" value="in_transit">
+                                <button type="submit" class="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                                    <span class="material-symbols-outlined text-[16px]">navigation</span>
+                                    <span>Dispatch / Start Transit</span>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
                         <a href="<?= base_url('tenant/deliveries/' . (int) $d['id']) ?>" 
-                           class="w-full py-2.5 px-4 rounded-xl bg-terra-green text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-xs transition-all group-hover:scale-[1.01] active:scale-95">
-                            <span class="material-symbols-outlined text-[18px]">near_me</span>
+                           class="w-full py-2.5 px-4 rounded-xl bg-terra-green text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-sm transition-all group-hover:scale-[1.01] active:scale-95">
+                            <span class="material-symbols-outlined text-[17px]">near_me</span>
                             <span>View Live Route &amp; Map</span>
-                            <span class="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            <span class="material-symbols-outlined text-[15px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
                         </a>
                     </div>
 

@@ -33,6 +33,7 @@ class ShopModel extends Model
         'offers_printing',
         'offers_delivery',
         'offers_pickup',
+        'hide_when_closed',
         'rating_average',
         'rating_count',
         'gcash_number',
@@ -87,16 +88,20 @@ class ShopModel extends Model
      */
     public function getMostRatedShops(int $limit = 5)
     {
-        $cacheKey = 'blax_most_rated_shops_' . $limit;
+        $calModel = new ShopCalendarScheduleModel();
+        $todayStr = date('Y-m-d');
+        $cacheKey = 'blax_most_rated_shops_' . $limit . '_' . $todayStr;
         try {
             $cached = cache($cacheKey);
             if (is_array($cached)) {
-                return $cached;
+                return $calModel->enrichShopsWithStatus($cached, true);
             }
         } catch (\Throwable $e) {}
 
-        $shops = $this->where('status', 'active')
-            ->orderBy('rating_average', 'DESC')
+        $this->builder()->where('status', 'active');
+        $this->applyDirectoryVisibilityClause($todayStr);
+
+        $shops = $this->orderBy('rating_average', 'DESC')
             ->orderBy('rating_count', 'DESC')
             ->findAll($limit);
 
@@ -104,7 +109,46 @@ class ShopModel extends Model
             cache()->save($cacheKey, $shops, 300);
         } catch (\Throwable $e) {}
 
-        return $shops;
+        return $calModel->enrichShopsWithStatus($shops ?: [], true);
+    }
+
+    /**
+     * Exclude shops that are closed today ONLY if the merchant enabled `hide_when_closed = 1`.
+     * By default (`hide_when_closed = 0`), Sales-Safe Mode keeps the shop visible with a "Closed Today" badge.
+     */
+    protected function applyDirectoryVisibilityClause(?string $dateStr = null): void
+    {
+        $calModel = new ShopCalendarScheduleModel();
+        $calModel->ensureSchema();
+
+        $dateStr   = $dateStr ?: date('Y-m-d');
+        $dayOfWeek = (int) date('w', strtotime($dateStr));
+        $escapedDate = $this->db->escape($dateStr);
+
+        $this->builder()->where("(
+            COALESCE(shops.hide_when_closed, 0) = 0
+            OR NOT (
+                EXISTS (
+                    SELECT 1 FROM shop_calendar_schedules scs
+                    WHERE scs.shop_id = shops.id
+                      AND scs.schedule_date = {$escapedDate}
+                      AND scs.is_closed = 1
+                )
+                OR (
+                    NOT EXISTS (
+                        SELECT 1 FROM shop_calendar_schedules scs2
+                        WHERE scs2.shop_id = shops.id
+                          AND scs2.schedule_date = {$escapedDate}
+                    )
+                    AND EXISTS (
+                        SELECT 1 FROM shop_business_hours sbh
+                        WHERE sbh.shop_id = shops.id
+                          AND sbh.day_of_week = {$dayOfWeek}
+                          AND sbh.is_closed = 1
+                    )
+                )
+            )
+        )", null, false);
     }
 
     /**
@@ -116,6 +160,7 @@ class ShopModel extends Model
     public function getAllShopsPaginated(?string $search = null, ?string $category = null, ?string $sort = null, int $perPage = 12, int $page = 1)
     {
         $this->builder()->where('status', 'active');
+        $this->applyDirectoryVisibilityClause();
 
         if ($category === 'printing') {
             $this->builder()->where('offers_printing', 1);
@@ -138,9 +183,10 @@ class ShopModel extends Model
         }
 
         $shops = $this->paginate($perPage, 'default', $page);
+        $shops = (new ShopCalendarScheduleModel())->enrichShopsWithStatus($shops ?: [], false);
 
         return [
-            'shops' => $shops ?: [],
+            'shops' => $shops,
             'pager' => $this->pager,
         ];
     }
@@ -156,6 +202,7 @@ class ShopModel extends Model
         $this->builder()
             ->where('status', 'active')
             ->where('offers_printing', 1);
+        $this->applyDirectoryVisibilityClause();
 
         if ($search !== null && $search !== '') {
             $this->builder()
@@ -172,9 +219,10 @@ class ShopModel extends Model
         }
 
         $shops = $this->paginate($perPage, 'default', $page);
+        $shops = (new ShopCalendarScheduleModel())->enrichShopsWithStatus($shops ?: [], false);
 
         return [
-            'shops' => $shops ?: [],
+            'shops' => $shops,
             'pager' => $this->pager,
         ];
     }

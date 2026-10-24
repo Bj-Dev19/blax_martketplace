@@ -2,51 +2,40 @@
 <?= $this->section('content') ?>
 
 <?php
-$sectionMeta = [
-    'home_banners' => [
-        'title' => 'Homepage Banners',
-        'icon' => 'view_carousel',
-        'desc' => 'Hero banner badge, main headline, description, background image, CTA button, and catalog headings.'
-    ],
-    'announcement_bar' => [
-        'title' => 'Announcement Bar',
-        'icon' => 'campaign',
-        'desc' => 'Global notification bar displayed across the top of all public customer storefront pages.'
-    ],
-    'footer_info' => [
-        'title' => 'Footer & Contact Info',
-        'icon' => 'contact_support',
-        'desc' => 'Customer support email, hotline number, Polomolok hub physical location, and copyright notice.'
-    ],
-];
-
-// Pre-calculate preview values from grouped items
+// Index all content items by their content_key for clean section-based layout
+$itemsByKey = [];
 $previewData = [];
-foreach (($grouped ?? []) as $grpPage => $grpItems) {
-    foreach ($grpItems as $it) {
-        $previewData[$it['content_key']] = [
-            'type'  => $it['content_type'],
-            'text'  => $it['text_value'] ?? '',
-            'image' => $it['image_url'] ?? '',
+foreach (($grouped ?? []) as $pageName => $pageItems) {
+    foreach ($pageItems as $item) {
+        $key = $item['content_key'];
+        $itemsByKey[$key] = $item;
+        $previewData[$key] = [
+            'type'  => $item['content_type'],
+            'text'  => $item['text_value'] ?? '',
+            'image' => $item['image_url'] ?? '',
         ];
     }
 }
 
-// Recommended image dimensions & aspect ratio presets
-$imageSpecs = [
-    'hero_image' => [
-        'aspect' => 'aspect-[3/1]',
-        'guide'  => 'Recommended: 1440×480px (3:1 panoramic ratio, max 3MB)',
-    ],
-];
+// Extract standard fields with safe defaults
+$annActiveVal   = in_array(trim((string)($itemsByKey['announcement_active']['text_value'] ?? '1')), ['1', 'true', 'on', 'yes'], true);
+$annTextVal     = $itemsByKey['announcement_text']['text_value'] ?? '🚀 Free doorstep delivery on orders over ₱500 within Polomolok! Use code BLAXSHIP';
 
-// Determine primary section order
-$orderedSections = ['home_banners', 'announcement_bar', 'footer_info'];
-foreach (array_keys($grouped ?? []) as $pageKey) {
-    if (!in_array($pageKey, $orderedSections, true)) {
-        $orderedSections[] = $pageKey;
-    }
-}
+$heroBadgeVal   = $itemsByKey['hero_badge']['text_value'] ?? 'Seasonal Event';
+$heroTitleVal   = $itemsByKey['hero_title']['text_value'] ?? 'The Ultimate Merchandise & Printing Hub';
+$heroSubVal     = $itemsByKey['hero_subtitle']['text_value'] ?? 'Discover premium goods, exclusive deals, and top-tier printing services all in one place across Polomolok.';
+$heroCtaVal     = $itemsByKey['hero_cta_text']['text_value'] ?? 'Explore Marketplace';
+$catalogTitleVal = $itemsByKey['catalog_title']['text_value'] ?? 'Global Product Catalog';
+$catalogSubVal   = $itemsByKey['catalog_subtitle']['text_value'] ?? 'Explore top-rated products from verified local merchants across Polomolok.';
+
+$heroImgRow     = $itemsByKey['hero_image'] ?? null;
+$rawHeroImg     = $heroImgRow['image_url'] ?? 'https://images.unsplash.com/photo-1556742049-0a67daf64f42?auto=format&fit=crop&w=1440&q=80';
+$heroImgUrl     = !empty($rawHeroImg) ? (str_starts_with($rawHeroImg, 'http') ? $rawHeroImg : base_url($rawHeroImg)) : '';
+
+$footerEmailVal = $itemsByKey['footer_contact_email']['text_value'] ?? 'support@blaxinventory.com';
+$footerPhoneVal = $itemsByKey['footer_phone']['text_value'] ?? '+63 917 123 4567';
+$footerAddrVal  = $itemsByKey['footer_address']['text_value'] ?? 'Poblacion, Polomolok, South Cotabato, Philippines 9504';
+$footerCopyVal  = $itemsByKey['footer_copyright']['text_value'] ?? ('© ' . date('Y') . ' Blax Multi-Tenant Inventory & Printing Platform. All rights reserved.');
 ?>
 
 <div class="space-y-6">
@@ -65,6 +54,7 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
             </button>
         </div>
     <?php endif; ?>
+
     <?php if (session()->getFlashdata('error')): ?>
         <div class="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300 text-sm flex items-center justify-between gap-3 shadow-xs">
             <div class="flex items-center gap-3">
@@ -79,238 +69,289 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
         </div>
     <?php endif; ?>
 
-    <!-- CMS Overview Header Card -->
+    <!-- CMS Header Banner -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2.5">
-                <div class="w-10 h-10 rounded-2xl bg-[#4A943E]/10 dark:bg-[#4A943E]/20 text-[#4A943E] flex items-center justify-center font-bold shadow-xs">
-                    <span class="material-symbols-outlined text-[22px]">edit_note</span>
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-[#4A943E]/10 dark:bg-[#4A943E]/20 text-[#4A943E] flex items-center justify-center font-bold shadow-xs">
+                    <span class="material-symbols-outlined text-[24px]">dashboard_customize</span>
                 </div>
                 <div>
                     <h2 class="text-xl sm:text-2xl font-bold font-display text-slate-900 dark:text-white tracking-tight">Storefront Content Management</h2>
                     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                        Manage headlines, hero visual banners, announcements, and footer meta with real-time responsive preview.
+                        Update announcements, hero banners, and customer support info with real-time responsive preview.
                     </p>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-3 shrink-0 flex-wrap">
-            <a href="<?= base_url('/') ?>" target="_blank" class="px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all inline-flex items-center gap-1.5 shadow-2xs">
+        <div class="flex items-center gap-3 shrink-0">
+            <a href="<?= base_url('/') ?>" target="_blank" class="px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 transition-all inline-flex items-center gap-2 shadow-2xs">
                 <span class="material-symbols-outlined text-[16px] text-slate-500">open_in_new</span>
-                <span>View Live Site</span>
+                <span>View Live Storefront</span>
             </a>
-            <button type="button" onclick="document.getElementById('addEntryModal').classList.remove('hidden')" class="px-4 py-2.5 bg-[#4A943E] hover:bg-[#3D7C33] text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs shadow-[#4A943E]/20">
-                <span class="material-symbols-outlined text-[16px]">add_circle</span>
-                <span>Add Custom Field</span>
-            </button>
         </div>
     </div>
 
-    <!-- Main Split Grid: Left = Structured Form Cards, Right = Sticky Live Preview -->
+    <!-- Main Split Grid: Left = 3 Focused Section Cards, Right = Sticky Live Preview -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- ═══════════════════════════════════════════════════════════════════ -->
-        <!-- LEFT COLUMN: Structured Form Cards (7 cols on lg screens)          -->
+        <!-- LEFT COLUMN: Structured Feature Cards (7 cols on lg screens)        -->
         <!-- ═══════════════════════════════════════════════════════════════════ -->
         <div class="lg:col-span-7 space-y-6">
 
-            <?php foreach ($orderedSections as $page): ?>
-                <?php 
-                    $items = $grouped[$page] ?? [];
-                    if (empty($items)) continue;
-                    $meta = $sectionMeta[$page] ?? [
-                        'title' => ucwords(str_replace('_', ' ', $page)),
-                        'icon' => 'tune',
-                        'desc' => 'Custom page settings and storefront parameters.'
-                    ];
-                ?>
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <!-- SECTION 1: GLOBAL ANNOUNCEMENT BAR                           -->
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="px-6 py-4.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-[20px]">campaign</span>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Announcement Bar</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Top notification bar shown across all public storefront pages.</p>
+                        </div>
+                    </div>
+                </div>
 
-                <section id="section-<?= esc($page) ?>" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-                    
-                    <!-- Section Header -->
-                    <div class="px-6 py-4.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap justify-between items-center gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="w-10 h-10 rounded-2xl bg-[#4A943E]/10 dark:bg-[#4A943E]/20 text-[#4A943E] flex items-center justify-center font-bold">
-                                <span class="material-symbols-outlined text-[20px]"><?= esc($meta['icon']) ?></span>
-                            </span>
+                <form action="<?= base_url('admin/content/save') ?>" method="POST" class="p-6 space-y-5">
+                    <?= csrf_field() ?>
+
+                    <!-- Active Toggle Selector -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                            Announcement Status
+                        </label>
+                        <div class="grid grid-cols-2 gap-3 max-w-md">
+                            <label class="flex items-center gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-[#4A943E] has-[:checked]:bg-[#4A943E]/5">
+                                <input type="radio" name="fields[announcement_active]" value="1" <?= $annActiveVal ? 'checked' : '' ?> data-preview-key="announcement_active" class="text-[#4A943E] focus:ring-[#4A943E] h-4 w-4">
+                                <div class="text-xs">
+                                    <span class="font-bold text-slate-900 dark:text-white block flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-[#4A943E]"></span> Visible
+                                    </span>
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Show banner at top</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors has-[:checked]:border-slate-400 has-[:checked]:bg-slate-100 dark:has-[:checked]:bg-slate-800">
+                                <input type="radio" name="fields[announcement_active]" value="0" <?= !$annActiveVal ? 'checked' : '' ?> data-preview-key="announcement_active" class="text-slate-600 focus:ring-slate-500 h-4 w-4">
+                                <div class="text-xs">
+                                    <span class="font-bold text-slate-900 dark:text-white block flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-slate-400"></span> Hidden
+                                    </span>
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Hide banner from site</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Announcement Text Field -->
+                    <div>
+                        <label for="input-announcement-text" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                            Announcement Message
+                        </label>
+                        <input id="input-announcement-text" name="fields[announcement_text]" value="<?= esc($annTextVal) ?>" data-preview-key="announcement_text" class="w-full border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="e.g. 🚀 Free doorstep delivery on orders over ₱500!">
+                        <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Recommended under 90 characters for best display on mobile devices.</p>
+                    </div>
+
+                    <div class="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" class="px-5 py-2.5 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[17px]">save</span>
+                            <span>Save Announcement</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <!-- SECTION 2: HOMEPAGE HERO BANNER & CATALOG HEADINGS            -->
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="px-6 py-4.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-2xl bg-[#4A943E]/10 dark:bg-[#4A943E]/20 text-[#4A943E] flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-[20px]">view_carousel</span>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Homepage Hero &amp; Catalog</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Primary value proposition, hero visual banner, and product catalog headers.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-6">
+
+                    <!-- Background Image Frame & Upload -->
+                    <?php if ($heroImgRow): ?>
+                        <div class="p-4.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                    Hero Banner Background Image
+                                </label>
+                                <span class="text-[11px] font-mono text-[#4A943E] font-medium">Recommended: 1440×480px (3:1, max 3MB)</span>
+                            </div>
+
+                            <div class="relative w-full aspect-[3/1] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-950 group shadow-inner">
+                                <?php if (!empty($heroImgUrl)): ?>
+                                    <img src="<?= esc($heroImgUrl) ?>" alt="Hero Banner" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
+                                    <a href="<?= esc($heroImgUrl) ?>" target="_blank" class="absolute inset-0 bg-slate-950/40 backdrop-blur-xs text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold gap-1.5">
+                                        <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                                        <span>View Full Image</span>
+                                    </a>
+                                <?php else: ?>
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+                                        <span class="material-symbols-outlined text-3xl">image</span>
+                                        <span>No image uploaded</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Upload Action Form -->
+                            <form action="<?= base_url('admin/content/upload') ?>" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="id" value="<?= $heroImgRow['id'] ?>">
+                                <input type="file" name="image" accept="image/*" class="flex-1 text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#4A943E]/10 file:text-[#4A943E] hover:file:bg-[#4A943E]/20" required>
+                                <button type="submit" class="px-4 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-xs font-bold hover:bg-slate-800 dark:hover:bg-white transition-all shadow-xs shrink-0 flex items-center justify-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[16px]">upload</span>
+                                    <span>Upload New Image</span>
+                                </button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Text Fields Form (Section Bulk Save) -->
+                    <form action="<?= base_url('admin/content/save') ?>" method="POST" class="space-y-4">
+                        <?= csrf_field() ?>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Hero Badge -->
                             <div>
-                                <h3 class="text-base font-bold font-display text-slate-900 dark:text-white"><?= esc($meta['title']) ?></h3>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><?= esc($meta['desc']) ?></p>
+                                <label for="input-hero-badge" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Hero Badge / Tagline
+                                </label>
+                                <input id="input-hero-badge" name="fields[hero_badge]" value="<?= esc($heroBadgeVal) ?>" data-preview-key="hero_badge" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="e.g. Polomolok Premier Hub">
+                            </div>
+
+                            <!-- Hero CTA Button Text -->
+                            <div>
+                                <label for="input-hero-cta" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Primary Button (CTA) Label
+                                </label>
+                                <input id="input-hero-cta" name="fields[hero_cta_text]" value="<?= esc($heroCtaVal) ?>" data-preview-key="hero_cta_text" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="e.g. Explore Marketplace">
                             </div>
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-mono">
-                            <?= count($items) ?> <?= count($items) === 1 ? 'Field' : 'Fields' ?>
-                        </span>
-                    </div>
 
-                    <!-- Entries List sorted top-to-bottom -->
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
-                        <?php foreach ($items as $it): ?>
-                            <?php 
-                                $key = $it['content_key'];
-                                $isLive = isset($connectedFields[$key]);
-                                $liveLocation = $connectedFields[$key] ?? null;
-                                $displayLabel = !empty($it['label']) ? $it['label'] : ucwords(str_replace('_', ' ', $key));
-                            ?>
-                            <div class="p-6 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                
-                                <!-- Field Header: Plain-language Label + Live Status Badge -->
-                                <div class="flex items-start justify-between gap-3 flex-wrap">
-                                    <div class="space-y-1">
-                                        <label for="field-<?= esc($it['id']) ?>" class="text-sm font-bold text-slate-900 dark:text-white block">
-                                            <?= esc($displayLabel) ?>
-                                        </label>
-                                        <?php if ($key === 'announcement_active'): ?>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Toggle whether the top announcement banner is visible across the storefront.</p>
-                                        <?php elseif ($key === 'hero_cta_text'): ?>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Label text displayed on the primary call-to-action button in the hero banner.</p>
-                                        <?php elseif ($key === 'footer_copyright'): ?>
-                                            <p class="text-xs text-slate-500 dark:text-slate-400">Legal trademark and copyright statement displayed at the very bottom.</p>
-                                        <?php endif; ?>
-                                    </div>
+                        <!-- Hero Main Headline -->
+                        <div>
+                            <label for="input-hero-title" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                Hero Main Headline
+                            </label>
+                            <input id="input-hero-title" name="fields[hero_title]" value="<?= esc($heroTitleVal) ?>" data-preview-key="hero_title" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="e.g. The Ultimate Merchandise & Printing Hub">
+                        </div>
 
-                                    <!-- Live Status Badge -->
-                                    <div class="shrink-0">
-                                        <?php if ($isLive): ?>
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs" title="This field is actively rendered on the live customer storefront">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-[#4A943E] animate-pulse"></span>
-                                                <span>Live on <?= esc($liveLocation) ?></span>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="Custom field created by admin; not connected to any storefront template yet">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                                <span>Not connected to any page</span>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
+                        <!-- Hero Subtitle Description -->
+                        <div>
+                            <label for="input-hero-sub" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                Hero Subtitle Description
+                            </label>
+                            <textarea id="input-hero-sub" name="fields[hero_subtitle]" rows="3" data-preview-key="hero_subtitle" class="w-full border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all leading-relaxed" placeholder="Write a short summary for your visitors..."><?= esc($heroSubVal) ?></textarea>
+                        </div>
 
-                                <!-- Field Form: Image Upload or Text Controls -->
-                                <?php if ($it['content_type'] === 'image'): ?>
-                                    <?php 
-                                        $img = $it['image_url'] ?? ''; 
-                                        $src = !empty($img) ? (str_starts_with($img, 'http') ? $img : base_url($img)) : '';
-                                        $spec = $imageSpecs[$key] ?? ['aspect' => 'aspect-[2/1]', 'guide' => 'Recommended: 1200×600px (2:1 ratio, max 3MB)'];
-                                    ?>
-                                    <div class="space-y-3">
-                                        <!-- Proportional Preview Frame -->
-                                        <div class="relative w-full max-w-xl <?= esc($spec['aspect']) ?> rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 shadow-inner group">
-                                            <?php if (!empty($src)): ?>
-                                                <img src="<?= esc($src) ?>" alt="<?= esc($displayLabel) ?>" id="frame-img-<?= esc($it['id']) ?>" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
-                                                <a href="<?= esc($src) ?>" target="_blank" class="absolute inset-0 bg-slate-950/50 backdrop-blur-xs text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold gap-1.5">
-                                                    <span class="material-symbols-outlined text-[18px]">open_in_new</span>
-                                                    <span>View Full Resolution</span>
-                                                </a>
-                                            <?php else: ?>
-                                                <div class="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs gap-1">
-                                                    <span class="material-symbols-outlined text-3xl">image</span>
-                                                    <span>No banner image uploaded</span>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
+                        <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 space-y-4">
+                            <h4 class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Product Catalog Section Headings</h4>
 
-                                        <!-- Upload Form -->
-                                        <form action="<?= base_url('admin/content/upload') ?>" method="POST" enctype="multipart/form-data" class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3 max-w-xl">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="id" value="<?= $it['id'] ?>">
-
-                                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                                <span class="uppercase font-bold tracking-wider text-slate-700 dark:text-slate-300">Upload Image File (JPG, PNG, WEBP)</span>
-                                                <span class="font-mono text-[#4A943E] font-semibold"><?= esc($spec['guide']) ?></span>
-                                            </div>
-
-                                            <div class="flex items-center gap-2">
-                                                <input type="file" name="image" accept="image/*" class="flex-1 text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#4A943E]/10 file:text-[#4A943E] hover:file:bg-[#4A943E]/20" required>
-                                                <button type="submit" class="px-4 py-2 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs shrink-0 flex items-center gap-1.5">
-                                                    <span class="material-symbols-outlined text-[16px]">upload</span>
-                                                    <span>Upload</span>
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-
-                                <?php else: ?>
-                                    <!-- Text / Textarea Form -->
-                                    <form action="<?= base_url('admin/content/save') ?>" method="POST" class="space-y-3">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="id" value="<?= $it['id'] ?>">
-
-                                        <?php if ($key === 'announcement_active'): ?>
-                                            <!-- Friendly Toggle Selector for Announcement Active -->
-                                            <?php $isActive = in_array(trim((string)($it['text_value'] ?? '0')), ['1', 'true', 'on'], true); ?>
-                                            <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex-wrap">
-                                                <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors">
-                                                    <input type="radio" name="text_value" value="1" <?= $isActive ? 'checked' : '' ?> data-preview-key="<?= esc($key) ?>" class="text-[#4A943E] focus:ring-[#4A943E] h-4 w-4">
-                                                    <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                                                        <span class="w-2 h-2 rounded-full bg-[#4A943E]"></span> Active (Show Bar)
-                                                    </span>
-                                                </label>
-                                                <label class="flex items-center gap-2 cursor-pointer p-1.5 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors">
-                                                    <input type="radio" name="text_value" value="0" <?= !$isActive ? 'checked' : '' ?> data-preview-key="<?= esc($key) ?>" class="text-[#4A943E] focus:ring-[#4A943E] h-4 w-4">
-                                                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                                        <span class="w-2 h-2 rounded-full bg-slate-400"></span> Inactive (Hide Bar)
-                                                    </span>
-                                                </label>
-                                                <button type="submit" class="ml-auto px-4 py-2 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs">
-                                                    Save Status
-                                                </button>
-                                            </div>
-
-                                        <?php elseif ($it['content_type'] === 'textarea'): ?>
-                                            <div class="space-y-2">
-                                                <textarea id="field-<?= esc($it['id']) ?>" name="text_value" rows="3" data-preview-key="<?= esc($key) ?>" class="w-full border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:border-transparent focus:outline-none transition-all leading-relaxed" placeholder="Enter <?= esc($displayLabel) ?>..."><?= esc($it['text_value'] ?? '') ?></textarea>
-                                                <div class="flex flex-wrap justify-between items-center gap-2">
-                                                    <span class="text-[11px] text-slate-400 dark:text-slate-500">Previews instantly on the right. Press Save to persist changes.</span>
-                                                    <button type="submit" class="px-4 py-2 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs flex items-center gap-1.5">
-                                                        <span class="material-symbols-outlined text-[16px]">save</span>
-                                                        <span>Save Text</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                        <?php else: ?>
-                                            <div class="flex items-center gap-2">
-                                                <input id="field-<?= esc($it['id']) ?>" name="text_value" value="<?= esc($it['text_value'] ?? '') ?>" data-preview-key="<?= esc($key) ?>" class="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:border-transparent focus:outline-none transition-all" placeholder="Enter <?= esc($displayLabel) ?>...">
-                                                <button type="submit" class="px-4 py-2.5 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs shrink-0 flex items-center gap-1.5">
-                                                    <span class="material-symbols-outlined text-[16px]">save</span>
-                                                    <span>Save</span>
-                                                </button>
-                                            </div>
-                                        <?php endif; ?>
-                                    </form>
-                                <?php endif; ?>
-
-                                <!-- Collapsed Technical Details / Rename for Developers -->
-                                <details class="text-xs text-slate-500 dark:text-slate-400 group pt-1">
-                                    <summary class="cursor-pointer font-medium hover:text-[#4A943E] inline-flex items-center gap-1.5 text-[11px] select-none text-slate-400 dark:text-slate-500 transition-colors">
-                                        <span class="material-symbols-outlined text-[15px] transition-transform group-open:rotate-90">chevron_right</span>
-                                        <span>Technical Developer Properties</span>
-                                    </summary>
-                                    <div class="mt-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                                        <div class="flex flex-wrap items-center gap-2 text-[11px]">
-                                            <span class="font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-semibold">Key: <?= esc($key) ?></span>
-                                            <span class="font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">Type: <?= esc($it['content_type']) ?></span>
-                                            <span class="font-mono bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">Page: <?= esc($page) ?></span>
-                                        </div>
-                                        <!-- Inline rename form -->
-                                        <form action="<?= base_url('admin/content/save') ?>" method="POST" class="flex items-center gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="id" value="<?= $it['id'] ?>">
-                                            <label class="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase shrink-0">Display Label:</label>
-                                            <input name="label" value="<?= esc($it['label'] ?? '') ?>" placeholder="Label name" class="flex-1 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-                                            <button type="submit" class="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0">
-                                                Update Label
-                                            </button>
-                                        </form>
-                                    </div>
-                                </details>
-
+                            <!-- Catalog Title -->
+                            <div>
+                                <label for="input-cat-title" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Catalog Heading
+                                </label>
+                                <input id="input-cat-title" name="fields[catalog_title]" value="<?= esc($catalogTitleVal) ?>" data-preview-key="catalog_title" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="e.g. Global Product Catalog">
                             </div>
-                        <?php endforeach; ?>
+
+                            <!-- Catalog Subtitle -->
+                            <div>
+                                <label for="input-cat-sub" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Catalog Subtitle Description
+                                </label>
+                                <textarea id="input-cat-sub" name="fields[catalog_subtitle]" rows="2" data-preview-key="catalog_subtitle" class="w-full border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all leading-relaxed"><?= esc($catalogSubVal) ?></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button type="submit" class="px-5 py-2.5 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[17px]">save</span>
+                                <span>Save Hero &amp; Catalog Content</span>
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </section>
+
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <!-- SECTION 3: FOOTER & SUPPORT CONTACT                          -->
+            <!-- ───────────────────────────────────────────────────────────── -->
+            <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="px-6 py-4.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-[20px]">contact_support</span>
+                        </span>
+                        <div>
+                            <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Footer &amp; Support Contacts</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Contact details, physical hub location, and legal copyright text.</p>
+                        </div>
                     </div>
-                </section>
-            <?php endforeach; ?>
+                </div>
+
+                <form action="<?= base_url('admin/content/save') ?>" method="POST" class="p-6 space-y-4">
+                    <?= csrf_field() ?>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Support Email -->
+                        <div>
+                            <label for="input-ft-email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                Customer Support Email
+                            </label>
+                            <input id="input-ft-email" type="email" name="fields[footer_contact_email]" value="<?= esc($footerEmailVal) ?>" data-preview-key="footer_contact_email" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="support@blaxinventory.com">
+                        </div>
+
+                        <!-- Hotline Phone -->
+                        <div>
+                            <label for="input-ft-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                                Hotline / Phone Number
+                            </label>
+                            <input id="input-ft-phone" name="fields[footer_phone]" value="<?= esc($footerPhoneVal) ?>" data-preview-key="footer_phone" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="+63 917 123 4567">
+                        </div>
+                    </div>
+
+                    <!-- Hub Physical Address -->
+                    <div>
+                        <label for="input-ft-addr" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                            Physical Hub / Office Location
+                        </label>
+                        <input id="input-ft-addr" name="fields[footer_address]" value="<?= esc($footerAddrVal) ?>" data-preview-key="footer_address" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="Poblacion, Polomolok, South Cotabato, Philippines 9504">
+                    </div>
+
+                    <!-- Copyright Notice -->
+                    <div>
+                        <label for="input-ft-copy" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                            Copyright Notice
+                        </label>
+                        <input id="input-ft-copy" name="fields[footer_copyright]" value="<?= esc($footerCopyVal) ?>" data-preview-key="footer_copyright" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#4A943E] focus:outline-none transition-all" placeholder="© 2026 Blax. All rights reserved.">
+                    </div>
+
+                    <div class="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" class="px-5 py-2.5 bg-[#4A943E] text-white rounded-xl text-xs font-bold hover:bg-[#3D7C33] transition-all shadow-xs flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[17px]">save</span>
+                            <span>Save Footer Information</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
 
         </div>
 
@@ -343,14 +384,10 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
                 <div class="p-3.5 bg-slate-50 dark:bg-slate-950 overflow-y-auto max-h-[calc(100vh-140px)] space-y-3.5 text-slate-800 dark:text-slate-200 text-xs select-none">
                     
                     <!-- 1. Preview Announcement Bar -->
-                    <?php 
-                        $annText = $previewData['announcement_text']['text'] ?? '🚀 Free doorstep delivery on orders over ₱500 within Polomolok! Use code BLAXSHIP';
-                        $annActive = in_array(trim((string)($previewData['announcement_active']['text'] ?? '1')), ['1', 'true', 'on'], true);
-                    ?>
-                    <div id="pv-announcement-bar" class="<?= $annActive ? '' : 'hidden' ?> bg-gradient-to-r from-[#4A943E] via-emerald-600 to-[#4A943E] text-white text-[10px] py-2 px-3 rounded-xl shadow-xs flex items-center justify-between gap-2 transition-all">
+                    <div id="pv-announcement-bar" class="<?= $annActiveVal ? '' : 'hidden' ?> bg-gradient-to-r from-[#4A943E] via-emerald-600 to-[#4A943E] text-white text-[10px] py-2 px-3 rounded-xl shadow-xs flex items-center justify-between gap-2 transition-all">
                         <div class="flex-1 flex items-center justify-center gap-1.5 text-center font-medium truncate">
                             <span class="material-symbols-outlined text-[14px] text-amber-300 shrink-0">campaign</span>
-                            <span id="pv-announcement-text" class="truncate font-sans"><?= esc($annText) ?></span>
+                            <span id="pv-announcement-text" class="truncate font-sans"><?= esc($annTextVal) ?></span>
                         </div>
                         <span class="text-[10px] text-white/70">✕</span>
                     </div>
@@ -372,50 +409,38 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
                     </div>
 
                     <!-- 3. Preview Hero Banner -->
-                    <?php
-                        $heroBadge = $previewData['hero_badge']['text'] ?? 'Seasonal Event';
-                        $heroTitle = $previewData['hero_title']['text'] ?? 'The Ultimate Merchandise & Printing Hub';
-                        $heroSubtitle = $previewData['hero_subtitle']['text'] ?? 'Discover premium goods, exclusive deals, and top-tier printing services all in one place across Polomolok.';
-                        $heroCta = $previewData['hero_cta_text']['text'] ?? 'Explore Marketplace';
-                        $heroImg = $previewData['hero_image']['image'] ?? 'https://images.unsplash.com/photo-1556742049-0a67daf64f42?auto=format&fit=crop&w=1440&q=80';
-                        if ($heroImg && !str_starts_with($heroImg, 'http')) $heroImg = base_url($heroImg);
-                    ?>
-                    <div id="pv-hero-banner" class="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white dark:bg-slate-900 min-h-[150px] flex items-center group border border-slate-200/60 dark:border-slate-800">
-                        <div id="pv-hero-bg" class="absolute inset-0 bg-cover bg-center w-full h-full scale-105 opacity-95 transition-transform duration-500 pointer-events-none" style="background-image: url('<?= esc($heroImg) ?>');"></div>
-                        <div class="absolute inset-0 pointer-events-none bg-gradient-to-r from-white/95 via-white/70 to-transparent dark:from-slate-900/95 dark:via-slate-900/75 dark:to-transparent"></div>
+                    <div id="pv-hero-banner" class="relative w-full rounded-2xl overflow-hidden shadow-xs bg-white dark:bg-slate-900 min-h-[155px] flex items-center group border border-slate-200/60 dark:border-slate-800">
+                        <div id="pv-hero-bg" class="absolute inset-0 bg-cover bg-center w-full h-full scale-105 opacity-95 transition-transform duration-500 pointer-events-none" style="background-image: url('<?= esc($heroImgUrl) ?>');"></div>
+                        <div class="absolute inset-0 pointer-events-none bg-gradient-to-r from-white/95 via-white/75 to-transparent dark:from-slate-900/95 dark:via-slate-900/80 dark:to-transparent"></div>
                         
                         <div class="relative z-10 p-4 max-w-[220px] space-y-1.5">
                             <span id="pv-hero-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#4A943E]/10 dark:bg-[#4A943E]/20 border border-[#4A943E]/30 text-[9px] font-bold text-[#4A943E] uppercase tracking-wider truncate backdrop-blur-xs">
-                                <?= esc($heroBadge) ?>
+                                <?= esc($heroBadgeVal) ?>
                             </span>
                             <h4 id="pv-hero-title" class="text-xs font-bold font-display text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                                <?= esc($heroTitle) ?>
+                                <?= esc($heroTitleVal) ?>
                             </h4>
                             <p id="pv-hero-subtitle" class="text-[10px] text-slate-600 dark:text-slate-400 font-medium line-clamp-2 leading-tight">
-                                <?= esc($heroSubtitle) ?>
+                                <?= esc($heroSubVal) ?>
                             </p>
                             <div class="pt-1">
                                 <span id="pv-hero-cta" class="inline-block bg-[#4A943E] text-white text-[9px] font-bold px-3 py-1 rounded-lg shadow-xs truncate">
-                                    <?= esc($heroCta) ?>
+                                    <?= esc($heroCtaVal) ?>
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- 4. Preview Catalog Section Header -->
-                    <?php
-                        $catTitle = $previewData['catalog_title']['text'] ?? 'Global Product Catalog';
-                        $catSub = $previewData['catalog_subtitle']['text'] ?? 'Aggregation of all products currently available across the entire RHK network.';
-                    ?>
                     <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800 space-y-1.5 shadow-2xs">
                         <div class="flex justify-between items-center">
                             <h5 id="pv-catalog-title" class="text-[11px] font-bold text-slate-900 dark:text-white truncate font-display">
-                                <?= esc($catTitle) ?>
+                                <?= esc($catalogTitleVal) ?>
                             </h5>
-                            <span class="text-[9px] text-[#4A943E] font-semibold">Filter & Sort</span>
+                            <span class="text-[9px] text-[#4A943E] font-semibold">Filter &amp; Sort</span>
                         </div>
                         <p id="pv-catalog-subtitle" class="text-[9px] text-slate-500 dark:text-slate-400 line-clamp-1 leading-tight">
-                            <?= esc($catSub) ?>
+                            <?= esc($catalogSubVal) ?>
                         </p>
                         <!-- Mock Product Mini Row -->
                         <div class="grid grid-cols-3 gap-2 pt-1.5">
@@ -438,12 +463,6 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
                     </div>
 
                     <!-- 5. Preview Mini Footer -->
-                    <?php
-                        $ftEmail = $previewData['footer_contact_email']['text'] ?? 'support@blaxinventory.com';
-                        $ftPhone = $previewData['footer_phone']['text'] ?? '+63 917 123 4567';
-                        $ftAddress = $previewData['footer_address']['text'] ?? 'Poblacion, Polomolok, South Cotabato, Philippines 9504';
-                        $ftCopy = $previewData['footer_copyright']['text'] ?? ('© ' . date('Y') . ' Blax. All rights reserved.');
-                    ?>
                     <div id="pv-footer" class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700/80 space-y-2.5 text-[9px]">
                         <div class="grid grid-cols-3 gap-2">
                             <div>
@@ -456,12 +475,12 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
                             </div>
                             <div>
                                 <span class="font-bold block text-slate-900 dark:text-white">Contact</span>
-                                <span id="pv-footer-email" class="text-slate-500 dark:text-slate-400 block truncate mt-0.5"><?= esc($ftEmail) ?></span>
-                                <span id="pv-footer-phone" class="text-slate-500 dark:text-slate-400 block truncate"><?= esc($ftPhone) ?></span>
+                                <span id="pv-footer-email" class="text-slate-500 dark:text-slate-400 block truncate mt-0.5"><?= esc($footerEmailVal) ?></span>
+                                <span id="pv-footer-phone" class="text-slate-500 dark:text-slate-400 block truncate"><?= esc($footerPhoneVal) ?></span>
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-200 dark:border-slate-700 text-[8px] text-slate-500 dark:text-slate-400 text-center leading-tight">
-                            <span id="pv-footer-copyright"><?= esc($ftCopy) ?></span>
+                            <span id="pv-footer-copyright"><?= esc($footerCopyVal) ?></span>
                         </div>
                     </div>
 
@@ -481,91 +500,10 @@ foreach (array_keys($grouped ?? []) as $pageKey) {
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- MODAL: Add New Custom Field (Gated with Clear Developer Warning)       -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="addEntryModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
-        
-        <div class="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3.5">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-[#4A943E]/10 dark:bg-[#4A943E]/20 text-[#4A943E] flex items-center justify-center font-bold">
-                    <span class="material-symbols-outlined text-[20px]">developer_mode</span>
-                </div>
-                <h3 class="text-base sm:text-lg font-bold font-display text-slate-900 dark:text-white">Add New Custom CMS Field</h3>
-            </div>
-            <button type="button" onclick="document.getElementById('addEntryModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <span class="material-symbols-outlined text-[20px]">close</span>
-            </button>
-        </div>
-
-        <!-- Prominent Developer Warning -->
-        <div class="p-4 rounded-2xl bg-[#F4AE52]/10 border border-[#F4AE52]/30 text-[#6E3511] dark:text-[#F4AE52] text-xs space-y-1.5">
-            <div class="flex items-center gap-2 font-bold">
-                <span class="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400">warning</span>
-                <span>Important Developer Notice</span>
-            </div>
-            <p class="leading-relaxed text-[11px] text-amber-900/90 dark:text-amber-200/80">
-                Custom fields added here will <strong>not automatically appear</strong> anywhere on the customer website. A software developer must write code in the corresponding template file (e.g. reading <code>$siteContents['your_key']</code>) before customers will be able to see it.
-            </p>
-        </div>
-
-        <form action="<?= base_url('admin/content/save') ?>" method="POST" class="space-y-4">
-            <?= csrf_field() ?>
-            
-            <div>
-                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Section Group</label>
-                <select name="page" class="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#4A943E] focus:outline-none" required>
-                    <option value="home_banners">Homepage Banners (home_banners)</option>
-                    <option value="announcement_bar">Announcement Bar (announcement_bar)</option>
-                    <option value="footer_info">Footer Info (footer_info)</option>
-                    <option value="custom_page">Custom / Other Section (custom_page)</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Unique Key Name (snake_case)</label>
-                <input name="content_key" placeholder="e.g. flash_sale_discount_badge" required pattern="[a-z0-9_]+" class="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#4A943E] focus:outline-none">
-                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Lowercase letters, numbers, and underscores only.</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Field Type</label>
-                    <select name="content_type" class="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#4A943E] focus:outline-none">
-                        <option value="text">Single Line Text</option>
-                        <option value="textarea">Multi-line Textarea</option>
-                        <option value="image">Image Upload</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Display Label</label>
-                    <input name="label" placeholder="e.g. Flash Sale Badge" class="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#4A943E] focus:outline-none">
-                </div>
-            </div>
-
-            <div>
-                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Initial Text Value (Optional)</label>
-                <textarea name="text_value" rows="2" placeholder="Initial value or placeholder..." class="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-[#4A943E] focus:outline-none"></textarea>
-            </div>
-
-            <div class="flex gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
-                <button type="button" onclick="document.getElementById('addEntryModal').classList.add('hidden')" class="flex-1 py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    Cancel
-                </button>
-                <button type="submit" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-[#4A943E] hover:bg-[#3D7C33] text-white transition-all shadow-xs">
-                    Create Field
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
 <!-- Real-time Live Preview JS Synchronization                              -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Map content_key to preview element IDs
     const textTargetMap = {
         'hero_badge': 'pv-hero-badge',
         'hero_title': 'pv-hero-title',
@@ -588,47 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const bar = document.getElementById('pv-announcement-bar');
             if (bar) {
                 const isActive = (val === '1' || val === 'true' || val === 'on');
-                if (isActive) {
-                    bar.classList.remove('hidden');
-                } else {
-                    bar.classList.add('hidden');
-                }
-            }
-            return;
-        }
-
-        const targetId = textTargetMap[key];
-        if (targetId) {
-            const el = document.getElementById(targetId);
-            if (el) {
-                el.textContent = val || '—';
-            }
-        }
-    }
-
-    // Listen on input and change across all previewable fields
-    document.addEventListener('input', (e) => {
-        const key = e.target.getAttribute('data-preview-key');
-        if (key) {
-            updatePreview(key, e.target.value);
-        }
-    });
-
-    document.addEventListener('change', (e) => {
-        const key = e.target.getAttribute('data-preview-key');
-        if (key) {
-            if (e.target.type === 'radio') {
-                if (e.target.checked) updatePreview(key, e.target.value);
-            } else {
-                updatePreview(key, e.target.value);
-            }
-        }
-    });
-});
-</script>
-
-<?= $this->endSection() ?>
-rue' || val === 'on');
                 if (isActive) {
                     bar.classList.remove('hidden');
                 } else {

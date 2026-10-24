@@ -50,7 +50,7 @@ class Checkout extends BaseController
 
         if (!empty($variants)) {
             if ($variantId <= 0) {
-                return redirect()->to(base_url('product/' . $productId))->with('error', 'Please select a product option before checking out.');
+                return redirect()->to(base_url('product/' . $productId . '?select_option=1#variants-section'))->with('info', 'Please select a product option before checking out.');
             }
 
             foreach ($variants as $v) {
@@ -93,8 +93,15 @@ class Checkout extends BaseController
         }
         $imageUrl = product_image_url($imageUrl, 'thumbnail');
 
-        // Load shop and addresses
-        $shop      = (new ShopModel())->find($product['shop_id']);
+        // Load shop and check operational schedule
+        $shop     = (new ShopModel())->find($product['shop_id']);
+        $opStatus = (new \App\Models\ShopCalendarScheduleModel())->getShopOperationalStatus((int) $product['shop_id']);
+        if (!empty($opStatus['is_closed_today'])) {
+            $shopName = esc($shop['shop_name'] ?? 'This store');
+            $noteStr  = !empty($opStatus['note']) ? ' (' . esc($opStatus['note']) . ')' : '';
+            return redirect()->to(base_url('product/' . $productId))->with('error', "\"{$shopName}\" is closed today{$noteStr} and cannot accept orders right now. You can add this item to your cart and checkout when the store reopens.");
+        }
+
         $addresses = (new ShippingAddressModel())
             ->where('user_id', $userId)
             ->orderBy('is_default', 'DESC')

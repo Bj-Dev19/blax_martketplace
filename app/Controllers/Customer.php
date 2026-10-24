@@ -182,25 +182,30 @@ class Customer extends BaseController
             $isFavorite = (new FavoriteShopModel())->where('user_id', $userId)->where('shop_id', $shop['id'])->first() !== null;
         }
 
-        $paperSizes       = (new \App\Models\ShopPaperSizeSettingModel())->getForShop((int) $shop['id']);
-        $printingSettings = (new \App\Models\ShopPrintingSettingModel())->getForShop((int) $shop['id']);
+        $paperSizes        = (new \App\Models\ShopPaperSizeSettingModel())->getForShop((int) $shop['id']);
+        $printingSettings  = (new \App\Models\ShopPrintingSettingModel())->getForShop((int) $shop['id']);
+        $calModel          = new \App\Models\ShopCalendarScheduleModel();
+        $operationalStatus = $calModel->getShopOperationalStatus((int) $shop['id']);
+        $calendarSchedules = $calModel->getSchedulesForShop((int) $shop['id']);
 
         return view('customer/shop_storefront', [
-            'shop'             => $shop,
-            'products'         => $result['products'],
-            'pager'            => $result['pager'],
-            'totalPages'       => $totalPages,
-            'currentPage'      => $page,
-            'perPage'          => $perPage,
-            'totalProducts'    => $total,
-            'searchQuery'      => $search,
-            'shopReviews'      => $shopReviews,
-            'shopReviewCount'  => $shopReviewCount,
-            'userShopReview'   => $userShopReview,
-            'isFavorite'       => $isFavorite,
-            'businessHours'    => $businessHours,
-            'paperSizes'       => $paperSizes,
-            'printingSettings' => $printingSettings,
+            'shop'              => $shop,
+            'products'          => $result['products'],
+            'pager'             => $result['pager'],
+            'totalPages'        => $totalPages,
+            'currentPage'       => $page,
+            'perPage'           => $perPage,
+            'totalProducts'     => $total,
+            'searchQuery'       => $search,
+            'shopReviews'       => $shopReviews,
+            'shopReviewCount'   => $shopReviewCount,
+            'userShopReview'    => $userShopReview,
+            'isFavorite'        => $isFavorite,
+            'businessHours'     => $businessHours,
+            'operationalStatus' => $operationalStatus,
+            'calendarSchedules' => $calendarSchedules,
+            'paperSizes'        => $paperSizes,
+            'printingSettings'  => $printingSettings,
         ]);
     }
 
@@ -286,14 +291,17 @@ class Customer extends BaseController
             $userReview = $reviewModel->getUserReview($userId, $id);
         }
 
+        $shopOperationalStatus = (new \App\Models\ShopCalendarScheduleModel())->getShopOperationalStatus((int) ($product['shop_id'] ?? 0));
+
         return view('customer/product_detail', [
-            'product'         => $product,
-            'relatedProducts' => $relatedProducts,
-            'productImages'   => $productImages,
-            'variants'        => $variants,
-            'reviews'         => $reviews,
-            'reviewCount'     => $reviewCount,
-            'userReview'      => $userReview,
+            'product'               => $product,
+            'relatedProducts'       => $relatedProducts,
+            'productImages'         => $productImages,
+            'variants'              => $variants,
+            'reviews'               => $reviews,
+            'reviewCount'           => $reviewCount,
+            'userReview'            => $userReview,
+            'shopOperationalStatus' => $shopOperationalStatus,
         ]);
     }
 
@@ -1301,6 +1309,14 @@ class Customer extends BaseController
         $shop = $shopId > 0 ? $shopModel->find($shopId) : null;
         if (!$shop || $shop['status'] !== 'active' || empty($shop['offers_printing'])) {
             session()->setFlashdata('error', 'Invalid printing shop selected. Please choose a valid shop.');
+            return redirect()->back();
+        }
+
+        $opStatus = (new \App\Models\ShopCalendarScheduleModel())->getShopOperationalStatus($shopId);
+        if (!empty($opStatus['is_closed_today'])) {
+            $shopName = esc($shop['shop_name'] ?? 'This shop');
+            $noteStr  = !empty($opStatus['note']) ? ' (' . esc($opStatus['note']) . ')' : '';
+            session()->setFlashdata('error', "\"{$shopName}\" is closed today{$noteStr} and cannot accept printing requests right now. Please try again when the store reopens.");
             return redirect()->back();
         }
 

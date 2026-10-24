@@ -65,14 +65,14 @@ class SeasonalAiService
         ],
         'holiday' => [
             'key'                  => 'holiday',
-            'name'                 => 'Holiday Rush & Year-End Celebrations',
+            'name'                 => 'Christmas & Year-End Holiday Celebrations',
             'short_name'           => 'Holiday Season',
             'icon'                 => 'celebration',
             'badge_color'          => 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700',
             'accent_hex'           => '#7c3aed',
             'period_label'         => 'October – December',
-            'velocity_multiplier'  => 2.5,
-            'description'          => 'Surge in customized company giveaways, personalized sublimation mugs, festival tarpaulins, gift bags, and calendars.',
+            'velocity_multiplier'  => 2.6,
+            'description'          => 'Surge in corporate and family giveaways, personalized sublimation mugs, calendars, planners, holiday packaging, greeting tags, and festive tarpaulins.',
             'target_categories'    => ['custom gifts', 'printing', 'packaging', 'crafts', 'merchandise', 'stationery'],
             'keywords'             => [
                 'gift', 'mug', 'calendar', 'planner', 'tarpaulin', 'photo', 'frame', 'sticker', 'box', 'ribbon', 'greeting',
@@ -103,82 +103,200 @@ class SeasonalAiService
                 ]
             ]
         ],
-        'graduation' => [
-            'key'                  => 'graduation',
-            'name'                 => 'Graduation, Moving-Up & Recognition',
-            'short_name'           => 'Graduation Season',
-            'icon'                 => 'workspace_premium',
-            'badge_color'          => 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700',
-            'accent_hex'           => '#059669',
-            'period_label'         => 'March – May',
-            'velocity_multiplier'  => 2.4,
-            'description'          => 'Heavy demand for certificate printing, graduation ribbons, medals, diploma holders, and stage tarpaulins.',
-            'target_categories'    => ['awards', 'printing', 'certificates', 'frames', 'stationery'],
+        'valentines' => [
+            'key'                  => 'valentines',
+            'name'                 => 'Valentine\'s Day & Expressions of Love',
+            'short_name'           => 'Valentine\'s Season',
+            'icon'                 => 'favorite',
+            'badge_color'          => 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-700',
+            'accent_hex'           => '#e11d48',
+            'period_label'         => 'January – February (Peak Feb 1–15)',
+            'velocity_multiplier'  => 2.3,
+            'description'          => 'Rapid spike in bespoke greeting cards, romantic photo prints, couple apparel prints, gift wraps, and novelty craft packaging.',
+            'target_categories'    => ['custom gifts', 'photo printing', 'greeting cards', 'crafts', 'packaging'],
             'keywords'             => [
-                'certificate', 'medal', 'ribbon', 'plaque', 'diploma', 'photo', 'frame', 'program', 'tarpaulin', 'souvenir',
-                'sash', 'award', 'trophy', 'token', 'toga', 'lei', 'garland', 'glossy', 'parchment', 'linen'
+                'valentine', 'heart', 'rose', 'love', 'card', 'greeting', 'photo', 'frame', 'mug', 'pillow', 'chocolate box',
+                'ribbon', 'tag', 'flower wrap', 'bouquet paper', 'craft', 'sticker'
             ],
             'expansion_ideas'      => [
                 [
-                    'name'         => 'Gold Embossed Certificate Frames (Letter / A4)',
-                    'category'     => 'Frames & Awards',
-                    'demand_surge' => '+450%',
-                    'est_price'    => 180.00,
-                    'reason'       => 'Essential companion purchase for graduates and award recipients receiving diplomas.'
+                    'name'         => 'Waterproof Floral Bouquet Wrapping Paper (20s Pack)',
+                    'category'     => 'Packaging & Floral',
+                    'demand_surge' => '+480%',
+                    'est_price'    => 160.00,
+                    'reason'       => 'High-demand material supplied to local florist pop-ups and gift shops in Polomolok.'
                 ],
                 [
-                    'name'         => 'Parchment & Specialty Linen Board Paper (100s)',
-                    'category'     => 'Specialty Paper',
-                    'demand_surge' => '+380%',
-                    'est_price'    => 210.00,
-                    'reason'       => 'Institutional requirement for printed diplomas and recognition certificates.'
+                    'name'         => 'Custom Polaroid-Style Instax Photo Print Bundles (10s)',
+                    'category'     => 'Photo Printing',
+                    'demand_surge' => '+390%',
+                    'est_price'    => 120.00,
+                    'reason'       => 'High margin keepsake gift heavily ordered by Gen-Z and couple customers.'
                 ],
                 [
-                    'name'         => 'Custom Tri-Color Graduation Lei Ribbon Materials',
-                    'category'     => 'Recognition Accessories',
-                    'demand_surge' => '+300%',
-                    'est_price'    => 110.00,
-                    'reason'       => 'High-margin seasonal craft purchased in bulk by parents and school organizers.'
+                    'name'         => 'Embossed Heart Greeting Cards with Envelopes',
+                    'category'     => 'Stationery',
+                    'demand_surge' => '+270%',
+                    'est_price'    => 45.00,
+                    'reason'       => 'Essential impulse register add-on for retail shoppers purchasing gifts.'
                 ]
             ]
         ],
-        'exams' => [
-            'key'                  => 'exams',
-            'name'                 => 'Midterms, Finals & Heavy Document Printing',
-            'short_name'           => 'Exam & Thesis Season',
-            'icon'                 => 'description',
-            'badge_color'          => 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700',
-            'accent_hex'           => '#d97706',
-            'period_label'         => 'September – October & February – March',
-            'velocity_multiplier'  => 2.2,
-            'description'          => 'Surge in high-volume document duplication, thesis hardbound binding, ink refills, and copier paper reams.',
-            'target_categories'    => ['copier paper', 'ink', 'binding', 'printing', 'office supplies'],
+        'mothers_fathers' => [
+            'key'                  => 'mothers_fathers',
+            'name'                 => 'Mother\'s & Father\'s Day Tributes',
+            'short_name'           => 'Parents\' Season',
+            'icon'                 => 'diversity_1',
+            'badge_color'          => 'bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-950/40 dark:text-pink-300 dark:border-pink-700',
+            'accent_hex'           => '#db2777',
+            'period_label'         => 'May – June',
+            'velocity_multiplier'  => 2.1,
+            'description'          => 'Annual surges in personalized family plaques, framed portraits, custom aprons/t-shirts, greeting cards, and celebratory banner prints.',
+            'target_categories'    => ['custom gifts', 'photo printing', 'frames', 'awards', 'merchandise'],
             'keywords'             => [
-                'bond', 'paper', 'a4', 'short', 'long', 'copy', 'xerox', 'ink', 'toner', 'cartridge', 'photo paper',
-                'ring bind', 'spiral', 'plastic cover', 'staple', 'stapler', 'puncher', 'clip', 'fastener', 'clear book',
-                'morocco', 'board'
+                'mom', 'dad', 'mother', 'father', 'family', 'portrait', 'frame', 'canvas', 'acrylic', 't-shirt', 'mug',
+                'plaque', 'greeting', 'card', 'banner', 'tarpaulin', 'ribbon'
             ],
             'expansion_ideas'      => [
                 [
-                    'name'         => 'Double-A 80gsm Premium Copier Paper (500s)',
-                    'category'     => 'Copier Paper',
-                    'demand_surge' => '+360%',
-                    'est_price'    => 240.00,
-                    'reason'       => 'Zero-jam requirement for thesis research submissions and bulk examination printing.'
-                ],
-                [
-                    'name'         => 'CISS 4-Color Universal Dye Ink Refill Set (100ml)',
-                    'category'     => 'Printer Consumables',
-                    'demand_surge' => '+290%',
+                    'name'         => 'Laser-Engraved Wooden Desktop Plaque',
+                    'category'     => 'Personalized Gifts',
+                    'demand_surge' => '+340%',
                     'est_price'    => 280.00,
-                    'reason'       => 'Continuous weekly refill demand by college students and printing operators.'
+                    'reason'       => 'Top-selling bespoke tribute for working parents and community elders.'
                 ],
                 [
-                    'name'         => 'PVC Rigid Clear Binding Covers (100 Sheets Pack)',
-                    'category'     => 'Binding Materials',
-                    'demand_surge' => '+230%',
+                    'name'         => 'Premium Glass-Front Magnetic Photo Display Frame',
+                    'category'     => 'Frames',
+                    'demand_surge' => '+290%',
                     'est_price'    => 195.00,
-                    'reason'       => 'Standard cover protective shield for research papers, feasibility studies, and project reports.'
+                    'reason'       => 'Essential item for showcasing newly printed family milestone photography.'
+                ],
+                [
+                    'name'         => 'Custom Family Celebration Tarpaulin (4x3 ft)',
+                    'category'     => 'Large Format Print',
+                    'demand_surge' => '+240%',
+                    'est_price'    => 220.00,
+                    'reason'       => 'Popular local requirement for home catering and barangay family gatherings.'
+                ]
+            ]
+        ],
+        'halloween' => [
+            'key'                  => 'halloween',
+            'name'                 => 'Halloween & All Saints\' Celebrations',
+            'short_name'           => 'Halloween Season',
+            'icon'                 => 'theater_comedy',
+            'badge_color'          => 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-700',
+            'accent_hex'           => '#ea580c',
+            'period_label'         => 'October 15 – November 2',
+            'velocity_multiplier'  => 2.0,
+            'description'          => 'Seasonal demand for trick-or-treat candy packaging, theme party masks, costume craft supplies, cemetery tribute stickers, and candles.',
+            'target_categories'    => ['party supplies', 'crafts', 'packaging', 'stickers', 'printing'],
+            'keywords'             => [
+                'halloween', 'trick', 'treat', 'party', 'mask', 'costume', 'craft', 'candy bag', 'sticker', 'all saints',
+                'cemetery', 'candle', 'tarpaulin', 'orange', 'black', 'cutout'
+            ],
+            'expansion_ideas'      => [
+                [
+                    'name'         => 'Pre-Printed Halloween Treat Pouches (50s)',
+                    'category'     => 'Packaging',
+                    'demand_surge' => '+310%',
+                    'est_price'    => 110.00,
+                    'reason'       => 'Fast-selling consumable for neighborhood and mall trick-or-treat activations.'
+                ],
+                [
+                    'name'         => 'Waterproof Die-Cut Memorial Vinyl Stickers (Pack of 5)',
+                    'category'     => 'Specialty Print',
+                    'demand_surge' => '+280%',
+                    'est_price'    => 75.00,
+                    'reason'       => 'Heavily purchased during Undas week for family tombstone displays and lanterns.'
+                ],
+                [
+                    'name'         => 'Neon Cardstock & Specialty Black Poster Board (10s)',
+                    'category'     => 'Paper & Board',
+                    'demand_surge' => '+210%',
+                    'est_price'    => 85.00,
+                    'reason'       => 'Core material for student costume crafts and school event hallway displays.'
+                ]
+            ]
+        ],
+        'easter' => [
+            'key'                  => 'easter',
+            'name'                 => 'Easter, Spring & Fiesta Celebrations',
+            'short_name'           => 'Easter & Spring',
+            'icon'                 => 'egg',
+            'badge_color'          => 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-700',
+            'accent_hex'           => '#ca8a04',
+            'period_label'         => 'March – April',
+            'velocity_multiplier'  => 1.8,
+            'description'          => 'High turnover of Easter egg hunt materials, community fiesta banners, pastel crafting paper, church program booklets, and souvenirs.',
+            'target_categories'    => ['party supplies', 'crafts', 'printing', 'paper', 'stationery'],
+            'keywords'             => [
+                'easter', 'spring', 'fiesta', 'egg', 'hunt', 'pastel', 'banner', 'bunting', 'program', 'booklet',
+                'ribbon', 'craft', 'cartolina', 'crepe paper', 'stickers'
+            ],
+            'expansion_ideas'      => [
+                [
+                    'name'         => 'Easter Egg Hunt DIY Craft Basket Kit (12s)',
+                    'category'     => 'Craft Kits',
+                    'demand_surge' => '+330%',
+                    'est_price'    => 140.00,
+                    'reason'       => 'Standard family and church youth group activity package across Polomolok.'
+                ],
+                [
+                    'name'         => 'Heavy-Duty Colorful Triangle Bunting Flags (10m)',
+                    'category'     => 'Party & Fiesta',
+                    'demand_surge' => '+260%',
+                    'est_price'    => 90.00,
+                    'reason'       => 'Widely installed along streetways and venue entrances for summer fiesta celebrations.'
+                ],
+                [
+                    'name'         => 'Pastel Multicolored Copy Paper (500 Sheets A4)',
+                    'category'     => 'Paper',
+                    'demand_surge' => '+220%',
+                    'est_price'    => 195.00,
+                    'reason'       => 'Popular for church Easter programs, community announcements, and children crafts.'
+                ]
+            ]
+        ],
+        'school' => [
+            'key'                  => 'school',
+            'name'                 => 'Back-to-School & Academics Rush',
+            'short_name'           => 'School Season',
+            'icon'                 => 'school',
+            'badge_color'          => 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
+            'accent_hex'           => '#004ac6',
+            'period_label'         => 'June – August (Primary) & January (Mid-Year)',
+            'velocity_multiplier'  => 2.8,
+            'description'          => 'Massive student surge in notebooks, writing instruments, bond paper, graphing pads, and school project printing.',
+            'target_categories'    => ['school supplies', 'stationery', 'paper', 'office supplies', 'printing', 'art supplies'],
+            'keywords'             => [
+                'notebook', 'spiral', 'composition', 'pad', 'intermediate', 'yellow', 'bond', 'paper', 'a4', 'short', 'long',
+                'ballpen', 'pen', 'gel pen', 'pencil', 'crayon', 'color', 'folder', 'envelope', 'eraser', 'ruler', 'sharpener',
+                'bag', 'uniform', 'scissor', 'glue', 'paste', 'binder', 'index', 'drawing', 'art', 'cartolina', 'manila',
+                'marker', 'highlighter', 'correction', 'staple', 'scientific'
+            ],
+            'expansion_ideas'      => [
+                [
+                    'name'         => 'Math Geometry Compass & Ruler Set',
+                    'category'     => 'School Supplies',
+                    'demand_surge' => '+320%',
+                    'est_price'    => 85.00,
+                    'reason'       => 'Mandatory equipment for Grade 7-12 mathematics across Polomolok schools.'
+                ],
+                [
+                    'name'         => 'Correction Tape with 6m Refill Pack',
+                    'category'     => 'Stationery',
+                    'demand_surge' => '+280%',
+                    'est_price'    => 45.00,
+                    'reason'       => 'High-turnover impulse consumable heavily purchased during lecture weeks.'
+                ],
+                [
+                    'name'         => 'Heavy-Duty 2-Pocket Portfolio Folders',
+                    'category'     => 'Paper & Filing',
+                    'demand_surge' => '+240%',
+                    'est_price'    => 28.00,
+                    'reason'       => 'Standard student requirement for periodic portfolio clearances and subject submissions.'
                 ]
             ]
         ],
@@ -233,30 +351,43 @@ class SeasonalAiService
     }
 
     /**
-     * Automatically determine the primary active season based on the calendar month.
+     * Automatically determine the primary active season based on general consumer demand patterns.
      */
     public function detectActiveSeason(): string
     {
         $month = (int) date('n');
+        $day   = (int) date('j');
 
-        // Sept & Oct: Midterm & Finals Exam Season (plus back-to-school secondary)
-        if ($month === 9 || $month === 10) {
-            return 'exams';
-        }
-        // Nov & Dec: Holiday & Year-End Rush
-        if ($month === 11 || $month === 12) {
+        // October (mid-late) through December: Holiday & Year-End Celebrations
+        if ($month === 11 || $month === 12 || ($month === 10 && $day >= 15)) {
             return 'holiday';
         }
-        // Jan & Feb: Business Permits + Mid-year academic reset
-        if ($month === 1 || $month === 2) {
+        // January: Business Permit & Compliance
+        if ($month === 1) {
             return 'business';
         }
-        // Mar, Apr, May: Graduation, Moving-Up & Summer
-        if ($month >= 3 && $month <= 5) {
-            return 'graduation';
+        // February: Valentine's Day Season
+        if ($month === 2) {
+            return 'valentines';
         }
-        // Jun, Jul, Aug: Core Philippine School Opening
-        return 'school';
+        // March & April: Easter & Spring Celebrations
+        if ($month === 3 || $month === 4) {
+            return 'easter';
+        }
+        // May & June: Mother's & Father's Day
+        if ($month === 5 || ($month === 6 && $day <= 20)) {
+            return 'mothers_fathers';
+        }
+        // Late June, July, August: Back-to-School Season
+        if ($month === 7 || $month === 8 || ($month === 6 && $day > 20)) {
+            return 'school';
+        }
+        // September to mid-October: Pre-holiday prep / Halloween
+        if ($month === 9 || ($month === 10 && $day < 15)) {
+            return 'halloween';
+        }
+
+        return 'holiday';
     }
 
     /**
@@ -268,14 +399,28 @@ class SeasonalAiService
     }
 
     /**
+     * Invalidate any cached seasonal AI analyses for a specific shop.
+     * Called whenever a merchant adjusts stock, creates products, or completes orders.
+     */
+    public function invalidateShopCache(int $shopId): void
+    {
+        try {
+            foreach (array_keys(self::$seasons) as $sKey) {
+                cache()->delete("cohere_seasonal_v1_{$shopId}_{$sKey}");
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    /**
      * Generate full Seasonal AI Restock Analysis for a specific shop.
      *
      * @param int         $shopId
-     * @param string|null $seasonKey ('school'|'holiday'|'graduation'|'exams'|'business')
+     * @param string|null $seasonKey ('school'|'holiday'|'graduation'|'exams'|'business'|'valentines'|'easter'|'mothers_fathers'|'halloween')
      * @param bool        $allowExternalAi Whether to make live external Cohere API calls on cache miss
+     * @param bool        $forceRefresh Whether to bypass and invalidate cached AI data for real-time calculation
      * @return array
      */
-    public function getSeasonalAnalysis(int $shopId, ?string $seasonKey = null, bool $allowExternalAi = true): array
+    public function getSeasonalAnalysis(int $shopId, ?string $seasonKey = null, bool $allowExternalAi = true, bool $forceRefresh = false): array
     {
         $activeDetected = $this->detectActiveSeason();
         $selectedKey    = ($seasonKey && isset(self::$seasons[$seasonKey])) ? $seasonKey : $activeDetected;
@@ -310,7 +455,7 @@ class SeasonalAiService
             $velocityMap[(int) $sr['product_id']] = (int) $sr['total_qty'];
         }
 
-        // 3. Score and forecast each product
+        // 3. Score and forecast each product based on real-time inventory
         $recommendations       = [];
         $totalPotentialUplift  = 0.0;
         $criticalCount         = 0;
@@ -350,18 +495,16 @@ class SeasonalAiService
                 }
             }
 
-            // Products with at least 1 keyword match or bestsellers are included in analysis
-            $isRelevant = ($matchCount > 0) || ((int) ($p['is_bestseller'] ?? 0) === 1);
-            if (!$isRelevant && count($products) > 10) {
-                // If shop has plenty of products, filter out completely unrelated products
-                continue;
-            }
+            $isSeasonalMatch = ($matchCount > 0) || ((int) ($p['is_bestseller'] ?? 0) === 1);
+            // Products with seasonal relevance receive the full seasonal demand surge.
+            // Other shop products receive a standard baseline safety multiplier (1.25x).
+            $effectiveMultiplier = $isSeasonalMatch ? $multiplier : 1.25;
 
             // Effective velocity baseline
             $baseVelocity = max(3, $qtySold30d > 0 ? $qtySold30d : (int) ceil($threshold * 0.7));
 
             // Forecasted monthly demand during this season
-            $seasonalVelocity = (int) ceil($baseVelocity * $multiplier);
+            $seasonalVelocity = (int) ceil($baseVelocity * $effectiveMultiplier);
 
             // Target Seasonal Buffer: 60-day safety stock buffer
             $targetBuffer = max(15, (int) ceil($seasonalVelocity * 1.35));
@@ -400,7 +543,7 @@ class SeasonalAiService
             $aiReason = $this->generateRationale(
                 $name,
                 $seasonDef['short_name'],
-                $multiplier,
+                $effectiveMultiplier,
                 $stock,
                 $targetBuffer,
                 $restockUnits,
@@ -419,15 +562,18 @@ class SeasonalAiService
                 'target_buffer'      => $targetBuffer,
                 'restock_units'      => $restockUnits,
                 'days_remaining'     => $daysRemaining,
+                'sales_velocity'     => round($dailySeasonalRate, 1),
                 'urgency'            => $urgency,
+                'is_seasonal_match'  => $isSeasonalMatch,
                 'est_revenue_uplift' => $estUplift,
                 'image_url'          => function_exists('product_image_url') ? product_image_url($p['image_url'] ?? null) : ($p['image_url'] ?? null),
                 'ai_rationale'       => $aiReason,
+                'rationale'          => $aiReason,
                 'stock_pct'          => min(100, $targetBuffer > 0 ? round(($stock / $targetBuffer) * 100) : 0),
             ];
         }
 
-        // Sort: Critical first, then High, then Highest Potential Revenue Uplift
+        // Sort: Critical first, then High, then Moderate, then Highest Potential Revenue Uplift
         usort($recommendations, function ($a, $b) {
             $urgencyRank = ['critical' => 1, 'high' => 2, 'moderate' => 3, 'healthy' => 4];
             $rankA = $urgencyRank[$a['urgency']] ?? 5;
@@ -446,7 +592,8 @@ class SeasonalAiService
             $seasonDef,
             $recommendations,
             $expansionIdeas,
-            $allowExternalAi
+            $allowExternalAi,
+            $forceRefresh
         );
 
         $isCohereActive = ($this->cohereClient && $this->cohereClient->isConfigured());
@@ -468,6 +615,8 @@ class SeasonalAiService
             'cohere_powered'           => $isCohereActive,
             'cohere_model'             => $isCohereActive ? ($this->cohereClient->config()->chatModel ?? 'command-a-03-2025') : null,
             'cohere_summary'           => $seasonDef['cohere_executive_summary'] ?? null,
+            'is_realtime'              => true,
+            'computed_at'              => date('Y-m-d H:i:s'),
         ];
     }
 
@@ -514,21 +663,28 @@ class SeasonalAiService
         array &$seasonDef,
         array &$recommendations,
         array &$expansionIdeas,
-        bool $allowExternalAi = true
+        bool $allowExternalAi = true,
+        bool $forceRefresh = false
     ): ?array {
         if (! $this->cohereClient || ! $this->cohereClient->isConfigured()) {
             return null;
         }
 
         $cacheKey = "cohere_seasonal_v1_{$shopId}_{$seasonKey}";
-        try {
-            $cached = cache($cacheKey);
-            if (is_array($cached) && !empty($cached['executive_summary'])) {
-                $this->applyCohereData($cached, $seasonDef, $recommendations, $expansionIdeas);
-                return $cached;
+        if ($forceRefresh) {
+            try {
+                cache()->delete($cacheKey);
+            } catch (\Throwable $e) {}
+        } else {
+            try {
+                $cached = cache($cacheKey);
+                if (is_array($cached) && !empty($cached['executive_summary'])) {
+                    $this->applyCohereData($cached, $seasonDef, $recommendations, $expansionIdeas);
+                    return $cached;
+                }
+            } catch (\Throwable $e) {
+                // Cache lookup fail-safe
             }
-        } catch (\Throwable $e) {
-            // Cache lookup fail-safe
         }
 
         if (! $allowExternalAi) {

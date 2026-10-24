@@ -309,7 +309,7 @@
                                     </div>
                                 <?php else: ?>
                                     <p class="text-[11px] text-slate-500 dark:text-slate-400">No saved address found. Please enter delivery address:</p>
-                                    <input type="text" name="shipping_address" id="cart-shipping-address-input" placeholder="Enter delivery address (Polomolok/Tupi)" class="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:border-terra-green" required>
+                                    <input type="text" name="shipping_address" id="cart-shipping-address-input" placeholder="Enter delivery address (Polomolok only)" class="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:border-terra-green" required>
                                 <?php endif; ?>
                             </div>
 

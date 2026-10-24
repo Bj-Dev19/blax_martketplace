@@ -628,8 +628,8 @@ class Tenant extends BaseController
                     'is_pickup'          => $isPickup,
                     'delivery_address'   => $deliveryAddr,
                     'status'             => $ord['status'] ?? 'pending',
-                    'created_at'         => $ord['created_at'],
-                    'placed_at_fmt'      => date('M d, h:i A', strtotime($ord['created_at'] ?? 'now')),
+                    'created_at'         => $ord['placed_at'] ?? $ord['created_at'] ?? date('Y-m-d H:i:s'),
+                    'placed_at_fmt'      => date('M d, h:i A', strtotime($ord['placed_at'] ?? $ord['created_at'] ?? 'now')),
                 ];
             }
 
@@ -1708,6 +1708,8 @@ class Tenant extends BaseController
         $validCount   = $orderModel->getOrderCountForShop($shopId, ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered', 'completed']);
         $aov          = $validCount > 0 ? $totalRevenue / $validCount : 0.0;
 
+        $db = \Config\Database::connect();
+
         // ---- Sales by category ----
         $categorySales = $orderModel->getCategorySales($shopId);
         $catTotal      = array_sum(array_column($categorySales, 'revenue'));
@@ -1726,7 +1728,139 @@ class Tenant extends BaseController
         unset($s);
 
         // ---- Top products ----
-        $topProducts = $orderModel->getTopProductsForShop($shopId, 5);
+        $topProducts = $orderModel->getTopProductsForShop($shopId, 8);
+
+        // ---- Most Rated & Top Reviewed Products ----
+        $mostRatedProducts = $db->table('products p')
+            ->select('p.*, c.name as category_name, pi.image_url')
+            ->join('categories c', 'c.id = p.category_id', 'left')
+            ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
+            ->where('p.shop_id', $shopId)
+            ->where('p.deleted_at', null)
+            ->where('p.rating_count >', 0)
+            ->orderBy('p.rating_count', 'DESC')
+            ->orderBy('p.rating_average', 'DESC')
+            ->limit(8)
+            ->get()->getResultArray();
+
+        // Fallback: If no products have reviews yet, show top products so the tab has actionable data
+        if (empty($mostRatedProducts)) {
+            $mostRatedProducts = $db->table('products p')
+                ->select('p.*, c.name as category_name, pi.image_url')
+                ->join('categories c', 'c.id = p.category_id', 'left')
+                ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
+                ->where('p.shop_id', $shopId)
+                ->where('p.deleted_at', null)
+                ->orderBy('p.created_at', 'DESC')
+                ->limit(8)
+                ->get()->getResultArray();
+        }
+
+        // ---- Customer Reviews & Comments Feed ----
+        $reviews = $db->table('reviews r')
+            ->select('r.*, u.first_name, u.last_name, u.email, p.name as product_name, p.sku as product_sku, pi.image_url as product_image')
+            ->join('users u', 'u.id = r.user_id', 'left')
+            ->join('products p', 'p.id = r.product_id', 'left')
+            ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
+            ->groupStart()
+                ->where('r.shop_id', $shopId)
+                ->orWhere('p.shop_id', $shopId)
+            ->groupEnd()
+            ->orderBy('r.created_at', 'DESC')
+            ->limit(25)
+            ->get()->getResultArray();
+
+        // ---- Rating Breakdown & CSAT ----
+        $ratingBreakdownRows = $db->table('reviews r')
+            ->select('r.rating, COUNT(*) as cnt')
+            ->join('products p', 'p.id = r.product_id', 'left')
+            ->groupStart()
+                ->where('r.shop_id', $shopId)
+                ->orWhere('p.shop_id', $shopId)
+            ->groupEnd()
+            ->groupBy('r.rating')
+            ->get()->getResultArray();
+
+        $starCounts = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        $totalReviewsCount = 0;
+        $positiveReviewsCount = 0;
+        foreach ($ratingBreakdownRows as $rb) {
+            $star = (int) $rb['rating'];
+            $cnt  = (int) $rb['cnt'];
+            if (isset($starCounts[$star])) {
+                $starCounts[$star] = $cnt;
+            }
+            $totalReviewsCount += $cnt;
+            if ($star >= 4) {
+                $positiveReviewsCount += $cnt;
+            }
+        }
+        $csatScore = $totalReviewsCount > 0 ? round(($positiveReviewsCount / $totalReviewsCount) * 100, 1) : 100.0;
+        $shopAvgRating = !empty($shop['rating_average']) ? (float) $shop['rating_average'] : 5.0;
+
+        // ---- Sales Channel Attribution ----
+        $orderChannelRows = $db->table('orders')
+            ->select("
+                CASE 
+                    WHEN pos_payment_status = 'paid' OR (pos_payment_method IS NOT NULL AND pos_payment_method != '' AND pos_payment_method != 'none') THEN 'pos'
+                    ELSE 'online'
+                END AS channel,
+                COUNT(*) as order_count,
+                SUM(total_amount) as channel_revenue
+            ")
+            ->where('shop_id', $shopId)
+            ->groupStart()
+                ->whereIn('status', ['completed', 'paid', 'delivered'])
+                ->orWhere('payment_status', 'paid')
+                ->orWhere('pos_payment_status', 'paid')
+            ->groupEnd()
+            ->whereNotIn('status', ['cancelled'])
+            ->groupBy('channel')
+            ->get()->getResultArray();
+
+        $channels = [
+            'online'   => ['key' => 'online', 'name' => 'Online Marketplace', 'orders' => 0, 'revenue' => 0.0, 'icon' => 'shopping_bag', 'color' => 'bg-emerald-500'],
+            'pos'      => ['key' => 'pos', 'name' => 'In-Store Walk-in (POS)', 'orders' => 0, 'revenue' => 0.0, 'icon' => 'point_of_sale', 'color' => 'bg-sky-500'],
+            'printing' => ['key' => 'printing', 'name' => 'Custom Print Orders', 'orders' => 0, 'revenue' => 0.0, 'icon' => 'print', 'color' => 'bg-purple-500'],
+        ];
+
+        foreach ($orderChannelRows as $ocr) {
+            $ch = $ocr['channel'];
+            if (isset($channels[$ch])) {
+                $channels[$ch]['orders']  += (int) $ocr['order_count'];
+                $channels[$ch]['revenue'] += (float) ($ocr['channel_revenue'] ?? 0.0);
+            }
+        }
+
+        $printChannelRow = $db->table('printing_requests')
+            ->select('COUNT(*) as order_count, SUM(total_price) as channel_revenue')
+            ->where('shop_id', $shopId)
+            ->whereIn('status', ['completed', 'paid', 'released', 'ready_for_pickup'])
+            ->whereNotIn('status', ['cancelled'])
+            ->get()->getRowArray();
+
+        if ($printChannelRow) {
+            $channels['printing']['orders']  = (int) ($printChannelRow['order_count'] ?? 0);
+            $channels['printing']['revenue'] = (float) ($printChannelRow['channel_revenue'] ?? 0.0);
+        }
+
+        $totalChannelRevenue = array_sum(array_column($channels, 'revenue'));
+        foreach ($channels as &$ch) {
+            $ch['pct'] = $totalChannelRevenue > 0 ? round(($ch['revenue'] / $totalChannelRevenue) * 100, 1) : 0.0;
+        }
+        unset($ch);
+
+        // ---- Active Inventory Health Summary ----
+        $inventorySummary = $db->table('products')
+            ->select("
+                COUNT(*) as total_items,
+                SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock_count,
+                SUM(CASE WHEN stock_quantity > 0 AND stock_quantity <= low_stock_threshold THEN 1 ELSE 0 END) as low_stock_count,
+                SUM(CASE WHEN stock_quantity > low_stock_threshold THEN 1 ELSE 0 END) as healthy_stock_count
+            ")
+            ->where('shop_id', $shopId)
+            ->where('deleted_at', null)
+            ->get()->getRowArray();
 
         // ---- Sales chart data ----
         $chart    = $orderModel->getSalesChartData($shopId, $range, true);
@@ -1750,6 +1884,14 @@ class Tenant extends BaseController
             'status_dist'         => $statusDist,
             'status_total'        => $statusTotal,
             'top_products'        => $topProducts,
+            'most_rated_products' => $mostRatedProducts,
+            'reviews'             => $reviews,
+            'star_counts'         => $starCounts,
+            'total_reviews_count' => $totalReviewsCount,
+            'csat_score'          => $csatScore,
+            'shop_avg_rating'     => $shopAvgRating,
+            'channels'            => $channels,
+            'inventory_summary'   => $inventorySummary,
             'chart_labels'        => $chart['labels'],
             'chart_values'        => $chart['values'],
             'chart_previous'      => $chart['previous_values'] ?? [],
@@ -1772,10 +1914,11 @@ class Tenant extends BaseController
             return $this->response->setJSON(['error' => 'Unauthorized']);
         }
         $shopId = (int) $res['shopId'];
-        $seasonParam = (string) $this->request->getGet('season');
+        $seasonParam  = (string) $this->request->getGet('season');
+        $forceRefresh = ($this->request->getGet('refresh') === '1');
 
         $seasonalService = new \App\Libraries\SeasonalAiService();
-        $seasonalData    = $seasonalService->getSeasonalAnalysis($shopId, $seasonParam ?: null);
+        $seasonalData    = $seasonalService->getSeasonalAnalysis($shopId, $seasonParam ?: null, true, $forceRefresh);
 
         return $this->response->setJSON($seasonalData);
     }
@@ -1787,15 +1930,18 @@ class Tenant extends BaseController
             return $res;
         }
 
-        $shopId = $res['shopId'];
-        $shop   = $res['shop'];
+        $shopId   = (int) $res['shopId'];
+        $calModel = new \App\Models\ShopCalendarScheduleModel();
+        $shop     = (new ShopModel())->find($shopId) ?: $res['shop'];
 
         return view('tenant/settings', [
-            'shop'           => $shop,
-            'businessHours'  => (new ShopBusinessHourModel())->getForShop($shopId),
-            'notifPrefs'     => (new ShopNotificationPreferenceModel())->getForShop($shopId),
-            'activeNav'      => 'settings',
-            'title'          => 'Settings',
+            'shop'              => $shop,
+            'businessHours'     => (new ShopBusinessHourModel())->getForShop($shopId),
+            'calendarSchedules' => $calModel->getSchedulesForShop($shopId),
+            'operationalStatus' => $calModel->getShopOperationalStatus($shopId),
+            'notifPrefs'        => (new ShopNotificationPreferenceModel())->getForShop($shopId),
+            'activeNav'         => 'settings',
+            'title'             => 'Settings',
         ]);
     }
 
@@ -2892,6 +3038,14 @@ class Tenant extends BaseController
             return $this->saveBusinessHours($shopId);
         }
 
+        if ($section === 'calendar_schedule') {
+            return $this->saveCalendarSchedule((int) $shopId);
+        }
+
+        if ($section === 'closure_visibility') {
+            return $this->saveClosureVisibility((int) $shopId);
+        }
+
         if ($section === 'notifications') {
             return $this->saveNotificationPreferences($shopId);
         }
@@ -2901,6 +3055,91 @@ class Tenant extends BaseController
         }
 
         return $this->saveShopProfile($shopId);
+    }
+
+    private function saveCalendarSchedule(int $shopId)
+    {
+        $calModel  = new \App\Models\ShopCalendarScheduleModel();
+        $action    = trim((string) $this->request->getPost('calendar_action'));
+        $startDate = trim((string) $this->request->getPost('schedule_date'));
+        $endDate   = trim((string) $this->request->getPost('end_date')) ?: $startDate;
+
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
+            return $this->settingsResponse(false, 'Please select a valid calendar date.');
+        }
+
+        if ($action === 'delete') {
+            $calModel->deleteScheduleDateRange($shopId, $startDate, $endDate);
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success'            => true,
+                    'message'            => $startDate === $endDate
+                        ? 'Calendar schedule cleared for ' . $startDate . '.'
+                        : 'Calendar schedules cleared from ' . $startDate . ' to ' . $endDate . '.',
+                    'schedules'          => $calModel->getSchedulesForShop($shopId),
+                    'operational_status' => $calModel->getShopOperationalStatus($shopId),
+                ]);
+            }
+            return redirect()->to(base_url('tenant/settings?tab=hours'))->with('success', 'Calendar schedule cleared.');
+        }
+
+        $isClosed   = (int) $this->request->getPost('is_closed') === 1;
+        $isAllDay   = (int) $this->request->getPost('is_all_day') === 1;
+        $note       = trim((string) $this->request->getPost('note'));
+        $colorTheme = trim((string) ($this->request->getPost('color_theme') ?: 'amber'));
+        $openTime   = (!$isAllDay && !$isClosed) ? trim((string) $this->request->getPost('open_time')) : null;
+        $closeTime  = (!$isAllDay && !$isClosed) ? trim((string) $this->request->getPost('close_time')) : null;
+
+        // Clean time format if provided
+        if ($openTime !== null && $openTime !== '') {
+            $openTime = preg_match('/^\d{1,2}:\d{2}$/', $openTime) ? ($openTime . ':00') : (preg_match('/^\d{1,2}:\d{2}:\d{2}$/', $openTime) ? $openTime : null);
+        } else {
+            $openTime = null;
+        }
+        if ($closeTime !== null && $closeTime !== '') {
+            $closeTime = preg_match('/^\d{1,2}:\d{2}$/', $closeTime) ? ($closeTime . ':00') : (preg_match('/^\d{1,2}:\d{2}:\d{2}$/', $closeTime) ? $closeTime : null);
+        } else {
+            $closeTime = null;
+        }
+
+        $calModel->upsertScheduleDateRange($shopId, $startDate, $endDate, $isClosed, $note, $colorTheme, $openTime, $closeTime);
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success'            => true,
+                'message'            => $startDate === $endDate
+                    ? 'Calendar schedule saved for ' . $startDate . '.'
+                    : 'Calendar schedule saved from ' . $startDate . ' to ' . $endDate . '.',
+                'schedules'          => $calModel->getSchedulesForShop($shopId),
+                'operational_status' => $calModel->getShopOperationalStatus($shopId),
+            ]);
+        }
+
+        return redirect()->to(base_url('tenant/settings?tab=hours'))->with('success', 'Store schedule saved.');
+    }
+
+    private function saveClosureVisibility(int $shopId)
+    {
+        $calModel = new \App\Models\ShopCalendarScheduleModel();
+        $calModel->ensureSchema();
+
+        $hideWhenClosed = (int) $this->request->getPost('hide_when_closed') === 1 ? 1 : 0;
+        (new ShopModel())->update($shopId, ['hide_when_closed' => $hideWhenClosed]);
+
+        $msg = $hideWhenClosed
+            ? 'Store will be hidden from the customer directory when closed today.'
+            : 'Sales-Safe Mode active: Store remains visible with a "Closed Today" badge while orders are locked.';
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success'            => true,
+                'message'            => $msg,
+                'hide_when_closed'   => $hideWhenClosed,
+                'operational_status' => $calModel->getShopOperationalStatus($shopId),
+            ]);
+        }
+
+        return redirect()->to(base_url('tenant/settings?tab=hours'))->with('success', $msg);
     }
 
     private function saveServiceModules(int $shopId)
@@ -3583,6 +3822,7 @@ class Tenant extends BaseController
         }
 
         $productModel->update($productId, ['stock_quantity' => $newStock]);
+        (new \App\Libraries\SeasonalAiService())->invalidateShopCache($shopId);
 
         $this->maybeNotifyLowStock($shopId, $product, $newStock);
 
@@ -3710,6 +3950,10 @@ class Tenant extends BaseController
                 $this->maybeNotifyLowStock($shopId, $product, $newStock);
                 $updatedCount++;
             }
+        }
+
+        if ($updatedCount > 0) {
+            (new \App\Libraries\SeasonalAiService())->invalidateShopCache($shopId);
         }
 
         $msg = "Successfully updated stock for {$updatedCount} product(s).";

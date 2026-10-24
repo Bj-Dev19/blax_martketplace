@@ -163,7 +163,7 @@
                                     <div>
                                         <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white block">Doorstep Delivery</span>
                                         <span id="buynow-delivery-subtext" class="text-[11px] text-slate-500 dark:text-slate-400 block">
-                                            <?= !empty($shippingQuote['distance_text']) ? esc($shippingQuote['distance_text']) . ' road route' : 'Polomolok & Tupi area' ?>
+                                            <?= !empty($shippingQuote['distance_text']) ? esc($shippingQuote['distance_text']) . ' road route' : 'Polomolok area' ?>
                                         </span>
                                     </div>
                                 </div>
@@ -239,9 +239,9 @@
                                     </span>
                                 </span>
                                 <span id="buynow-route-formula-text" class="font-mono text-[10px] text-slate-500 dark:text-slate-400">
-                                    Base ₱<?= number_format((float) ($shippingQuote['base_shipping_fee'] ?? 50), 2) ?> (<?= number_format((float) ($shippingQuote['included_distance_km'] ?? 3), 1) ?> km)
-                                    <?php if (!empty($shippingQuote['extra_distance_km']) && (float) $shippingQuote['extra_distance_km'] > 0): ?>
-                                        + ₱<?= number_format((float) $shippingQuote['extra_distance_fee'], 2) ?> (<?= number_format((float) $shippingQuote['extra_distance_km'], 1) ?> km extra)
+                                    Base ₱<?= number_format((float) ($shippingQuote['base_shipping_fee'] ?? 50), 2) ?> (up to <?= number_format((float) ($shippingQuote['included_distance_km'] ?? 2), 1) ?> km limit)
+                                    <?php if (!empty($shippingQuote['extra_distance_fee']) && (float) $shippingQuote['extra_distance_fee'] > 0): ?>
+                                        + ₱<?= number_format((float) $shippingQuote['extra_distance_fee'], 2) ?> (<?= (int) ($shippingQuote['extra_steps'] ?? 1) ?> <?= ((int) ($shippingQuote['extra_steps'] ?? 1) === 1) ? 'step' : 'steps' ?> beyond limit)
                                     <?php endif; ?>
                                 </span>
                             </div>
@@ -678,9 +678,10 @@
                     routeDistText.innerHTML = 'Road Distance: <strong>' + (q.distance_text || '—') + '</strong>';
                 }
                 if (routeFormulaText) {
-                    var formula = 'Base ' + formatMoney(q.base_shipping_fee) + ' (' + Number(q.included_distance_km).toFixed(1) + ' km)';
-                    if (Number(q.extra_distance_km) > 0) {
-                        formula += ' + ' + formatMoney(q.extra_distance_fee) + ' (' + Number(q.extra_distance_km).toFixed(1) + ' km extra)';
+                    var formula = 'Base ' + formatMoney(q.base_shipping_fee) + ' (up to ' + Number(q.included_distance_km).toFixed(1) + ' km limit)';
+                    if (Number(q.extra_distance_fee) > 0) {
+                        var steps = parseInt(q.extra_steps, 10) || 1;
+                        formula += ' + ' + formatMoney(q.extra_distance_fee) + ' (' + steps + (steps === 1 ? ' step' : ' steps') + ' beyond limit)';
                     }
                     routeFormulaText.textContent = formula;
                 }

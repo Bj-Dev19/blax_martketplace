@@ -134,10 +134,35 @@
                         $hasVariants = !empty($groupedVariants);
                         $firstGroupName = $hasVariants ? array_key_first($groupedVariants) : 'option';
                         $cartDisabled = $outOfStock || $hasVariants;
+                        $shopOperationalStatus = $shopOperationalStatus ?? ['is_closed_today' => false, 'note' => ''];
+                        $isShopClosedToday     = !empty($shopOperationalStatus['is_closed_today']);
+                        $shopClosureNote       = trim((string) ($shopOperationalStatus['note'] ?? ''));
+                        $buyNowDisabled        = $cartDisabled || $isShopClosedToday;
+                        $highlightSelectOption = !empty($_GET['select_option']);
                     ?>
 
+                    <?php if ($isShopClosedToday): ?>
+                        <div class="rounded-2xl border border-rose-500/35 bg-rose-500/10 p-3.5 mb-3 flex items-start gap-2.5 text-xs">
+                            <span class="material-symbols-outlined text-rose-600 dark:text-rose-400 text-[18px] shrink-0">event_busy</span>
+                            <div class="space-y-0.5">
+                                <p class="font-bold text-rose-700 dark:text-rose-300">
+                                    Store Closed Today<?= $shopClosureNote !== '' ? ' • ' . esc($shopClosureNote) : '' ?>
+                                </p>
+                                <p class="text-slate-600 dark:text-slate-300">
+                                    You can still select options and <strong>Add to Cart</strong> for later, but instant checkout (Buy Now) is paused until the store reopens.
+                                </p>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <?php if ($hasVariants): ?>
-                        <div class="bg-slate-50 dark:bg-slate-800/70 rounded-2xl p-3.5 sm:p-4 mb-3 border border-slate-200 dark:border-slate-700 space-y-3" id="variants-section">
+                        <div class="bg-slate-50 dark:bg-slate-800/70 rounded-2xl p-3.5 sm:p-4 mb-3 border <?= $highlightSelectOption ? 'border-2 border-terra-green ring-2 ring-terra-green/20' : 'border-slate-200 dark:border-slate-700' ?> space-y-3 transition-all" id="variants-section">
+                            <?php if ($highlightSelectOption): ?>
+                                <div class="flex items-center gap-1.5 text-xs font-bold text-terra-green bg-terra-green/10 px-3 py-1.5 rounded-xl border border-terra-green/25">
+                                    <span class="material-symbols-outlined text-[16px]">touch_app</span>
+                                    <span>Please select your preferred <?= esc($firstGroupName) ?> option below to add this product to your cart.</span>
+                                </div>
+                            <?php endif; ?>
                             <?php foreach ($groupedVariants as $groupName => $options): ?>
                                 <div>
                                     <div class="flex justify-between items-center mb-1.5">
@@ -197,10 +222,17 @@
                             </button>
                         </div>
 
-                        <button type="button" id="buy-now-btn" class="w-full bg-terra-green hover:bg-terra-green-dark text-white py-3 rounded-xl font-bold text-sm shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5" <?= $cartDisabled ? 'disabled' : '' ?>>
-                            <span class="material-symbols-outlined text-[18px]">bolt</span>
-                            <span>Buy Now</span>
-                        </button>
+                        <?php if ($isShopClosedToday): ?>
+                            <button type="button" id="buy-now-btn" disabled data-shop-closed="1" class="w-full bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-400 py-3 rounded-xl font-bold text-xs sm:text-sm cursor-not-allowed flex items-center justify-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px]">lock</span>
+                                <span>Store Closed Today<?= $shopClosureNote !== '' ? ' (' . esc($shopClosureNote) . ')' : '' ?> — Cannot Order Now</span>
+                            </button>
+                        <?php else: ?>
+                            <button type="button" id="buy-now-btn" class="w-full bg-terra-green hover:bg-terra-green-dark text-white py-3 rounded-xl font-bold text-sm shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5" <?= $cartDisabled ? 'disabled' : '' ?>>
+                                <span class="material-symbols-outlined text-[18px]">bolt</span>
+                                <span>Buy Now</span>
+                            </button>
+                        <?php endif; ?>
                     </form>
 
                     <div class="flex justify-center gap-4 py-3 border-t border-slate-100 dark:border-slate-800 mt-2 flex-wrap text-xs text-slate-500 dark:text-slate-400">
@@ -579,7 +611,7 @@
                         cartBtnText.textContent = 'Add to Cart';
                     }
                 }
-                if (buyBtn) {
+                if (buyBtn && buyBtn.getAttribute('data-shop-closed') !== '1') {
                     buyBtn.removeAttribute('disabled');
                 }
                 if (input) {
@@ -606,6 +638,15 @@
             }
         });
     });
+
+    if (hasVariants && (window.location.search.indexOf('select_option=1') !== -1 || window.location.hash === '#variants-section')) {
+        var vsEl = document.getElementById('variants-section');
+        if (vsEl) {
+            setTimeout(function () {
+                vsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 150);
+        }
+    }
 
     // Direct Buy Now Navigation Handler
     if (buyBtn) {
