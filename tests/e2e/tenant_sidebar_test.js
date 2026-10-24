@@ -1,4 +1,20 @@
-const { chromium } = require('playwright');
+let chromium;
+try {
+    chromium = require('playwright').chromium;
+} catch (e) {
+    try {
+        const fallback = require.resolve('playwright', {
+            paths: [
+                process.env.PLAYWRIGHT_PATH || '',
+                'C:/Users/Gwapo/.gemini/antigravity-ide/brain/28c9ac83-7876-4124-aeed-7d6b6d11e7bf/scratch/playwright_test/node_modules'
+            ]
+        });
+        chromium = require(fallback).chromium;
+    } catch (err) {
+        console.error('Playwright not found. Install via `npm install -D playwright` or set PLAYWRIGHT_PATH.');
+        process.exit(1);
+    }
+}
 
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost/blax_inventory/public';
 
