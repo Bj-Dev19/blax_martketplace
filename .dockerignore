@@ -18,6 +18,11 @@ scratch
 skills-lock.json
 cookies.txt
 DESIGN.md
+approval_test.php
+serve.bat
+spark.bat
+builds/
+.env.render.example
 
 # Ignore local test uploads in build context (keep .gitkeep so folders exist)
 public/uploads/business_permits/*

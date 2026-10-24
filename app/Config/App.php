@@ -207,42 +207,78 @@ class App extends BaseConfig
     {
         parent::__construct();
 
-        // 1. Detect dynamic base URL when running in an HTTP request context
-        if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '') {
-            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
-                || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
-                || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
-                || (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443);
+        $ciEnv = (defined('ENVIRONMENT') ? ENVIRONMENT : null)
+            ?: (function_exists('env') ? env('CI_ENVIRONMENT') : null)
+            ?: getenv('CI_ENVIRONMENT')
+            ?: 'development';
 
-            $scheme = $isHttps ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'];
+        $isProduction = ($ciEnv === 'production');
 
-            // Determine if the app is served from a subfolder (e.g. Laragon /blax_inventory/public) or web root (Docker, Cloud Container, Spark)
-            $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
-            $basePath = (trim($scriptDir, '/') !== '') ? '/' . trim($scriptDir, '/') . '/' : '/';
+        if ($isProduction) {
+            // 1. Production (Render / Cloud Container): Strict base URL and allowedHostnames to prevent Host-header injection
+            $envBaseURL = (function_exists('env') ? env('APP_BASE_URL') : null)
+                ?: getenv('APP_BASE_URL')
+                ?: (function_exists('env') ? env('app.baseURL') : null)
+                ?: getenv('app.baseURL')
+                ?: getenv('RENDER_EXTERNAL_URL')
+                ?: 'http://localhost:8080/';
 
-            $this->baseURL = $scheme . '://' . $host . $basePath;
+            $this->baseURL = rtrim((string) $envBaseURL, '/') . '/';
             $this->indexPage = '';
 
-            // Dynamically allow the current HTTP_HOST so SiteURIFactory always accepts it
-            $hostOnly = explode(':', (string) $host)[0];
-            if ($hostOnly !== '' && !in_array($hostOnly, $this->allowedHostnames, true)) {
-                $this->allowedHostnames[] = $hostOnly;
+            $configuredHost = parse_url($this->baseURL, PHP_URL_HOST);
+            $this->allowedHostnames = array_values(array_unique(array_filter([
+                'localhost',
+                '127.0.0.1',
+                $configuredHost,
+                'blaxmarketplace.vercel.app',
+            ])));
+
+            // Enable forceGlobalSecureRequests safely behind Render HTTPS proxy
+            if (
+                (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+            ) {
+                $this->forceGlobalSecureRequests = true;
             }
         } else {
-            // 2. Non-HTTP context (CLI, Spark, automated testing) - check environment variables or production fallback
-            $envBaseURL = (function_exists('env') ? env('app.baseURL') : null)
-                ?: getenv('app.baseURL')
-                ?: getenv('APP_BASEURL')
-                ?: getenv('APP_BASE_URL')
-                ?: getenv('RENDER_EXTERNAL_URL');
+            // 2. Development / Local Laragon: Keep dynamic host detection
+            if (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '') {
+                $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                    || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+                    || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+                    || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+                    || (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && (int)$_SERVER['HTTP_X_FORWARDED_PORT'] === 443);
 
-            if (!empty($envBaseURL)) {
-                $this->baseURL = rtrim((string) $envBaseURL, '/') . '/';
+                $scheme = $isHttps ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'];
+
+                // Determine if the app is served from a subfolder (e.g. Laragon /blax_inventory/public) or web root (Docker, Cloud Container, Spark)
+                $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+                $basePath = (trim($scriptDir, '/') !== '') ? '/' . trim($scriptDir, '/') . '/' : '/';
+
+                $this->baseURL = $scheme . '://' . $host . $basePath;
                 $this->indexPage = '';
+
+                // Dynamically allow the current HTTP_HOST so SiteURIFactory always accepts it
+                $hostOnly = explode(':', (string) $host)[0];
+                if ($hostOnly !== '' && !in_array($hostOnly, $this->allowedHostnames, true)) {
+                    $this->allowedHostnames[] = $hostOnly;
+                }
             } else {
-                $this->baseURL = 'http://localhost:8080/';
+                // Non-HTTP context in development (CLI, Spark, automated testing)
+                $envBaseURL = (function_exists('env') ? env('app.baseURL') : null)
+                    ?: getenv('app.baseURL')
+                    ?: getenv('APP_BASEURL')
+                    ?: getenv('APP_BASE_URL')
+                    ?: getenv('RENDER_EXTERNAL_URL');
+
+                if (!empty($envBaseURL)) {
+                    $this->baseURL = rtrim((string) $envBaseURL, '/') . '/';
+                    $this->indexPage = '';
+                } else {
+                    $this->baseURL = 'http://localhost/blax_inventory/public/';
+                }
             }
         }
     }

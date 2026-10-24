@@ -99,6 +99,10 @@ class Database extends Config
             $this->defaultGroup = 'tests';
         }
 
+        if (defined('ENVIRONMENT') && ENVIRONMENT === 'production') {
+            $this->default['DBDebug'] = false;
+        }
+
         // -----------------------------------------------------------
         // Environment variable resolution for cloud platforms, Vercel, and local
         // -----------------------------------------------------------

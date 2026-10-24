@@ -9,7 +9,7 @@ use CodeIgniter\Router\RouteCollection;
 // Customer / Public Routes
 $routes->get('/', 'Home::index');
 $routes->post('ai/query', 'Home::aiQuery');
-$routes->match(['GET', 'POST'], 'api/route', 'CustomerOrderController::computeRoute');
+$routes->post('api/route', 'CustomerOrderController::computeRoute', ['filter' => 'actionThrottle']);
 
 // Auth Routes
 $routes->get('login', 'Auth::login');

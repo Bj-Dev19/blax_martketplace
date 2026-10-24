@@ -54,6 +54,7 @@ memory_limit=512M
 max_execution_time=300
 max_input_time=300
 default_socket_timeout=300
+expose_php=Off
 EOF
 fi
 
