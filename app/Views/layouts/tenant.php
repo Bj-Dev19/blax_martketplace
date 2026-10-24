@@ -24,24 +24,42 @@
     $fullscreenLayout = $isPos || (!empty($fullscreenLayout) && $fullscreenLayout === true);
 
     $tenantUserId = (int) session()->get('user_id');
-    $unread_count = 0;
-    $notifications = [];
-    if ($tenantUserId > 0) {
-        $notifModel = new \App\Models\NotificationModel();
-        $unread_count = $notifModel->getUnreadCount($tenantUserId);
-        $notifications = $notifModel->getRecent($tenantUserId, 8);
+    if (!isset($unread_count)) {
+        $unread_count = 0;
+    }
+    if (!isset($notifications) || !is_array($notifications)) {
+        $notifications = [];
+    }
+    // Only query notifications as fallback if not already supplied by controller
+    if ($tenantUserId > 0 && empty($notifications) && $unread_count === 0) {
+        try {
+            $notifModel = new \App\Models\NotificationModel();
+            $unread_count = $notifModel->getUnreadCount($tenantUserId);
+            $notifications = $notifModel->getRecent($tenantUserId, 8);
+        } catch (\Throwable $e) {}
     }
 
     $tenantShopId = (int) (session()->get('shop_id') ?? ($shop['id'] ?? 0));
     $todayClosedStatus = null;
     if ($tenantShopId > 0) {
-        try {
-            $calScheduleModel = new \App\Models\ShopCalendarScheduleModel();
-            $statusInfo = $calScheduleModel->getShopOperationalStatus($tenantShopId);
-            if (!empty($statusInfo['is_closed_today'])) {
-                $todayClosedStatus = $statusInfo;
-            }
-        } catch (\Throwable $e) {}
+        $sessClosedKey = 'shop_closed_status_' . $tenantShopId;
+        $cachedClosed = session()->get($sessClosedKey);
+        $now = time();
+        if (is_array($cachedClosed) && isset($cachedClosed['expires']) && $cachedClosed['expires'] > $now) {
+            $todayClosedStatus = $cachedClosed['data'];
+        } else {
+            try {
+                $calScheduleModel = new \App\Models\ShopCalendarScheduleModel();
+                $statusInfo = $calScheduleModel->getShopOperationalStatus($tenantShopId);
+                if (!empty($statusInfo['is_closed_today'])) {
+                    $todayClosedStatus = $statusInfo;
+                }
+                session()->set($sessClosedKey, [
+                    'expires' => $now + 60, // memoize for 60 seconds
+                    'data'    => $todayClosedStatus
+                ]);
+            } catch (\Throwable $e) {}
+        }
     }
 ?>
 
@@ -655,11 +673,23 @@
         }
 
         // Instant navigation visual feedback & auto-close mobile drawer on link click
-        document.querySelectorAll('#tenant-sidebar a.nav-item').forEach(link => {
+        document.querySelectorAll('#tenant-sidebar a.nav-item, #mobile-tenant-nav a.nav-item').forEach(link => {
             link.addEventListener('click', function(e) {
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || this.target === '_blank') return;
 
-                this.classList.add('opacity-75');
+                // Stop pending poll timers so PHP-FPM workers prioritize page navigation
+                if (typeof window.__blaxCancelPoll === 'function') {
+                    window.__blaxCancelPoll();
+                }
+
+                // Instant active state switch for rapid visual confirmation
+                document.querySelectorAll('#tenant-sidebar a.nav-item').forEach(el => {
+                    el.classList.remove('bg-terra-green/10', 'text-terra-green', 'font-semibold', 'shadow-2xs');
+                    el.classList.add('text-slate-600', 'dark:text-slate-400');
+                });
+                this.classList.remove('text-slate-600', 'dark:text-slate-400');
+                this.classList.add('bg-terra-green/10', 'text-terra-green', 'font-semibold', 'opacity-85');
+
                 const loader = document.getElementById('blax-page-loader');
                 if (loader) loader.classList.add('loading');
 
@@ -883,6 +913,12 @@
         }
 
         window.updateTenantNotifications = updateNotificationsUI;
+        window.__blaxCancelPoll = function() {
+            if (pollTimer) {
+                clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+        };
 
         let pollInterval = 20000;
 

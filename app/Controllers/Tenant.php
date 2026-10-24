@@ -494,7 +494,7 @@ class Tenant extends BaseController
         }
 
         $items = (new OrderItemModel())
-            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image')
+            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image', false)
             ->where('order_items.order_id', $orderId)
             ->findAll();
         $customer = (new UserModel())->find($order['customer_id']);
@@ -617,7 +617,7 @@ class Tenant extends BaseController
         $newOrders = [];
         if ($rawLastOrderId !== null && $rawLastOrderId !== '') {
             $lastOrderId = (int) $rawLastOrderId;
-            $rawOrders = $orderModel->select('orders.*, users.first_name, users.last_name, users.phone as cust_phone, users.profile_image_url, shipping_addresses.address_line1, shipping_addresses.address_line2, shipping_addresses.phone as addr_phone, (SELECT COUNT(*) FROM order_items WHERE order_items.order_id = orders.id) as calc_items_count')
+            $rawOrders = $orderModel->select('orders.*, users.first_name, users.last_name, users.phone as cust_phone, users.profile_image_url, shipping_addresses.address_line1, shipping_addresses.address_line2, shipping_addresses.phone as addr_phone, (SELECT COUNT(*) FROM order_items WHERE order_items.order_id = orders.id) as calc_items_count', false)
                 ->join('users', 'users.id = orders.customer_id', 'left')
                 ->join('shipping_addresses', 'shipping_addresses.id = orders.shipping_address_id', 'left')
                 ->where('orders.shop_id', $shopId)
@@ -670,7 +670,7 @@ class Tenant extends BaseController
             if (!empty($orderIds)) {
                 $db = \Config\Database::connect();
                 $itemsRaw = $db->table('order_items')
-                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                     ->whereIn('order_id', $orderIds)
                     ->get()->getResultArray();
 
@@ -2037,7 +2037,7 @@ class Tenant extends BaseController
         $ordMap = [];
         if (!empty($ordIds)) {
             $ords = $db->table('orders o')
-                ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count')
+                ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count', false)
                 ->join('users u', 'u.id = o.customer_id', 'left')
                 ->whereIn('o.id', array_unique($ordIds))
                 ->get()->getResultArray();
@@ -4667,7 +4667,7 @@ class Tenant extends BaseController
         if (in_array($order['status'], ['completed', 'delivered'], true)) {
             $orderItemModel = new \App\Models\OrderItemModel();
             $rawItems = $orderItemModel
-                ->select('order_items.*, p.stock_quantity as current_stock, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                ->select('order_items.*, p.stock_quantity as current_stock, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                 ->join('products p', 'p.id = order_items.product_id', 'left')
                 ->where('order_items.order_id', $order['id'])
                 ->findAll();
@@ -5906,7 +5906,7 @@ class Tenant extends BaseController
                 return redirect()->to('tenant/pos')->with('error', 'Order is ' . humanize_status($order['status']) . '. Only Ready for Pick-up orders can be processed in POS.');
             }
             $orderItems = (new OrderItemModel())
-                ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                 ->where('order_items.order_id', $order['id'])
                 ->findAll();
         }
@@ -6170,7 +6170,7 @@ class Tenant extends BaseController
             }
             if ($order) {
                 $orderItems = (new OrderItemModel())
-                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image')
+                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image', false)
                     ->where('order_items.order_id', $order['id'])
                     ->findAll();
             }
