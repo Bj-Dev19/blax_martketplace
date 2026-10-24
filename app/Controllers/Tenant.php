@@ -580,6 +580,39 @@ class Tenant extends BaseController
         $orderModel = new OrderModel();
         $printingModel = new PrintingRequestModel();
 
+        $maxOrdRow = $orderModel->where('shop_id', $shopId)->selectMax('id')->first();
+        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
+
+        $maxPrRow = $printingModel->where('shop_id', $shopId)->selectMax('id')->first();
+        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
+
+        // Live Notification Telemetry
+        $notifModel = new \App\Models\NotificationModel();
+        $unreadCount = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
+        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
+
+        // Fast-path: if heartbeat poll and no new orders/printing, return immediately (skips 8+ heavy summary queries)
+        if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
+            $lastOrderId = (int) $rawLastOrderId;
+            $lastPrintingId = (int) $rawLastPrintingId;
+            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId) {
+                return $this->response
+                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    ->setJSON([
+                        'success'           => true,
+                        'max_order_id'      => $currentMaxOrderId,
+                        'max_printing_id'   => $currentMaxPrintId,
+                        'has_new_orders'    => false,
+                        'new_orders'        => [],
+                        'has_new_printing'  => false,
+                        'new_printing'      => [],
+                        'unread_count'      => $unreadCount,
+                        'notifications'     => $recentNotifs,
+                        'timestamp'         => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
+
         // 1. Fetch new orders for this shop in a single JOIN query (0 N+1 roundtrips)
         $newOrders = [];
         if ($rawLastOrderId !== null && $rawLastOrderId !== '') {
@@ -723,17 +756,6 @@ class Tenant extends BaseController
         $summary = $orderModel->getOrdersSummary($shopId);
         $printSummary = $printingModel->getPrintSummary($shopId);
         $inventorySummary = (new ProductModel())->getInventorySummary($shopId);
-
-        $maxOrdRow = $orderModel->where('shop_id', $shopId)->selectMax('id')->first();
-        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
-
-        $maxPrRow = $printingModel->where('shop_id', $shopId)->selectMax('id')->first();
-        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
-
-        // 3. Live Notification Telemetry
-        $notifModel = new \App\Models\NotificationModel();
-        $unreadCount = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
-        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
 
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
@@ -1866,10 +1888,10 @@ class Tenant extends BaseController
         $chart    = $orderModel->getSalesChartData($shopId, $range, true);
         $chartMax = !empty($chart['values']) ? max($chart['values']) : 0.0;
 
-        // ---- AI Seasonal Demand & Restock Intelligence ----
+        // ---- AI Seasonal Demand & Restock Intelligence (Fast local heuristic on initial page load, AJAX for live AI) ----
         $seasonalService = new \App\Libraries\SeasonalAiService();
         $seasonParam     = (string) $this->request->getGet('season');
-        $seasonalData    = $seasonalService->getSeasonalAnalysis($shopId, $seasonParam ?: null);
+        $seasonalData    = $seasonalService->getSeasonalAnalysis($shopId, $seasonParam ?: null, false);
 
         return view('tenant/analytics', [
             'shop'                => $shop,

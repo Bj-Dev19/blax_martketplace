@@ -856,8 +856,15 @@
 
         window.updateTenantNotifications = updateNotificationsUI;
 
+        let pollInterval = 20000;
+
+        function scheduleNextPoll() {
+            clearTimeout(pollTimer);
+            pollTimer = setTimeout(pollTenantUpdates, pollInterval);
+        }
+
         async function pollTenantUpdates() {
-            if (document.visibilityState === 'hidden') return;
+            if (document.visibilityState === 'hidden' || !navigator.onLine) return;
             try {
                 let url = '<?= base_url('tenant/realtime/check') ?>';
                 if (!isInitial && lastOrderId !== null && lastPrintingId !== null) {
@@ -867,9 +874,17 @@
                 const res = await fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                if (!res.ok) return;
+                if (!res.ok) {
+                    pollInterval = Math.min(pollInterval * 1.5, 60000);
+                    scheduleNextPoll();
+                    return;
+                }
+                pollInterval = 20000;
                 const data = await res.json();
-                if (!data || !data.success) return;
+                if (!data || !data.success) {
+                    scheduleNextPoll();
+                    return;
+                }
 
                 if (isInitial) {
                     lastOrderId = data.max_order_id || 0;
@@ -878,6 +893,7 @@
                     if (typeof data.unread_count !== 'undefined') {
                         updateNotificationsUI(data.unread_count, data.notifications);
                     }
+                    scheduleNextPoll();
                     return;
                 }
 
@@ -920,17 +936,25 @@
                 }
             } catch(e) {
                 console.debug('Tenant realtime poll failed:', e);
+                pollInterval = Math.min(pollInterval * 1.5, 60000);
             }
+            scheduleNextPoll();
         }
 
-        // Start polling: initial check after 1.5s, then every 7s
-        pollTimer = setInterval(pollTenantUpdates, 7000);
-        setTimeout(pollTenantUpdates, 1500);
+        // Start polling: initial check after 1.5s, then scheduled
+        pollTimer = setTimeout(pollTenantUpdates, 1500);
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 pollTenantUpdates();
             }
+        });
+
+        window.addEventListener('pagehide', () => {
+            clearTimeout(pollTimer);
+        });
+        window.addEventListener('beforeunload', () => {
+            clearTimeout(pollTimer);
         });
 
         // Mark All As Read AJAX handling

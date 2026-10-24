@@ -21,20 +21,40 @@ class NotificationModel extends Model
         'created_at',
     ];
 
+    private static array $unreadCache = [];
+    private static array $recentCache = [];
+
+    public static function clearRequestCache(): void
+    {
+        self::$unreadCache = [];
+        self::$recentCache = [];
+    }
+
     public function getUnreadCount(int $userId): int
     {
-        return (int) $this->where('user_id', $userId)->where('is_read', 0)->countAllResults();
+        if (isset(self::$unreadCache[$userId])) {
+            return self::$unreadCache[$userId];
+        }
+
+        return self::$unreadCache[$userId] = (int) $this->where('user_id', $userId)->where('is_read', 0)->countAllResults();
     }
 
     public function getRecent(int $userId, int $limit = 5): array
     {
-        return $this->where('user_id', $userId)
+        $cacheKey = $userId . ':' . $limit;
+        if (isset(self::$recentCache[$cacheKey])) {
+            return self::$recentCache[$cacheKey];
+        }
+
+        return self::$recentCache[$cacheKey] = $this->where('user_id', $userId)
             ->orderBy('created_at', 'DESC')
             ->findAll($limit);
     }
 
     public function markAllRead(int $userId): bool
     {
+        self::clearRequestCache();
+
         return (bool) $this->where('user_id', $userId)
             ->set(['is_read' => 1])
             ->update();
@@ -42,6 +62,8 @@ class NotificationModel extends Model
 
     public function markRead(int $id, int $userId): bool
     {
+        self::clearRequestCache();
+
         return (bool) $this->where('id', $id)
             ->where('user_id', $userId)
             ->set(['is_read' => 1])
@@ -50,6 +72,7 @@ class NotificationModel extends Model
 
     public function create(int $userId, string $type, string $title, string $message, ?string $actionUrl = null): bool
     {
+        self::clearRequestCache();
         $safeUrl = null;
         if ($actionUrl !== null && $actionUrl !== '') {
             $parsed = trim($actionUrl);
