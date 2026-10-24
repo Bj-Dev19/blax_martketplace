@@ -2,6 +2,11 @@
 module.exports = {
   content: [
     "./app/Views/**/*.php",
+    "./app/Helpers/**/*.php",
+    "./app/Controllers/**/*.php",
+    "./app/Libraries/**/*.php",
+    "./app/Models/**/*.php",
+    "./app/Services/**/*.php",
     "./public/js/**/*.js"
   ],
   darkMode: "class",

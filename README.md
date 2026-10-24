@@ -19,7 +19,7 @@ An AI-assisted product search/chat feature is also included, powered by Cohere e
 | Backend framework | CodeIgniter 4 |
 | Language | PHP ^8.1 |
 | Database | MySQL (via MySQLi driver) |
-| Frontend | Server-rendered PHP views + Tailwind CSS (CDN) |
+| Frontend | Server-rendered PHP views + compiled Tailwind CSS v3 |
 | Payments | PayMongo |
 | AI / Search | Cohere (embeddings + chat) |
 | Testing | PHPUnit 10 |
@@ -82,6 +82,18 @@ php spark serve
 
 The app will be available at the `app.baseURL` configured in `.env`.
 
+### Building Assets (Tailwind CSS)
+
+Tailwind CSS styles are compiled into `public/css/tailwind.css`:
+
+```bash
+# Build production CSS
+npm run build:css
+
+# Or watch for changes during development
+npm run watch:css
+```
+
 ### Running Tests
 
 ```bash
@@ -89,6 +101,16 @@ composer test
 # or
 vendor/bin/phpunit
 ```
+
+---
+
+## Deployment (Render)
+
+For clean and secure deployment on Render with an external MySQL database (e.g. Aiven), refer to the step-by-step guide:
+
+- **[Render Deployment Guide](docs/DEPLOY_RENDER.md)**
+- **Blueprint file**: `render.yaml`
+- **Environment template**: `.env.render.example`
 
 ---
 
