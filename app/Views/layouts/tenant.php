@@ -118,20 +118,65 @@
                 display: flex !important;
             }
         }
+        #blax-page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #059669);
+            z-index: 99999;
+            transform: translateX(-100%);
+            transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+        #blax-page-loader.loading {
+            transform: translateX(-15%);
+            transition: transform 8s cubic-bezier(0.1, 0.5, 0.1, 1);
+        }
     </style>
     <script>
         (function() {
-            const isPos = <?= json_encode($isPos) ?>;
-            const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
-            const isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+            let isCollapsed = false;
+            try {
+                const isPos = <?= json_encode($isPos) ?>;
+                const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
+                isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+            } catch(e) {
+                isCollapsed = false;
+            }
             if (isCollapsed) {
                 document.documentElement.classList.add('tenant-sidebar-init-collapsed');
             }
+
+            window.toggleTenantSidebar = function() {
+                const sidebar = document.getElementById('tenant-sidebar');
+                const main = document.getElementById('tenant-main-content');
+                const icon = document.getElementById('tenant-sidebar-collapse-icon');
+                if (!sidebar || !main) return;
+
+                document.documentElement.classList.remove('tenant-sidebar-init-collapsed');
+                const willCollapse = !sidebar.classList.contains('sidebar-collapsed');
+
+                if (willCollapse) {
+                    sidebar.classList.add('sidebar-collapsed');
+                    main.classList.add('sidebar-collapsed-main');
+                    if (icon) icon.textContent = 'chevron_right';
+                    try { localStorage.setItem('blax_tenant_sidebar_collapsed', 'true'); } catch(e) {}
+                } else {
+                    sidebar.classList.remove('sidebar-collapsed');
+                    main.classList.remove('sidebar-collapsed-main');
+                    if (icon) icon.textContent = 'chevron_left';
+                    try { localStorage.setItem('blax_tenant_sidebar_collapsed', 'false'); } catch(e) {}
+                }
+            };
         })();
     </script>
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-terra-green selection:text-white">
+
+    <div id="blax-page-loader"></div>
 
     <div class="flex h-screen overflow-hidden">
 
@@ -161,7 +206,7 @@
                 </button>
 
                 <!-- Mobile Close Button -->
-                <button id="tenant-sidebar-close" type="button" class="md:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative z-50" aria-label="Close navigation" onclick="const s=document.getElementById('tenant-sidebar');if(s){s.classList.remove('mobile-open','flex','z-50');s.classList.add('hidden');}const o=document.getElementById('tenant-sidebar-overlay');if(o){o.classList.remove('active');}document.body.classList.remove('mobile-nav-open');">
+                <button id="tenant-sidebar-close" type="button" class="md:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative z-50" aria-label="Close navigation">
                     <span class="material-symbols-outlined text-[20px] pointer-events-none">close</span>
                 </button>
             </div>
@@ -584,35 +629,16 @@
     <?php endif; ?>
 
     <script>
-    function toggleTenantSidebar() {
-        const sidebar = document.getElementById('tenant-sidebar');
-        const main = document.getElementById('tenant-main-content');
-        const icon = document.getElementById('tenant-sidebar-collapse-icon');
-        if (!sidebar || !main) return;
-
-        // Clean up early FOUC class
-        document.documentElement.classList.remove('tenant-sidebar-init-collapsed');
-
-        const willCollapse = !sidebar.classList.contains('sidebar-collapsed');
-
-        if (willCollapse) {
-            sidebar.classList.add('sidebar-collapsed');
-            main.classList.add('sidebar-collapsed-main');
-            if (icon) icon.textContent = 'chevron_right';
-            localStorage.setItem('blax_tenant_sidebar_collapsed', 'true');
-        } else {
-            sidebar.classList.remove('sidebar-collapsed');
-            main.classList.remove('sidebar-collapsed-main');
-            if (icon) icon.textContent = 'chevron_left';
-            localStorage.setItem('blax_tenant_sidebar_collapsed', 'false');
-        }
-    }
-
-    // Sync state on DOMContentLoaded
+    // Sync sidebar state on DOMContentLoaded & bind instant navigation feedback
     document.addEventListener('DOMContentLoaded', () => {
-        const isPos = <?= json_encode($isPos) ?>;
-        const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
-        const isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+        let isCollapsed = false;
+        try {
+            const isPos = <?= json_encode($isPos) ?>;
+            const stored = localStorage.getItem('blax_tenant_sidebar_collapsed');
+            isCollapsed = isPos ? (stored !== 'false') : (stored === 'true');
+        } catch(e) {
+            isCollapsed = false;
+        }
 
         const sidebar = document.getElementById('tenant-sidebar');
         const main = document.getElementById('tenant-main-content');
@@ -628,23 +654,25 @@
             if (icon) icon.textContent = 'chevron_left';
         }
 
-        // Mobile drawer toggle bindings
-        const mobileToggle = document.getElementById('sidebar-toggle');
-        const overlay = document.getElementById('tenant-sidebar-overlay');
-        if (mobileToggle && sidebar && overlay) {
-            mobileToggle.addEventListener('click', () => {
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('flex', 'z-50', 'mobile-open');
-                overlay.classList.add('active');
-                document.body.classList.add('mobile-nav-open');
+        // Instant navigation visual feedback & auto-close mobile drawer on link click
+        document.querySelectorAll('#tenant-sidebar a.nav-item').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || this.target === '_blank') return;
+
+                this.classList.add('opacity-75');
+                const loader = document.getElementById('blax-page-loader');
+                if (loader) loader.classList.add('loading');
+
+                const sb = document.getElementById('tenant-sidebar');
+                const ov = document.getElementById('tenant-sidebar-overlay');
+                if (sb && sb.classList.contains('mobile-open')) {
+                    sb.classList.remove('mobile-open', 'flex', 'z-50');
+                    sb.classList.add('hidden');
+                    if (ov) ov.classList.remove('active');
+                    document.body.classList.remove('mobile-nav-open');
+                }
             });
-            overlay.addEventListener('click', () => {
-                sidebar.classList.remove('mobile-open', 'flex', 'z-50');
-                sidebar.classList.add('hidden');
-                overlay.classList.remove('active');
-                document.body.classList.remove('mobile-nav-open');
-            });
-        }
+        });
     });
     </script>
 
