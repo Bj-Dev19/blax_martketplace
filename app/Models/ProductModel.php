@@ -40,7 +40,7 @@ class ProductModel extends Model
     public function getProductsWithDetails($shopId = null, $categoryId = null, $search = null)
     {
         $builder = $this->db->table('products p')
-            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count')
+            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count', false)
             ->join('shops s', 's.id = p.shop_id', 'left')
             ->join('categories c', 'c.id = p.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
@@ -68,7 +68,7 @@ class ProductModel extends Model
     public function getProductWithDetails(int $id): ?array
     {
         return $this->db->table('products p')
-            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count')
+            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count', false)
             ->join('shops s', 's.id = p.shop_id', 'left')
             ->join('categories c', 'c.id = p.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
@@ -85,7 +85,7 @@ class ProductModel extends Model
     public function getRelatedProducts(int $categoryId, int $excludeProductId, int $limit = 12): array
     {
         return $this->db->table('products p')
-            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count')
+            ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count', false)
             ->join('shops s', 's.id = p.shop_id', 'left')
             ->join('categories c', 'c.id = p.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = p.id AND pi.is_primary = 1', 'left')
@@ -155,7 +155,7 @@ class ProductModel extends Model
         ?int $rotationSeed = null
     ) {
         $this->builder()
-            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count')
+            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
             ->join('shops s', 's.id = products.shop_id', 'left')
             ->join('categories c', 'c.id = products.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = products.id AND pi.is_primary = 1', 'left')
@@ -228,7 +228,7 @@ class ProductModel extends Model
     public function getProductsWithDetailsPaginated(int $shopId, ?string $search = null, int $perPage = 6, int $page = 1)
     {
         $this->builder()
-            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count')
+            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
             ->join('shops s', 's.id = products.shop_id', 'left')
             ->join('categories c', 'c.id = products.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = products.id AND pi.is_primary = 1', 'left')
@@ -468,7 +468,7 @@ class ProductModel extends Model
         }
 
         $this->builder()
-            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count')
+            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
             ->join('shops s', 's.id = products.shop_id', 'left')
             ->join('categories c', 'c.id = products.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = products.id AND pi.is_primary = 1', 'left')

@@ -494,7 +494,7 @@ class Tenant extends BaseController
         }
 
         $items = (new OrderItemModel())
-            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image')
+            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image', false)
             ->where('order_items.order_id', $orderId)
             ->findAll();
         $customer = (new UserModel())->find($order['customer_id']);
@@ -617,7 +617,7 @@ class Tenant extends BaseController
         $newOrders = [];
         if ($rawLastOrderId !== null && $rawLastOrderId !== '') {
             $lastOrderId = (int) $rawLastOrderId;
-            $rawOrders = $orderModel->select('orders.*, users.first_name, users.last_name, users.phone as cust_phone, users.profile_image_url, shipping_addresses.address_line1, shipping_addresses.address_line2, shipping_addresses.phone as addr_phone, (SELECT COUNT(*) FROM order_items WHERE order_items.order_id = orders.id) as calc_items_count')
+            $rawOrders = $orderModel->select('orders.*, users.first_name, users.last_name, users.phone as cust_phone, users.profile_image_url, shipping_addresses.address_line1, shipping_addresses.address_line2, shipping_addresses.phone as addr_phone, (SELECT COUNT(*) FROM order_items WHERE order_items.order_id = orders.id) as calc_items_count', false)
                 ->join('users', 'users.id = orders.customer_id', 'left')
                 ->join('shipping_addresses', 'shipping_addresses.id = orders.shipping_address_id', 'left')
                 ->where('orders.shop_id', $shopId)
@@ -670,7 +670,7 @@ class Tenant extends BaseController
             if (!empty($orderIds)) {
                 $db = \Config\Database::connect();
                 $itemsRaw = $db->table('order_items')
-                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                     ->whereIn('order_id', $orderIds)
                     ->get()->getResultArray();
 
@@ -1705,8 +1705,8 @@ class Tenant extends BaseController
             'escrow_holding'    => round($escrowHolding, 2),
             'released_earnings' => round($releasedEarnings, 2),
             'total_deductions'  => $payoutDeductions,
-            'settled_records'   => $settledRecords,
-            'escrow_records'    => $escrowRecords,
+            'settled_records'   => array_slice($settledRecords, 0, 50),
+            'escrow_records'    => array_slice($escrowRecords, 0, 50),
         ];
     }
 
@@ -2037,7 +2037,7 @@ class Tenant extends BaseController
         $ordMap = [];
         if (!empty($ordIds)) {
             $ords = $db->table('orders o')
-                ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count')
+                ->select('o.id, o.order_number, o.total_amount, o.status, o.payment_status, o.fulfillment_method, u.first_name, u.last_name, (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) AS item_count', false)
                 ->join('users u', 'u.id = o.customer_id', 'left')
                 ->whereIn('o.id', array_unique($ordIds))
                 ->get()->getResultArray();
@@ -4667,7 +4667,7 @@ class Tenant extends BaseController
         if (in_array($order['status'], ['completed', 'delivered'], true)) {
             $orderItemModel = new \App\Models\OrderItemModel();
             $rawItems = $orderItemModel
-                ->select('order_items.*, p.stock_quantity as current_stock, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                ->select('order_items.*, p.stock_quantity as current_stock, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                 ->join('products p', 'p.id = order_items.product_id', 'left')
                 ->where('order_items.order_id', $order['id'])
                 ->findAll();
@@ -5906,7 +5906,7 @@ class Tenant extends BaseController
                 return redirect()->to('tenant/pos')->with('error', 'Order is ' . humanize_status($order['status']) . '. Only Ready for Pick-up orders can be processed in POS.');
             }
             $orderItems = (new OrderItemModel())
-                ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image')
+                ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image', false)
                 ->where('order_items.order_id', $order['id'])
                 ->findAll();
         }
@@ -5953,30 +5953,69 @@ class Tenant extends BaseController
             $printingRemainingBalance = max(0.0, round($totalPrice - $printingOnlinePaid, 2));
         }
 
-        // Available store-pickup product orders for quick selection (ONLY ready_for_pickup)
+        // Available store-pickup product orders for quick selection (ONLY ready_for_pickup, capped to recent 50)
         $pickupOrders = $orderModel
-            ->select('orders.*, u.first_name, u.last_name, u.phone, (SELECT GROUP_CONCAT(CONCAT(quantity, "x ", product_name) SEPARATOR ", ") FROM order_items WHERE order_id = orders.id) as items_summary')
+            ->select('orders.*, u.first_name, u.last_name, u.phone')
             ->join('users u', 'u.id = orders.customer_id', 'left')
             ->where('orders.shop_id', $shopId)
             ->where('orders.fulfillment_method', 'pickup')
             ->where('orders.status', 'ready_for_pickup')
             ->orderBy('orders.placed_at', 'DESC')
-            ->findAll();
+            ->findAll(50);
 
-        // Available store-pickup printing requests for quick selection (ONLY ready_for_pickup)
-        $printingPickupRequests = (new PrintingRequestModel())
-            ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email')
-            ->join('users u', 'u.id = printing_requests.customer_id', 'left')
-            ->where('printing_requests.shop_id', $shopId)
-            ->where('printing_requests.fulfillment_method', 'pickup')
-            ->groupStart()
-                ->where('printing_requests.status', 'ready_for_pickup')
-                ->orWhere('printing_requests.status', 'ready')
-            ->groupEnd()
-            ->orderBy('printing_requests.created_at', 'DESC')
-            ->findAll();
+        // High-performance batch resolution of items_summary (replaces 50 correlated subqueries with 1 indexed query)
+        $orderIds = !empty($pickupOrders) ? array_filter(array_column($pickupOrders, 'id')) : [];
+        $itemsSummaryMap = [];
+        if (!empty($orderIds)) {
+            try {
+                $orderItems = (new OrderItemModel())
+                    ->select('order_id, quantity, product_name')
+                    ->whereIn('order_id', $orderIds)
+                    ->findAll();
+                foreach ($orderItems as $it) {
+                    $oId = (int) $it['order_id'];
+                    $qty = $it['quantity'] ?? 1;
+                    $pName = $it['product_name'] ?? 'Item';
+                    $str = $qty . 'x ' . $pName;
+                    if (!isset($itemsSummaryMap[$oId])) {
+                        $itemsSummaryMap[$oId] = $str;
+                    } else {
+                        $itemsSummaryMap[$oId] .= ', ' . $str;
+                    }
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'POS order items summary batch lookup failed: ' . $e->getMessage());
+            }
+        }
+        foreach ($pickupOrders as &$po) {
+            $po['items_summary'] = $itemsSummaryMap[(int) $po['id']] ?? '';
+        }
+        unset($po);
 
-        $categories = (new CategoryModel())->getAllCached();
+        // Available store-pickup printing requests for quick selection (ONLY ready_for_pickup, capped to recent 50)
+        try {
+            $printingPickupRequests = (new PrintingRequestModel())
+                ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email')
+                ->join('users u', 'u.id = printing_requests.customer_id', 'left')
+                ->where('printing_requests.shop_id', $shopId)
+                ->where('printing_requests.fulfillment_method', 'pickup')
+                ->groupStart()
+                    ->where('printing_requests.status', 'ready_for_pickup')
+                    ->orWhere('printing_requests.status', 'ready')
+                ->groupEnd()
+                ->orderBy('printing_requests.created_at', 'DESC')
+                ->findAll(50);
+        } catch (\Throwable $e) {
+            log_message('error', 'POS printing pickup requests query failed: ' . $e->getMessage());
+            $printingPickupRequests = [];
+        }
+
+        try {
+            $categories = (new CategoryModel())->getAllCached();
+        } catch (\Throwable $e) {
+            log_message('error', 'POS categories load failed: ' . $e->getMessage());
+            $categories = [];
+        }
 
         // Cross-reference customers who have both ready-for-pickup orders and printing requests
         $customerHasPrintingMap = [];
@@ -6131,7 +6170,7 @@ class Tenant extends BaseController
             }
             if ($order) {
                 $orderItems = (new OrderItemModel())
-                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image')
+                    ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as gallery_image, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image', false)
                     ->where('order_items.order_id', $order['id'])
                     ->findAll();
             }

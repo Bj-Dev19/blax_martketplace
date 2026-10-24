@@ -244,7 +244,7 @@ class OrderModel extends Model
 
         $orderIds = array_column($orders, 'id');
         $items = $this->db->table('order_items')
-            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image')
+            ->select('order_items.*, (SELECT image_url FROM product_images WHERE product_id = order_items.product_id ORDER BY is_primary DESC, sort_order ASC LIMIT 1) as product_image', false)
             ->whereIn('order_items.order_id', $orderIds)
             ->get()
             ->getResultArray();
