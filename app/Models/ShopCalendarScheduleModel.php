@@ -51,10 +51,16 @@ class ShopCalendarScheduleModel extends Model
             return;
         }
 
-        try {
-            $db     = $this->db ?? \Config\Database::connect();
-            $driver = strtolower((string) ($db->DBDriver ?? 'mysqli'));
+        // In non-sqlite environments (MySQL/Aiven), schema is guaranteed by migrations.
+        // Avoid executing 3 synchronous DDL/SHOW queries on every single HTTP request.
+        $db     = $this->db ?? \Config\Database::connect();
+        $driver = strtolower((string) ($db->DBDriver ?? 'mysqli'));
+        if (! str_contains($driver, 'sqlite')) {
+            self::$schemaChecked = true;
+            return;
+        }
 
+        try {
             if (str_contains($driver, 'sqlite')) {
                 $db->query("
                     CREATE TABLE IF NOT EXISTS `shop_calendar_schedules` (

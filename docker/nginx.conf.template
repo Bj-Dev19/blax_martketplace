@@ -46,6 +46,13 @@ server {
     add_header Permissions-Policy "geolocation=(self), camera=(), microphone=()" always;
     add_header Strict-Transport-Security $hsts_header always;
 
+    # Lightweight health check (direct Nginx response, zero overhead)
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
