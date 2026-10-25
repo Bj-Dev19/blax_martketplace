@@ -64,9 +64,18 @@ class Filters extends BaseFilters
         'after' => [
             'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
-            'toolbar',     // Debug Toolbar
         ],
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Debug Toolbar safeguard: only register if explicitly enabled in development and not CLI
+        if (defined('CI_DEBUG') && CI_DEBUG === true && ! is_cli()) {
+            $this->required['after'][] = 'toolbar';
+        }
+    }
 
     /**
      * List of filter aliases that are always

@@ -3,9 +3,17 @@ set -e
 
 # Default PORT to 8080 if not injected by the hosting platform / cloud environment
 export PORT="${PORT:-8080}"
-export CI_ENVIRONMENT="${CI_ENVIRONMENT:-production}"
 
-echo "Starting container on PORT ${PORT} (CI_ENVIRONMENT: ${CI_ENVIRONMENT})..."
+# Production environment safeguard: Always enforce production unless explicitly opting into development mode
+if [ "${ALLOW_DEV_MODE:-0}" != "1" ]; then
+    export CI_ENVIRONMENT="production"
+fi
+
+echo "Starting container on PORT ${PORT} (CI_ENVIRONMENT: ${CI_ENVIRONMENT}, ALLOW_DEV_MODE: ${ALLOW_DEV_MODE:-0})..."
+echo "Security Audit: Debug Toolbar disabled in production mode."
+
+# Clean legacy debugbar history and profiler cache files on container boot
+rm -rf /var/www/html/writable/debugbar/*
 
 # Substitute only ${PORT} into the Nginx config template to protect Nginx variables ($uri, $document_root, etc.)
 envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
