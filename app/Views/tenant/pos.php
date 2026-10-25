@@ -113,338 +113,204 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
         </div>
     </div>
 
-    <?php if ($isCombinedPickup): ?>
-        <!-- Combined Pick-up Master Banner -->
-        <div class="p-md rounded-2xl bg-gradient-to-r from-purple-500/10 via-primary/10 to-secondary/10 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-sm">
-            <div class="flex items-center gap-md">
-                <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <span class="material-symbols-outlined text-xl">join_inner</span>
-                </div>
-                <div>
-                    <div class="flex items-center gap-xs flex-wrap">
-                        <h3 class="font-extrabold text-sm sm:text-base text-on-surface">Combined Store Pick-up Transaction</h3>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Order + Printing</span>
-                    </div>
-                    <p class="text-xs text-on-surface-variant">
-                        Fulfilling <strong>Order #<?= esc($order['order_number']) ?></strong> and <strong>Printing Request #<?= esc($printingRequest['request_number']) ?></strong> together in one unified checkout.
-                    </p>
-                </div>
-            </div>
-            <div class="flex items-center gap-xs shrink-0 self-end sm:self-center">
-                <a href="<?= base_url('tenant/pos?order_id=' . $order['id']) ?>" class="text-[11px] font-semibold text-secondary hover:underline px-2.5 py-1 bg-surface-container rounded-lg border border-outline-variant/20">Order Only</a>
-                <a href="<?= base_url('tenant/pos?printing_id=' . $printingRequest['id']) ?>" class="text-[11px] font-semibold text-primary hover:underline px-2.5 py-1 bg-surface-container rounded-lg border border-outline-variant/20">Print Only</a>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($isStorePickup): ?>
+    <?php if ($isStorePickup || $isPrintingPickup): ?>
         <?php
-        $poCustId = (int) ($order['customer_id'] ?? 0);
-        $matchingPr = (!$isCombinedPickup && !empty($customerHasPrintingMap[$poCustId])) ? $customerHasPrintingMap[$poCustId][0] : null;
-        ?>
-        <!-- Modern Pick-up Fulfillment Card -->
-        <div class="bg-surface-container-lowest border border-secondary/35 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
-            <?php if ($matchingPr): ?>
-                <!-- Cross-reference Alert: Customer also has printing request ready -->
-                <div class="p-3 rounded-xl bg-purple-50/90 border border-purple-200 text-purple-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-8 h-8 rounded-lg bg-purple-200/80 text-purple-800 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-[18px]">print</span>
-                        </span>
-                        <div class="text-xs">
-                            <strong class="font-bold text-purple-900">This customer also has a Ready for Pick-up Printing Request!</strong>
-                            <span class="block sm:inline sm:ml-1 text-[11px] text-purple-800 font-mono">#<?= esc($matchingPr['request_number']) ?> (<?= esc($matchingPr['file_name'] ?? 'Document.pdf') ?>)</span>
-                        </div>
-                    </div>
-                    <a href="<?= base_url('tenant/pos?order_id=' . $order['id'] . '&printing_id=' . $matchingPr['id']) ?>" 
-                       class="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-xs shrink-0 active:scale-95 cursor-pointer">
-                        <span class="material-symbols-outlined text-[15px]">join_inner</span>
-                        <span>Combine Pick-up</span>
-                    </a>
-                </div>
-            <?php endif; ?>
-
-            <!-- Top Header: Reference, Placement Date, Payment Condition & Quick Actions -->
-            <div class="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-outline-variant/20">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0 shadow-2xs">
-                        <span class="material-symbols-outlined text-[22px]">storefront</span>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="font-mono text-base sm:text-lg font-extrabold text-on-surface leading-none">#<?= esc($order['order_number'] ?? ($order['id'] ?? '')) ?></h3>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-secondary/15 text-secondary border border-secondary/25">
-                                <span class="material-symbols-outlined text-[13px]">check_circle</span>
-                                <span>Ready for Pick-up</span>
-                            </span>
-                        </div>
-                        <p class="text-[11px] text-outline font-medium mt-1">Placed on <?= esc(date('M d, Y h:i A', strtotime($order['placed_at'] ?? 'now'))) ?></p>
-                    </div>
-                </div>
-
-                <!-- Payment Status Pill & Actions -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <?php if ($isOnlinePaid): ?>
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-500/10 text-green-800 border border-green-500/25">
-                            <span class="material-symbols-outlined text-[16px] text-green-700">verified</span>
-                            <span>PAID ONLINE (<?= esc(strtoupper($order['payment_method'] ?: 'ONLINE')) ?>)</span>
-                        </span>
-                    <?php else: ?>
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-900 border border-amber-500/30">
-                            <span class="material-symbols-outlined text-[16px] text-amber-700">payments</span>
-                            <span>UNPAID • Collect ₱<?= number_format($baseOnlineAmount, 2) ?> at Counter</span>
-                        </span>
-                    <?php endif; ?>
-
-                    <button type="button" onclick="openPickupSelectorModal()" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/10 rounded-xl border border-primary/25 transition-colors cursor-pointer" title="Select another pick-up order">
-                        <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
-                        <span>Change Order</span>
-                    </button>
-                    <a href="<?= base_url('tenant/pos') ?>" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-error hover:bg-error/10 rounded-xl border border-error/25 transition-colors cursor-pointer" title="Exit pick-up mode to regular walk-in">
-                        <span class="material-symbols-outlined text-[16px]">close</span>
-                        <span>Exit</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 2-Column Content Grid: Customer Profile & Guidance (Left) + Itemized Handover Checklist (Right) -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                
-                <!-- Left: Customer Profile & Cashier Guidance (5 cols) -->
-                <div class="lg:col-span-5 space-y-3">
-                    <!-- Customer Card -->
-                    <div class="p-3.5 bg-surface-container-low rounded-xl border border-outline-variant/25 flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center text-sm font-bold shrink-0 shadow-2xs <?= $customerProfileImg !== '' ? 'relative overflow-hidden' : '' ?>">
-                            <span><?= esc($customerInitials) ?></span>
-                            <?php if ($customerProfileImg !== ''): ?>
-                                <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($customerProfileImg)) ?>" alt="<?= esc($customerFullName) ?> avatar" loading="lazy" onerror="this.remove();">
-                            <?php endif; ?>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <span class="text-[10px] text-outline font-bold uppercase tracking-wider block">Customer</span>
-                            <h4 class="font-extrabold text-sm sm:text-base text-on-surface truncate leading-tight"><?= esc($customerFullName ?: 'Online Customer') ?></h4>
-                            <div class="flex items-center gap-2 mt-1 text-xs text-on-surface-variant flex-wrap">
-                                <?php if ($customerPhone !== ''): ?>
-                                    <a href="tel:<?= esc($customerPhone) ?>" class="inline-flex items-center gap-0.5 hover:text-primary transition-colors font-mono font-medium">
-                                        <span class="material-symbols-outlined text-[14px]">phone</span>
-                                        <span><?= esc($customerPhone) ?></span>
-                                    </a>
-                                <?php else: ?>
-                                    <span class="text-outline text-[11px]">No phone on file</span>
-                                <?php endif; ?>
-                                <span class="text-outline">•</span>
-                                <span class="text-[11px] font-semibold text-secondary">Store Pick-up</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cashier Guidance Alert Box -->
-                    <div class="p-3.5 rounded-xl text-xs <?= $isOnlinePaid ? 'bg-green-50/90 text-green-950 border border-green-300/70' : 'bg-amber-50/90 text-amber-950 border border-amber-300/70' ?>">
-                        <div class="flex items-start gap-2.5">
-                            <span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5 <?= $isOnlinePaid ? 'text-green-700' : 'text-amber-700' ?>">
-                                <?= $isOnlinePaid ? 'check_circle' : 'info' ?>
-                            </span>
-                            <div class="space-y-0.5">
-                                <p class="font-bold text-xs sm:text-sm <?= $isOnlinePaid ? 'text-green-900' : 'text-amber-900' ?>">
-                                    <?= $isOnlinePaid ? 'Order Paid Online • Hand Over Products' : 'Payment Required Upon Pick-up' ?>
-                                </p>
-                                <p class="text-[11px] leading-relaxed text-on-surface-variant">
-                                    <?php if ($isOnlinePaid): ?>
-                                        Customer already paid <strong>₱<?= number_format($baseOnlineAmount, 2) ?></strong> via <?= esc(strtoupper($order['payment_method'] ?: 'ONLINE')) ?>. Hand over items and <strong>only collect payment for additional walk-in items</strong> added to cart.
-                                    <?php else: ?>
-                                        Original order is unpaid. <strong>Collect ₱<?= number_format($baseOnlineAmount, 2) ?></strong> at register, plus any additional items selected below.
-                                    <?php endif; ?>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Itemized Handover Checklist (7 cols) -->
-                <div class="lg:col-span-7 bg-surface-container-low rounded-xl border border-outline-variant/25 p-3.5 space-y-2.5">
-                    <div class="flex items-center justify-between border-b border-outline-variant/20 pb-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[16px] text-secondary">inventory_2</span>
-                            <span>Items to Hand Over (<?= count($orderItems) ?> item<?= count($orderItems) === 1 ? '' : 's' ?>)</span>
-                        </span>
-                        <span class="font-mono text-xs font-bold text-on-surface">
-                            Order Subtotal: ₱<?= number_format($baseOnlineAmount, 2) ?>
-                        </span>
-                    </div>
-
-                    <!-- Items List -->
-                    <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                        <?php if (!empty($orderItems)): ?>
-                            <?php foreach ($orderItems as $oit): ?>
-                                <?php if (empty($oit['is_pos_addition'])): ?>
-                                    <div class="flex items-center justify-between gap-3 p-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/20 shadow-2xs hover:border-secondary/30 transition-colors">
-                                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                                            <?php $itemImg = trim((string) ($oit['gallery_image'] ?? '')); ?>
-                                            <?php if ($itemImg !== ''): ?>
-                                                <img src="<?= esc(product_image_url($itemImg, 'thumbnail')) ?>" alt="<?= esc($oit['product_name'] ?? 'Product') ?>" class="w-11 h-11 object-cover rounded-lg border border-outline-variant/25 shrink-0 bg-surface-container" loading="lazy" onerror="this.remove();">
-                                            <?php else: ?>
-                                                <div class="w-11 h-11 rounded-lg bg-surface-container flex items-center justify-center text-outline shrink-0">
-                                                    <span class="material-symbols-outlined text-[20px]">inventory_2</span>
-                                                </div>
-                                            <?php endif; ?>
-                                            <div class="min-w-0 flex-1">
-                                                <h5 class="font-extrabold text-xs sm:text-sm text-on-surface truncate leading-tight"><?= esc($oit['product_name'] ?? 'Product') ?></h5>
-                                                <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                                    <?php if (!empty($oit['variant_label'])): ?>
-                                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                                                            <?= esc($oit['variant_label']) ?>
-                                                        </span>
-                                                    <?php endif; ?>
-                                                    <span class="text-[11px] text-outline font-mono">₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?> each</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            <span class="inline-flex items-center justify-center px-2 py-0.5 bg-secondary-container/50 text-secondary text-xs font-extrabold rounded-md font-mono">
-                                                <?= (int) ($oit['quantity'] ?? 1) ?>×
-                                            </span>
-                                            <p class="font-mono text-xs sm:text-sm font-bold text-on-surface mt-0.5">
-                                                ₱<?= number_format((float) ($oit['line_total'] ?? (($oit['quantity'] ?? 1) * ($oit['unit_price'] ?? $oit['price'] ?? 0))), 2) ?>
-                                            </p>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="text-xs text-outline text-center py-4">No items listed for this order.</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($isPrintingPickup): ?>
-        <?php
-        $prCustId = (int) ($printingRequest['customer_id'] ?? 0);
-        $matchingOrder = (!$isCombinedPickup && !empty($customerHasOrderMap[$prCustId])) ? $customerHasOrderMap[$prCustId][0] : null;
-        $prCustomerName = trim(($printingRequest['first_name'] ?? '') . ' ' . ($printingRequest['last_name'] ?? ''));
+        // Resolve customer details if printing-only
+        if (empty($customerFullName) && !empty($printingRequest)) {
+            $customerFullName = trim(($printingRequest['first_name'] ?? '') . ' ' . ($printingRequest['last_name'] ?? ''));
+            $customerPhone = trim((string) ($printingRequest['phone'] ?? ''));
+            $customerEmail = trim((string) ($printingRequest['email'] ?? ''));
+            $customerInitials = $customerFullName !== '' ? mb_strtoupper(mb_substr($customerFullName, 0, 2)) : 'OC';
+        }
+        
+        $orderCounterDue = $isStorePickup ? ($isOnlinePaid ? 0.0 : $baseOnlineAmount) : 0.0;
         $prTotal = (float) ($printingRequest['total_price'] ?? 0);
         $prPaid = (float) $printingOnlinePaid;
         $prDue = (float) $printingRemainingBalance;
-        $prSpecs = [
-            ((int) ($printingRequest['page_count'] ?? 1)) . ' pages',
-            ((int) ($printingRequest['copies'] ?? 1)) . ' cop' . (((int) ($printingRequest['copies'] ?? 1)) === 1 ? 'y' : 'ies'),
-            strtoupper((string) ($printingRequest['color_mode'] ?? 'BW')),
-            esc($printingRequest['paper_size'] ?? 'Letter'),
-        ];
-        if (!empty($printingRequest['binding_option']) && $printingRequest['binding_option'] !== 'none') {
-            $prSpecs[] = ucfirst($printingRequest['binding_option']) . ' Binding';
+        $printCounterDue = $isPrintingPickup ? $prDue : 0.0;
+        $totalCounterDue = $orderCounterDue + $printCounterDue;
+
+        // Cross-reference checks for single mode
+        $poCustId = (int) ($order['customer_id'] ?? 0);
+        $matchingPr = (!$isCombinedPickup && $isStorePickup && !empty($customerHasPrintingMap[$poCustId])) ? $customerHasPrintingMap[$poCustId][0] : null;
+
+        $prCustId = (int) ($printingRequest['customer_id'] ?? 0);
+        $matchingOrder = (!$isCombinedPickup && $isPrintingPickup && !empty($customerHasOrderMap[$prCustId])) ? $customerHasOrderMap[$prCustId][0] : null;
+
+        $prSpecs = [];
+        if ($isPrintingPickup) {
+            $prSpecs = [
+                ((int) ($printingRequest['page_count'] ?? 1)) . ' pgs',
+                ((int) ($printingRequest['copies'] ?? 1)) . ' ' . (((int) ($printingRequest['copies'] ?? 1)) === 1 ? 'copy' : 'copies'),
+                strtoupper((string) ($printingRequest['color_mode'] ?? 'BW')),
+                esc($printingRequest['paper_size'] ?? 'Letter'),
+            ];
+            if (!empty($printingRequest['binding_option']) && $printingRequest['binding_option'] !== 'none') {
+                $prSpecs[] = ucfirst($printingRequest['binding_option']);
+            }
         }
         ?>
-        <!-- Online Printing Request Card (Pickup Mode) -->
-        <div class="bg-surface-container-lowest border border-primary/30 rounded-2xl p-lg shadow-sm">
-            <?php if ($matchingOrder): ?>
-                <!-- Cross-reference Alert: Customer also has product order ready -->
-                <div class="mb-md p-md rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 flex flex-col sm:flex-row sm:items-center justify-between gap-sm">
-                    <div class="flex items-center gap-sm">
-                        <span class="material-symbols-outlined text-indigo-700 text-2xl">shopping_bag</span>
-                        <div class="text-xs sm:text-sm">
-                            <strong>This customer also has a Ready for Pick-up Product Order!</strong>
-                            <span class="block sm:inline sm:ml-1 text-xs text-indigo-800 font-mono">#<?= esc($matchingOrder['order_number']) ?></span>
+
+        <!-- Unified Handover Manifest Dock (<120px) -->
+        <div class="bg-white dark:bg-slate-900 border <?= $isCombinedPickup ? 'border-purple-300 dark:border-purple-800/60' : ($isPrintingPickup ? 'border-terra-earth/30 dark:border-terra-earth/40' : 'border-terra-green/30 dark:border-terra-green/40') ?> rounded-2xl p-3 sm:p-3.5 shadow-sm transition-all mb-3">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                
+                <!-- 1. Left: Customer Profile & Order References -->
+                <div class="flex items-center gap-3 min-w-[260px] max-w-[340px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800 pb-2.5 lg:pb-0 lg:pr-3.5">
+                    <div class="w-10 h-10 rounded-xl <?= $isCombinedPickup ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300' : ($isPrintingPickup ? 'bg-terra-earth/15 text-terra-earth dark:text-terra-amber' : 'bg-terra-green/15 text-terra-green') ?> flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs relative overflow-hidden">
+                        <?php if ($customerProfileImg !== ''): ?>
+                            <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($customerProfileImg)) ?>" alt="<?= esc($customerFullName) ?>" loading="lazy" onerror="this.remove();">
+                        <?php endif; ?>
+                        <span><?= esc($customerInitials) ?></span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <h3 class="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[170px]" title="<?= esc($customerFullName) ?>">
+                                <?= esc($customerFullName ?: 'Online Customer') ?>
+                            </h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold <?= $isCombinedPickup ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' : ($isPrintingPickup ? 'bg-terra-earth/15 text-terra-earth dark:text-terra-amber' : 'bg-terra-green/15 text-terra-green') ?>">
+                                <?= $isCombinedPickup ? 'Combined' : ($isPrintingPickup ? 'Print Only' : 'Order Only') ?>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap font-mono">
+                            <?php if ($customerPhone !== ''): ?>
+                                <a href="tel:<?= esc($customerPhone) ?>" class="hover:text-terra-green transition-colors inline-flex items-center gap-0.5">
+                                    <span class="material-symbols-outlined text-[13px]">call</span>
+                                    <span><?= esc($customerPhone) ?></span>
+                                </a>
+                                <span class="text-slate-300 dark:text-slate-600">•</span>
+                            <?php endif; ?>
+                            <?php if ($isStorePickup): ?>
+                                <span class="text-slate-700 dark:text-slate-300 font-semibold" title="Order Number">#<?= esc($order['order_number'] ?? ($order['id'] ?? '')) ?></span>
+                            <?php endif; ?>
+                            <?php if ($isPrintingPickup): ?>
+                                <?php if ($isStorePickup): ?><span class="text-slate-300 dark:text-slate-600">•</span><?php endif; ?>
+                                <span class="text-terra-earth dark:text-terra-amber font-semibold" title="Printing Request Number">#<?= esc($printingRequest['request_number'] ?? '') ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <a href="<?= base_url('tenant/pos?order_id=' . $matchingOrder['id'] . '&printing_id=' . $printingRequest['id']) ?>" 
-                       class="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm shrink-0">
-                        <span class="material-symbols-outlined text-[16px]">join_inner</span>
-                        <span>Combine Pick-up</span>
-                    </a>
                 </div>
-            <?php endif; ?>
 
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/20 pb-md mb-md">
-                <div class="flex items-center gap-sm">
-                    <div class="p-2 bg-primary-container/40 text-primary rounded-xl">
-                        <span class="material-symbols-outlined text-xl">print</span>
-                    </div>
-                    <div>
-                        <span class="text-xs text-primary font-bold uppercase tracking-wider"><?= esc($prCustomerName ?: 'Online Customer') ?></span>
-                        <h2 class="text-title-md sm:text-title-lg font-extrabold text-on-surface leading-tight">
-                            <?= esc($printingRequest['file_name'] ?? 'Document.pdf') ?>
-                        </h2>
-                        <div class="text-xs text-on-surface-variant font-mono mt-0.5">
-                            Printing Request Reference #<?= esc($printingRequest['request_number']) ?>
-                            <span class="text-outline mx-1">•</span>
-                            <span class="text-xs text-on-surface-variant"><?= implode(' • ', $prSpecs) ?></span>
+                <!-- 2. Center: Physical Handover Manifest Items (Horizontal Scrolling Chips) -->
+                <div class="flex-1 flex items-center gap-2 overflow-x-auto py-0.5 custom-scrollbar min-w-0">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider shrink-0 hidden sm:inline-block">
+                        Hand Over:
+                    </span>
+
+                    <!-- Store Pick-up Product Items -->
+                    <?php if ($isStorePickup && !empty($orderItems)): ?>
+                        <?php foreach ($orderItems as $oit): ?>
+                            <?php if (empty($oit['is_pos_addition'])): ?>
+                                <?php $itemImg = trim((string) ($oit['gallery_image'] ?? '')); ?>
+                                <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 shrink-0 text-xs shadow-2xs hover:border-terra-green/30 transition-colors">
+                                    <?php if ($itemImg !== ''): ?>
+                                        <img src="<?= esc(product_image_url($itemImg, 'thumbnail')) ?>" alt="<?= esc($oit['product_name'] ?? 'Product') ?>" class="w-8 h-8 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0 bg-white dark:bg-slate-800" loading="lazy" onerror="this.remove();">
+                                    <?php else: ?>
+                                        <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 flex items-center justify-center shrink-0">
+                                            <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-slate-800 dark:text-slate-200 leading-tight truncate max-w-[130px]" title="<?= esc($oit['product_name'] ?? 'Product') ?>">
+                                            <?= esc($oit['product_name'] ?? 'Product') ?>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                                            <span class="font-bold text-slate-700 dark:text-slate-300"><?= (int) ($oit['quantity'] ?? 1) ?>×</span>
+                                            <span>• ₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?></span>
+                                            <?php if (!empty($oit['variant_label'])): ?>
+                                                <span class="text-[9px] px-1 rounded bg-slate-200 dark:bg-slate-700"><?= esc($oit['variant_label']) ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php elseif ($isStorePickup): ?>
+                        <div class="text-xs text-slate-400 italic px-2">No physical items recorded for order.</div>
+                    <?php endif; ?>
+
+                    <!-- Printing Request Document Badge -->
+                    <?php if ($isPrintingPickup): ?>
+                        <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 shrink-0 text-xs shadow-2xs">
+                            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[18px]">print</span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-purple-900 dark:text-purple-200 leading-tight truncate max-w-[140px]" title="<?= esc($printingRequest['file_name'] ?? 'Document.pdf') ?>">
+                                    <?= esc($printingRequest['file_name'] ?? 'Document.pdf') ?>
+                                </div>
+                                <div class="text-[10px] text-purple-700 dark:text-purple-400 font-mono mt-0.5">
+                                    <?= esc(implode(' • ', $prSpecs)) ?>
+                                </div>
+                            </div>
+                            <?php if (!empty($printingRequest['file_path'])): ?>
+                                <a href="<?= base_url('uploads/' . $printingRequest['file_path']) ?>" target="_blank" class="p-1 text-purple-600 hover:text-purple-800 dark:hover:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors" title="Preview or Download document">
+                                    <span class="material-symbols-outlined text-[16px]">visibility</span>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Cross-reference Quick Combine Buttons (if single pickup mode has another order ready) -->
+                    <?php if ($matchingPr): ?>
+                        <a href="<?= base_url('tenant/pos?order_id=' . $order['id'] . '&printing_id=' . $matchingPr['id']) ?>" 
+                           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shrink-0 shadow-xs transition-all active:scale-95"
+                           title="Customer also has Print Request #<?= esc($matchingPr['request_number']) ?>">
+                            <span class="material-symbols-outlined text-[15px]">join_inner</span>
+                            <span>+ Combine Print</span>
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($matchingOrder): ?>
+                        <a href="<?= base_url('tenant/pos?order_id=' . $matchingOrder['id'] . '&printing_id=' . $printingRequest['id']) ?>" 
+                           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 shadow-xs transition-all active:scale-95"
+                           title="Customer also has Product Order #<?= esc($matchingOrder['order_number']) ?>">
+                            <span class="material-symbols-outlined text-[15px]">join_inner</span>
+                            <span>+ Combine Order</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+
+                <!-- 3. Right: Counter Balance Due & Action Buttons -->
+                <div class="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 lg:pl-3.5">
+                    <div class="text-right">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Collect at Counter</span>
+                            <?php if ($totalCounterDue <= 0): ?>
+                                <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-300">PAID ONLINE</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="font-mono text-base sm:text-lg font-black leading-tight <?= $totalCounterDue > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400' ?>">
+                            ₱<?= number_format($totalCounterDue, 2) ?>
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono">
+                            <?php if ($isCombinedPickup): ?>
+                                Order: <?= $isOnlinePaid ? 'Paid' : '₱' . number_format($orderCounterDue, 2) ?> • Print: <?= $prDue <= 0 ? 'Paid' : '₱' . number_format($prDue, 2) ?>
+                            <?php elseif ($isStorePickup): ?>
+                                <?= $isOnlinePaid ? 'Paid via ' . esc(strtoupper($order['payment_method'] ?: 'ONLINE')) : 'Unpaid order' ?>
+                            <?php else: ?>
+                                <?= $prPaid > 0 ? 'Paid ₱' . number_format($prPaid, 2) . ' online' : 'Unpaid print request' ?>
+                            <?php endif; ?>
                         </div>
                     </div>
-                </div>
-                <div class="flex flex-wrap items-center gap-sm">
-                    <?php if ($prDue <= 0 && $prTotal > 0): ?>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px]">verified</span>
-                            <span>FULLY PAID ONLINE (₱<?= number_format($prPaid, 2) ?>)</span>
-                        </span>
-                    <?php elseif ($prPaid > 0): ?>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px]">verified</span>
-                            <span>DOWN PAYMENT PAID (₱<?= number_format($prPaid, 2) ?>)</span>
-                        </span>
-                    <?php else: ?>
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px]">warning</span>
-                            <span>UNPAID ONLINE (Collect ₱<?= number_format($prTotal, 2) ?> at counter)</span>
-                        </span>
-                    <?php endif; ?>
-                    <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-surface-container text-on-surface-variant">
-                        Placed <?= esc(date('M d, Y h:i A', strtotime($printingRequest['created_at']))) ?>
-                    </span>
-                    <button type="button" onclick="openPrintingSelectorModal()" class="text-xs font-bold text-primary hover:underline ml-xs">
-                        Change Request
-                    </button>
-                </div>
-            </div>
 
-            <!-- Notice Banner -->
-            <div class="mb-md p-md rounded-xl text-body-md font-medium flex items-center gap-sm <?= $prDue <= 0 ? 'bg-green-50 text-green-900 border border-green-200' : 'bg-amber-50 text-amber-900 border border-amber-200' ?>">
-                <span class="material-symbols-outlined shrink-0 text-xl <?= $prDue <= 0 ? 'text-green-600' : 'text-amber-600' ?>"><?= $prDue <= 0 ? 'check_circle' : 'info' ?></span>
-                <div class="text-xs sm:text-sm">
-                    <?php if ($prDue <= 0 && $prTotal > 0): ?>
-                        <strong>ORIGINAL PRINTING ORDER: ₱<?= number_format($prTotal, 2) ?> FULLY PAID ONLINE.</strong> Customer already paid 100% online. <strong>NEVER charge this original ₱<?= number_format($prTotal, 2) ?> again.</strong> Only collect payment for any additional in-store items selected below.
-                    <?php elseif ($prPaid > 0): ?>
-                        <strong>ONLINE DOWN PAYMENT: ₱<?= number_format($prPaid, 2) ?> PAID.</strong> Customer already paid down payment online. <strong>NEVER charge the down payment again.</strong> Collect remaining balance of <strong>₱<?= number_format($prDue, 2) ?></strong> plus any additional in-store items at pickup.
-                    <?php else: ?>
-                        <strong>PRINTING ORDER IS UNPAID:</strong> Collect ₱<?= number_format($prTotal, 2) ?> plus any additional in-store items at pickup.
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md text-body-md">
-                <div class="p-sm bg-surface-container-low rounded-xl">
-                    <span class="text-xs text-on-surface-variant block font-medium">Customer</span>
-                    <span class="font-bold text-on-surface"><?= esc($prCustomerName ?: 'Online Customer') ?></span>
-                    <?php if (!empty($printingRequest['phone'])): ?>
-                        <span class="text-xs text-outline block mt-0.5"><?= esc($printingRequest['phone']) ?></span>
-                    <?php endif; ?>
+                    <!-- Actions Button Group -->
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" 
+                                onclick="<?= $isPrintingPickup && !$isStorePickup ? 'openPrintingSelectorModal()' : 'openPickupSelectorModal()' ?>" 
+                                class="h-9 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition-all"
+                                title="Change pick-up order/request">
+                            <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+                            <span class="hidden sm:inline">Change</span>
+                        </button>
+                        <a href="<?= base_url('tenant/pos') ?>" 
+                           class="h-9 px-2.5 rounded-xl border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1 transition-all"
+                           title="Exit pick-up mode to walk-in register">
+                            <span class="material-symbols-outlined text-[16px]">close</span>
+                            <span class="hidden sm:inline">Exit</span>
+                        </a>
+                    </div>
                 </div>
 
-                <div class="p-sm bg-surface-container-low rounded-xl">
-                    <span class="text-xs text-on-surface-variant block font-medium">Total Print Price</span>
-                    <span class="font-bold font-mono text-on-surface">₱<?= number_format($prTotal, 2) ?></span>
-                    <span class="text-xs text-outline block mt-0.5"><?= esc(humanize_status($printingRequest['status'])) ?></span>
-                </div>
-
-                <div class="p-sm bg-surface-container-low rounded-xl">
-                    <span class="text-xs text-on-surface-variant block font-medium">Online Paid Credit</span>
-                    <span class="font-bold font-mono text-green-700">₱<?= number_format($prPaid, 2) ?></span>
-                    <span class="text-xs <?= $prPaid > 0 ? 'text-green-700 font-bold' : 'text-outline' ?> block mt-0.5">
-                        <?= $prPaid > 0 ? '✓ Paid Online' : 'None' ?>
-                    </span>
-                </div>
-
-                <div class="p-sm bg-surface-container-low rounded-xl">
-                    <span class="text-xs text-on-surface-variant block font-medium">Remaining Print Balance Due</span>
-                    <span class="font-bold font-mono <?= $prDue > 0 ? 'text-amber-800 font-extrabold' : 'text-green-700' ?>">₱<?= number_format($prDue, 2) ?></span>
-                    <span class="text-xs <?= $prDue > 0 ? 'text-amber-800 font-semibold' : 'text-green-700' ?> block mt-0.5">
-                        <?= $prDue > 0 ? 'Collect at counter' : 'Fully Settled' ?>
-                    </span>
-                </div>
             </div>
         </div>
     <?php endif; ?>
@@ -565,10 +431,10 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                                     <?php if (empty($oit['is_pos_addition'])): ?>
                                         <div class="p-1.5 px-2.5 flex items-center justify-between">
                                             <div class="min-w-0 flex-1 pr-2">
-                                                <p class="font-semibold text-on-surface truncate"><?= esc($oit['product_name']) ?></p>
-                                                <p class="text-[10px] text-outline font-mono">Qty: <?= (int) $oit['quantity'] ?> × ₱<?= number_format((float) $oit['unit_price'], 2) ?></p>
+                                                <p class="font-semibold text-on-surface truncate"><?= esc($oit['product_name'] ?? 'Item') ?></p>
+                                                <p class="text-[10px] text-outline font-mono">Qty: <?= (int) ($oit['quantity'] ?? 1) ?> × ₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?></p>
                                             </div>
-                                            <span class="font-mono font-bold text-on-surface">₱<?= number_format((float) $oit['line_total'], 2) ?></span>
+                                            <span class="font-mono font-bold text-on-surface">₱<?= number_format((float) ($oit['line_total'] ?? (((int) ($oit['quantity'] ?? 1)) * ((float) ($oit['unit_price'] ?? $oit['price'] ?? 0)))), 2) ?></span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
@@ -667,10 +533,10 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                                     <?php if (empty($oit['is_pos_addition'])): ?>
                                         <div class="p-1.5 px-2.5 flex items-center justify-between">
                                             <div class="min-w-0 flex-1 pr-2">
-                                                <p class="font-semibold text-on-surface truncate"><?= esc($oit['product_name']) ?></p>
-                                                <p class="text-[10px] text-outline font-mono">Qty: <?= (int) $oit['quantity'] ?> × ₱<?= number_format((float) $oit['unit_price'], 2) ?></p>
+                                                <p class="font-semibold text-on-surface truncate"><?= esc($oit['product_name'] ?? 'Item') ?></p>
+                                                <p class="text-[10px] text-outline font-mono">Qty: <?= (int) ($oit['quantity'] ?? 1) ?> × ₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?></p>
                                             </div>
-                                            <span class="font-mono font-bold text-on-surface">₱<?= number_format((float) $oit['line_total'], 2) ?></span>
+                                            <span class="font-mono font-bold text-on-surface">₱<?= number_format((float) ($oit['line_total'] ?? (((int) ($oit['quantity'] ?? 1)) * ((float) ($oit['unit_price'] ?? $oit['price'] ?? 0)))), 2) ?></span>
                                         </div>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
