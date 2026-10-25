@@ -1395,12 +1395,16 @@ class Tenant extends BaseController
      */
     public function updateDeliveryLocation()
     {
-        $res = $this->getShopOrRedirect();
-        if ($res instanceof \CodeIgniter\HTTP\RedirectResponse) {
+        $shopId = $this->resolveShopIdForPoll();
+        if ($shopId === null || $shopId <= 0) {
             return $this->response->setStatusCode(401)->setJSON(['success' => false, 'error' => 'Unauthorized']);
         }
 
-        $shopId     = (int) $res['shopId'];
+        // Release PHP session lock immediately so concurrent browser requests are never blocked
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
         $deliveryId = (int) $this->request->getPost('delivery_id');
         $lat        = (float) $this->request->getPost('lat');
         $lng        = (float) $this->request->getPost('lng');
@@ -1413,19 +1417,19 @@ class Tenant extends BaseController
         }
 
         $deliveryModel = new DeliveryModel();
-        $ownerShopId = $deliveryModel->resolveShopId($deliveryId);
-        if (!$ownerShopId || $ownerShopId !== $shopId) {
-            return $this->response->setStatusCode(403)->setJSON([
-                'success' => false,
-                'error'   => 'Access denied. This delivery does not belong to your shop.',
-            ]);
-        }
-
         $delivery = $deliveryModel->find($deliveryId);
         if (!$delivery) {
             return $this->response->setStatusCode(404)->setJSON([
                 'success' => false,
                 'error'   => 'Delivery record not found.',
+            ]);
+        }
+
+        $ownerShopId = $deliveryModel->resolveShopId($deliveryId) ?? (int) ($delivery['shop_id'] ?? 0);
+        if (!$ownerShopId || $ownerShopId !== $shopId) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'error'   => 'Access denied. This delivery does not belong to your shop.',
             ]);
         }
 
@@ -1438,6 +1442,22 @@ class Tenant extends BaseController
         }
 
         $isInZone = DeliveryModel::isPolomolokCoordinate($lat, $lng);
+
+        // Optimization: if coordinates moved < 5m and status is already in_transit, skip redundant remote DB write
+        $currLat = (float) ($delivery['current_lat'] ?? 0);
+        $currLng = (float) ($delivery['current_lng'] ?? 0);
+        $movedDelta = hypot($lat - $currLat, $lng - $currLng);
+        if ($movedDelta < 0.00005 && $delivery['status'] === 'in_transit') {
+            return $this->response->setJSON([
+                'success'    => true,
+                'lat'        => $lat,
+                'lng'        => $lng,
+                'in_zone'    => $isInZone,
+                'status'     => 'in_transit',
+                'updated_at' => $delivery['location_updated_at'] ?? date('Y-m-d H:i:s'),
+                'csrf_hash'  => csrf_hash(),
+            ]);
+        }
 
         $now = date('Y-m-d H:i:s');
         $updateData = [
@@ -6286,6 +6306,13 @@ class Tenant extends BaseController
             if ($geo) {
                 $destLat = $geo['lat'];
                 $destLng = $geo['lng'];
+                // Persist geocoded coordinates to prevent redundant remote API lookups on future loads
+                try {
+                    $deliveryModel->update($deliveryId, [
+                        'destination_latitude'  => $destLat,
+                        'destination_longitude' => $destLng,
+                    ]);
+                } catch (\Throwable $e) {}
             }
         }
 
@@ -6321,12 +6348,11 @@ class Tenant extends BaseController
      */
     public function stopDeliveryBroadcast()
     {
-        $res = $this->getShopOrRedirect();
-        if ($res instanceof \CodeIgniter\HTTP\RedirectResponse) {
+        $shopId = $this->resolveShopIdForPoll();
+        if ($shopId === null || $shopId <= 0) {
             return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
 
-        $shopId = (int) $res['shopId'];
         $userRole = (string) (session()->get('user_role') ?? '');
 
         // Release PHP session lock immediately so unload beacon never hangs
@@ -6360,12 +6386,14 @@ class Tenant extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Forbidden']);
         }
 
-        // Deactivate active broadcast session by setting location_updated_at, current_lat, current_lng to NULL
-        $deliveryModel->update($deliveryId, [
-            'location_updated_at' => null,
-            'current_lat'         => null,
-            'current_lng'         => null,
-        ]);
+        // Only update if broadcast was active to avoid redundant database writes
+        if ($delivery['location_updated_at'] !== null || $delivery['current_lat'] !== null || $delivery['current_lng'] !== null) {
+            $deliveryModel->update($deliveryId, [
+                'location_updated_at' => null,
+                'current_lat'         => null,
+                'current_lng'         => null,
+            ]);
+        }
 
         return $this->response->setJSON(['status' => 'success', 'message' => 'Broadcast stopped']);
     }

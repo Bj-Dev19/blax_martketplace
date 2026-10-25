@@ -1023,12 +1023,11 @@
         }
 
         let shouldSend = false;
-        if (now - lastSentTime >= 5000) {
+        const distMoved = lastSentCoords ? distanceMeters(lat, lng, lastSentCoords.lat, lastSentCoords.lng) : 999;
+        if (now - lastSentTime >= 15000) {
             shouldSend = true;
-        } else if (lastSentCoords && distanceMeters(lat, lng, lastSentCoords.lat, lastSentCoords.lng) >= 5) {
-            if (now - lastSentTime >= 2500) {
-                shouldSend = true;
-            }
+        } else if (distMoved >= 10 && (now - lastSentTime >= 4000)) {
+            shouldSend = true;
         }
 
         if (shouldSend) {
@@ -1111,7 +1110,11 @@
         startGpsBroadcasting();
     };
 
+    let isSendingLocation = false;
+
     function sendLocationUpdate(lat, lng, accuracy) {
+        if (isSendingLocation) return;
+        isSendingLocation = true;
         lastSentTime = Date.now();
         lastSentCoords = { lat, lng };
 
@@ -1160,31 +1163,36 @@
         })
         .catch(err => {
             console.debug('Failed to broadcast GPS position:', err);
+        })
+        .finally(() => {
+            isSendingLocation = false;
         });
     }
 
     let isExitBroadcastStopped = false;
+
     function stopBroadcastingOnExit() {
+        if (isExitBroadcastStopped || !DELIVERY_ID) return;
+        isExitBroadcastStopped = true;
+
         if (watchId !== null) {
             try { navigator.geolocation.clearWatch(watchId); } catch(e) {}
             watchId = null;
         }
-        if (DELIVERY_ID && !isExitBroadcastStopped) {
-            isExitBroadcastStopped = true;
-            const stopUrl = '<?= base_url('tenant/deliveries/stop-broadcast') ?>';
-            const params = new URLSearchParams();
-            params.append('delivery_id', String(DELIVERY_ID));
-            const csrfToken = window.getCsrfToken ? window.getCsrfToken() : '';
-            if (csrfToken) {
-                params.append('<?= csrf_token() ?>', csrfToken);
-            }
-            const payload = params.toString();
 
-            if (navigator.sendBeacon) {
-                const blob = new Blob([payload], { type: 'application/x-www-form-urlencoded; charset=UTF-8' });
-                navigator.sendBeacon(stopUrl, blob);
-            }
+        const stopUrl = '<?= base_url('tenant/deliveries/stop-broadcast') ?>';
+        const params = new URLSearchParams();
+        params.append('delivery_id', String(DELIVERY_ID));
+        const csrfToken = window.getCsrfToken ? window.getCsrfToken() : '';
+        if (csrfToken) {
+            params.append('<?= csrf_token() ?>', csrfToken);
+        }
+        const payload = params.toString();
 
+        if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: 'application/x-www-form-urlencoded; charset=UTF-8' });
+            navigator.sendBeacon(stopUrl, blob);
+        } else {
             try {
                 fetch(stopUrl, {
                     method: 'POST',
