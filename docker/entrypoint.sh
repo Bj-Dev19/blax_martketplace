@@ -28,7 +28,17 @@ PHP_FPM_START_SERVERS="${PHP_FPM_START_SERVERS:-1}"
 PHP_FPM_MIN_SPARE_SERVERS="${PHP_FPM_MIN_SPARE_SERVERS:-1}"
 PHP_FPM_MAX_SPARE_SERVERS="${PHP_FPM_MAX_SPARE_SERVERS:-2}"
 PHP_FPM_MAX_REQUESTS="${PHP_FPM_MAX_REQUESTS:-500}"
-FPM_SLOWLOG_TIMEOUT="${FPM_SLOWLOG_TIMEOUT:-2s}"
+
+# FPM slowlog requires CAP_SYS_PTRACE which Render containers block.
+# Default to 0 (disabled) to avoid ptrace(ATTACH) errors.
+# Slow requests are tracked non-blockingly via access.format and PerformanceFilter.
+FPM_SLOWLOG_TIMEOUT="${FPM_SLOWLOG_TIMEOUT:-0}"
+
+SLOWLOG_DIRECTIVES=""
+if [ "${FPM_SLOWLOG_TIMEOUT}" != "0" ] && [ -n "${FPM_SLOWLOG_TIMEOUT}" ]; then
+    SLOWLOG_DIRECTIVES="request_slowlog_timeout = ${FPM_SLOWLOG_TIMEOUT}
+slowlog = /proc/self/fd/2"
+fi
 
 if [ -d "/usr/local/etc/php-fpm.d" ]; then
     cat <<EOF > /usr/local/etc/php-fpm.d/zz-php-fpm.conf
@@ -38,8 +48,7 @@ catch_workers_output = yes
 decorate_workers_output = no
 access.log = /proc/self/fd/2
 access.format = "[%{%Y-%m-%d %H:%M:%S}t] %m %{REQUEST_URI}e %s %{mili}dms %{kilo}Mkb %C%%"
-request_slowlog_timeout = ${FPM_SLOWLOG_TIMEOUT}
-slowlog = /proc/self/fd/2
+${SLOWLOG_DIRECTIVES}
 pm = ${PHP_FPM_PM}
 pm.max_children = ${PHP_FPM_MAX_CHILDREN}
 pm.start_servers = ${PHP_FPM_START_SERVERS}
