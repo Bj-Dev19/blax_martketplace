@@ -40,6 +40,7 @@ class Filters extends BaseFilters
         'roleAccess'     => \App\Filters\RoleAccessFilter::class,
         'authThrottle'   => \App\Filters\AuthRateLimiter::class,
         'actionThrottle' => \App\Filters\ActionRateLimiter::class,
+        'appProfile'     => \App\Filters\PerformanceFilter::class,
     ];
 
     /**
@@ -75,11 +76,13 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            'appProfile',
             // 'honeypot',
             'csrf' => ['except' => ['healthz', 'payment/webhook', 'payment/transfer-webhook', 'api/route', 'tenant/deliveries/stop-broadcast']],
             // 'invalidchars',
         ],
         'after' => [
+            'appProfile',
             // 'honeypot',
             'secureheaders',
         ],

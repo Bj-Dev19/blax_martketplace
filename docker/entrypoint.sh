@@ -20,6 +20,7 @@ PHP_FPM_START_SERVERS="${PHP_FPM_START_SERVERS:-1}"
 PHP_FPM_MIN_SPARE_SERVERS="${PHP_FPM_MIN_SPARE_SERVERS:-1}"
 PHP_FPM_MAX_SPARE_SERVERS="${PHP_FPM_MAX_SPARE_SERVERS:-2}"
 PHP_FPM_MAX_REQUESTS="${PHP_FPM_MAX_REQUESTS:-500}"
+FPM_SLOWLOG_TIMEOUT="${FPM_SLOWLOG_TIMEOUT:-2s}"
 
 if [ -d "/usr/local/etc/php-fpm.d" ]; then
     cat <<EOF > /usr/local/etc/php-fpm.d/zz-php-fpm.conf
@@ -27,6 +28,10 @@ if [ -d "/usr/local/etc/php-fpm.d" ]; then
 clear_env = no
 catch_workers_output = yes
 decorate_workers_output = no
+access.log = /proc/self/fd/2
+access.format = "[%{%Y-%m-%d %H:%M:%S}t] %m %{REQUEST_URI}e %s %{mili}dms %{kilo}Mkb %C%%"
+request_slowlog_timeout = ${FPM_SLOWLOG_TIMEOUT}
+slowlog = /proc/self/fd/2
 pm = ${PHP_FPM_PM}
 pm.max_children = ${PHP_FPM_MAX_CHILDREN}
 pm.start_servers = ${PHP_FPM_START_SERVERS}
@@ -67,6 +72,8 @@ max_execution_time=${PHP_MAX_EXECUTION_TIME}
 max_input_time=120
 default_socket_timeout=120
 expose_php=Off
+log_errors=On
+error_log=/proc/self/fd/2
 EOF
 fi
 
