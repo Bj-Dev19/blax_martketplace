@@ -77,6 +77,21 @@ error_log=/proc/self/fd/2
 EOF
 fi
 
+# Fail fast at startup: validate Nginx and PHP-FPM configurations before running migrations or daemons
+echo "Validating Nginx and PHP-FPM configurations..."
+if ! nginx_test_output=$(nginx -t 2>&1); then
+    echo "ERROR: nginx configuration test failed:" >&2
+    echo "$nginx_test_output" >&2
+    exit 1
+fi
+
+if ! fpm_test_output=$(php-fpm -t 2>&1); then
+    echo "ERROR: php-fpm configuration test failed:" >&2
+    echo "$fpm_test_output" >&2
+    exit 1
+fi
+echo "Nginx and PHP-FPM configuration tests passed."
+
 # Ensure writable directories exist with correct permissions for www-data
 mkdir -p /var/www/html/writable/cache \
          /var/www/html/writable/cache/views \

@@ -66,6 +66,11 @@ RUN mkdir -p /var/www/html/writable/cache \
 RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/nginx.conf.template /etc/nginx/conf.d/default.conf.template
 
+# Validate Nginx configuration template at build time to fail fast if syntax/context is invalid
+RUN PORT=8080 envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf \
+    && nginx -t \
+    && rm -f /etc/nginx/conf.d/default.conf
+
 # Ensure entrypoint has LF line endings (safe from Windows CRLF) and executable permission
 RUN sed -i 's/\r$//' /var/www/html/docker/entrypoint.sh \
     && chmod +x /var/www/html/docker/entrypoint.sh

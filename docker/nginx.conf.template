@@ -8,6 +8,12 @@ map $http_x_forwarded_proto $hsts_header {
     default "";
 }
 
+# Timed access log format with request and upstream timing (allowed only in http context)
+log_format timed_combined '$remote_addr - $remote_user [$time_local] "$request" '
+                          '$status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" rt=$request_time uct="$upstream_connect_time" '
+                          'uht="$upstream_header_time" urt="$upstream_response_time"';
+
 server {
     listen ${PORT};
     server_name _;
@@ -17,12 +23,6 @@ server {
     index index.php index.html;
 
     client_max_body_size 50M;
-
-    # Timed access log format with request and upstream timing
-    log_format timed_combined '$remote_addr - $remote_user [$time_local] "$request" '
-                              '$status $body_bytes_sent "$http_referer" '
-                              '"$http_user_agent" rt=$request_time uct="$upstream_connect_time" '
-                              'uht="$upstream_header_time" urt="$upstream_response_time"';
 
     access_log /dev/stdout timed_combined;
     error_log /dev/stderr warn;

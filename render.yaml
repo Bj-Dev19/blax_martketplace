@@ -8,7 +8,7 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: CI_ENVIRONMENT
-        value: production
+        value: production # never 'development' on a server
       - key: DB_HOST
         sync: false
       - key: DB_PORT
