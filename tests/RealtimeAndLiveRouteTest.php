@@ -51,6 +51,23 @@ class RealtimeAndLiveRouteTest extends CIUnitTestCase
         ]);
     }
 
+    private function asCustomer(int $userId): self
+    {
+        $hash = csrf_hash();
+        $_COOKIE['csrf_cookie_name'] = $hash;
+
+        return $this->withSession([
+            'user_id'    => $userId,
+            'user_name'  => 'Test Customer',
+            'user_email' => 'customer@test.com',
+            'user_role'  => 'customer',
+            'role'       => 'customer',
+            'isLoggedIn' => true,
+        ])->withHeaders([
+            'X-CSRF-TOKEN' => $hash,
+        ]);
+    }
+
     public function testServiceAreaCoordinateBounds()
     {
         // Polomolok center is within bounds
@@ -160,6 +177,89 @@ class RealtimeAndLiveRouteTest extends CIUnitTestCase
         $this->assertArrayHasKey('max_printing_id', $json);
         $this->assertArrayHasKey('has_new_orders', $json);
         $this->assertArrayHasKey('has_new_printing', $json);
+    }
+
+    public function testCustomerRealtimeCheckFastPath()
+    {
+        $customer = (new UserModel())->where('role', 'customer')->first();
+        if (!$customer) {
+            $customer = (new UserModel())->first();
+        }
+        $userId = (int) $customer['id'];
+
+        // Initial call without sigs returns changed => true
+        $res1 = $this->asCustomer($userId)->get('customer/realtime/check');
+        $res1->assertStatus(200);
+        $json1 = json_decode($res1->getJSON(), true);
+        $this->assertTrue($json1['success']);
+        $this->assertTrue($json1['changed']);
+
+        // Heartbeat call with matched sigs returns changed => false
+        $maxNotifId = $json1['max_notif_id'] ?? 0;
+        $orderSig   = urlencode($json1['order_sig'] ?? '');
+        $printSig   = urlencode($json1['print_sig'] ?? '');
+
+        $res2 = $this->asCustomer($userId)
+            ->get("customer/realtime/check?last_notif_id={$maxNotifId}&last_order_sig={$orderSig}&last_print_sig={$printSig}");
+        $res2->assertStatus(200);
+        $json2 = json_decode($res2->getJSON(), true);
+        $this->assertTrue($json2['success']);
+        $this->assertFalse($json2['changed']);
+    }
+
+    public function testTenantRealtimeCheckFastPath()
+    {
+        $shop = (new ShopModel())->first();
+        if (!$shop) {
+            $this->markTestSkipped('No shops available in database to test tenant realtime check.');
+        }
+
+        $tenantUser = (new UserModel())->find($shop['owner_id']);
+        if (!$tenantUser) {
+            $this->markTestSkipped('Shop owner not found in users table.');
+        }
+
+        // 1. Initial call
+        $res1 = $this->asTenant((int) $tenantUser['id'], (int) $shop['id'])
+            ->get('tenant/realtime/check?last_order_id=0&last_printing_id=0');
+        $res1->assertStatus(200);
+        $json1 = json_decode($res1->getJSON(), true);
+        $this->assertTrue($json1['success']);
+
+        $maxOrd = (int) ($json1['max_order_id'] ?? 0);
+        $maxPr  = (int) ($json1['max_printing_id'] ?? 0);
+        $maxNotif = (int) ($json1['max_notif_id'] ?? 0);
+
+        // 2. Heartbeat call passing latest IDs returns changed => false
+        $res2 = $this->asTenant((int) $tenantUser['id'], (int) $shop['id'])
+            ->get("tenant/realtime/check?last_order_id={$maxOrd}&last_printing_id={$maxPr}&last_notif_id={$maxNotif}");
+        $res2->assertStatus(200);
+        $json2 = json_decode($res2->getJSON(), true);
+        $this->assertTrue($json2['success']);
+        $this->assertFalse($json2['changed']);
+        $this->assertEmpty($json2['notifications']);
+    }
+
+    public function testAdminRealtimeCheckFastPath()
+    {
+        $admin = (new UserModel())->where('role', 'admin')->first();
+        $adminId = $admin ? (int) $admin['id'] : 1;
+
+        $res1 = $this->asAdmin($adminId)->get('admin/realtime/check?last_order_id=0&last_printing_id=0');
+        $res1->assertStatus(200);
+        $json1 = json_decode($res1->getJSON(), true);
+        $this->assertTrue($json1['success']);
+
+        $maxOrd = (int) ($json1['max_order_id'] ?? 0);
+        $maxPr  = (int) ($json1['max_printing_id'] ?? 0);
+        $maxNotif = (int) ($json1['max_notif_id'] ?? 0);
+
+        $res2 = $this->asAdmin($adminId)->get("admin/realtime/check?last_order_id={$maxOrd}&last_printing_id={$maxPr}&last_notif_id={$maxNotif}");
+        $res2->assertStatus(200);
+        $json2 = json_decode($res2->getJSON(), true);
+        $this->assertTrue($json2['success']);
+        $this->assertFalse($json2['changed']);
+        $this->assertEmpty($json2['notifications']);
     }
 
     public function testAdminLiveTrackingOnlyShowsTenantWhenViewLiveRouteIsOpened()

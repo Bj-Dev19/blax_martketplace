@@ -354,6 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Customer Real-time Notification & Delivery Status Poller (if logged in)
     <?php if ($isLogged): ?>
     let lastNotifId = <?= !empty($recentNotifs[0]['id']) ? (int)$recentNotifs[0]['id'] : 0 ?>;
+    let lastOrderSig = '';
+    let lastPrintSig = '';
     let knownOrderStatuses = {};
     let knownPrintStatuses = {};
     let isInitialCustomerPoll = true;
@@ -409,7 +411,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.visibilityState === 'hidden') return;
 
         let url = '<?= base_url('customer/realtime/check') ?>';
-        if (lastNotifId > 0) url += '?last_notif_id=' + lastNotifId;
+        const params = new URLSearchParams();
+        if (lastNotifId > 0) params.set('last_notif_id', lastNotifId);
+        if (lastOrderSig) params.set('last_order_sig', lastOrderSig);
+        if (lastPrintSig) params.set('last_print_sig', lastPrintSig);
+        const qs = params.toString();
+        if (qs) url += '?' + qs;
 
         fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(r => {
@@ -418,6 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(res => {
                 if (!res || !res.success) return;
+
+                if (res.order_sig !== undefined) lastOrderSig = res.order_sig;
+                if (res.print_sig !== undefined) lastPrintSig = res.print_sig;
 
                 // Sync header badges
                 updateCustomerBadges(res.unread_count, res.cart_count, res.active_orders_count);
@@ -439,6 +449,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (res.max_notif_id && res.max_notif_id > lastNotifId) {
                     lastNotifId = res.max_notif_id;
+                }
+
+                if (res.changed === false) {
+                    return;
                 }
 
                 // Show new notification toasts

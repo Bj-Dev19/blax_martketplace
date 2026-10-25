@@ -488,6 +488,7 @@
     (function() {
         let lastOrderId = null;
         let lastPrintingId = null;
+        let lastNotifId = null;
         let isInitial = true;
 
         function getAdminToastContainer() {
@@ -584,8 +585,9 @@
             if (document.visibilityState === 'hidden') return;
             let url = '<?= base_url('admin/realtime/check') ?>';
             const params = [];
-            if (lastOrderId !== null) params.push('last_order_id=' + lastOrderId);
-            if (lastPrintingId !== null) params.push('last_printing_id=' + lastPrintingId);
+            if (lastOrderId !== null) params.push('last_order_id=' + encodeURIComponent(lastOrderId));
+            if (lastPrintingId !== null) params.push('last_printing_id=' + encodeURIComponent(lastPrintingId));
+            if (lastNotifId !== null) params.push('last_notif_id=' + encodeURIComponent(lastNotifId));
             params.push('_t=' + Date.now());
             if (params.length > 0) url += '?' + params.join('&');
 
@@ -600,6 +602,7 @@
                     if (isInitial) {
                         lastOrderId = res.max_order_id || 0;
                         lastPrintingId = res.max_printing_id || 0;
+                        lastNotifId = res.max_notif_id || 0;
                         isInitial = false;
                         if (typeof res.unread_count === 'number') {
                             updateAdminNotifBadge(res.unread_count);
@@ -609,9 +612,14 @@
 
                     if (res.max_order_id) lastOrderId = Math.max(lastOrderId || 0, res.max_order_id);
                     if (res.max_printing_id) lastPrintingId = Math.max(lastPrintingId || 0, res.max_printing_id);
+                    if (res.max_notif_id) lastNotifId = Math.max(lastNotifId || 0, res.max_notif_id);
 
                     if (typeof res.unread_count === 'number') {
                         updateAdminNotifBadge(res.unread_count);
+                    }
+
+                    if (res.changed === false) {
+                        return;
                     }
 
                     if (res.summary) {

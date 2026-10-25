@@ -750,6 +750,7 @@
     (function() {
         let lastOrderId = null;
         let lastPrintingId = null;
+        let lastNotifId = null;
         let pollTimer = null;
         let isInitial = true;
 
@@ -973,6 +974,9 @@
                 let url = '<?= base_url('tenant/realtime/check') ?>';
                 if (!isInitial && lastOrderId !== null && lastPrintingId !== null) {
                     url += `?last_order_id=${encodeURIComponent(lastOrderId)}&last_printing_id=${encodeURIComponent(lastPrintingId)}`;
+                    if (lastNotifId !== null) {
+                        url += `&last_notif_id=${encodeURIComponent(lastNotifId)}`;
+                    }
                 }
 
                 const res = await fetch(url, {
@@ -993,9 +997,22 @@
                 if (isInitial) {
                     lastOrderId = data.max_order_id || 0;
                     lastPrintingId = data.max_printing_id || 0;
+                    lastNotifId = data.max_notif_id || 0;
                     isInitial = false;
                     if (typeof data.unread_count !== 'undefined') {
                         updateNotificationsUI(data.unread_count, data.notifications);
+                    }
+                    scheduleNextPoll();
+                    return;
+                }
+
+                if (data.max_notif_id) {
+                    lastNotifId = Math.max(lastNotifId || 0, data.max_notif_id);
+                }
+
+                if (data.changed === false) {
+                    if (typeof data.unread_count !== 'undefined') {
+                        updateNotificationsUI(data.unread_count);
                     }
                     scheduleNextPoll();
                     return;

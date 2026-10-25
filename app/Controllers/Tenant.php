@@ -576,6 +576,7 @@ class Tenant extends BaseController
         $shopId = (int) $res['shopId'];
         $rawLastOrderId = $this->request->getGet('last_order_id');
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
+        $rawLastNotifId = $this->request->getGet('last_notif_id');
 
         $orderModel = new OrderModel();
         $printingModel = new PrintingRequestModel();
@@ -588,30 +589,37 @@ class Tenant extends BaseController
 
         // Live Notification Telemetry
         $notifModel = new \App\Models\NotificationModel();
+        $maxNotifRow = $userId > 0 ? $notifModel->where('user_id', $userId)->selectMax('id')->first() : null;
+        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
         $unreadCount = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
-        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
 
-        // Fast-path: if heartbeat poll and no new orders/printing, return immediately (skips 8+ heavy summary queries)
+        // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately (skips 8+ heavy summary queries & recent notifs fetch)
         if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
             $lastOrderId = (int) $rawLastOrderId;
             $lastPrintingId = (int) $rawLastPrintingId;
-            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId) {
+            $lastNotifId = $rawLastNotifId !== null && $rawLastNotifId !== '' ? (int) $rawLastNotifId : null;
+
+            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId)) {
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
                     ->setJSON([
                         'success'           => true,
+                        'changed'           => false,
                         'max_order_id'      => $currentMaxOrderId,
                         'max_printing_id'   => $currentMaxPrintId,
+                        'max_notif_id'      => $currentMaxNotifId,
                         'has_new_orders'    => false,
                         'new_orders'        => [],
                         'has_new_printing'  => false,
                         'new_printing'      => [],
                         'unread_count'      => $unreadCount,
-                        'notifications'     => $recentNotifs,
+                        'notifications'     => [],
                         'timestamp'         => date('Y-m-d H:i:s'),
                     ]);
             }
         }
+
+        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
 
         // 1. Fetch new orders for this shop in a single JOIN query (0 N+1 roundtrips)
         $newOrders = [];
@@ -761,8 +769,10 @@ class Tenant extends BaseController
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
                 'success'           => true,
+                'changed'           => true,
                 'max_order_id'      => $currentMaxOrderId,
                 'max_printing_id'   => $currentMaxPrintId,
+                'max_notif_id'      => $currentMaxNotifId,
                 'has_new_orders'    => !empty($newOrders),
                 'new_orders'        => $newOrders,
                 'has_new_printing'  => !empty($newPrinting),

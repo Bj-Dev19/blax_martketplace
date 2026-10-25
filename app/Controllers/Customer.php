@@ -937,37 +937,74 @@ class Customer extends BaseController
         }
 
         $notifModel = new \App\Models\NotificationModel();
+        $orderModel = new \App\Models\OrderModel();
+        $prModel    = new \App\Models\PrintingRequestModel();
+
+        $rawLastNotifId = $this->request->getGet('last_notif_id');
+        $rawLastOrderSig = $this->request->getGet('last_order_sig');
+        $rawLastPrintSig = $this->request->getGet('last_print_sig');
+
+        // Fast change-detection snapshots
+        $maxNotifRow = $notifModel->where('user_id', $userId)->selectMax('id')->first();
+        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
         $unreadCount = $notifModel->getUnreadCount($userId);
 
-        $lastNotifId = (int) $this->request->getGet('last_notif_id');
-        $notifBuilder = (new \App\Models\NotificationModel())->where('user_id', $userId);
-        if ($lastNotifId > 0) {
-            $notifBuilder->where('id >', $lastNotifId);
-        }
-        $newNotifs = $notifBuilder->orderBy('id', 'DESC')->limit(5)->findAll();
-
-        $maxNotifId = $lastNotifId;
-        foreach ($newNotifs as $n) {
-            if ((int) $n['id'] > $maxNotifId) {
-                $maxNotifId = (int) $n['id'];
-            }
-        }
-
-        // Active orders status snapshot
-        $activeOrders = (new \App\Models\OrderModel())
+        $activeOrders = $orderModel
             ->select('id, order_number, status, placed_at')
             ->where('customer_id', $userId)
             ->whereIn('status', ['pending', 'processing', 'shipped', 'in_transit', 'ready_for_pickup'])
             ->orderBy('placed_at', 'DESC')
+            ->limit(10)
             ->findAll();
 
-        // Active printing requests status snapshot
-        $activePrinting = (new \App\Models\PrintingRequestModel())
+        $activePrinting = $prModel
             ->select('id, request_number, status, progress_percent, file_name, created_at')
             ->where('customer_id', $userId)
             ->whereIn('status', ['new', 'in_production', 'ready_for_pickup', 'ready_for_delivery'])
             ->orderBy('created_at', 'DESC')
+            ->limit(10)
             ->findAll();
+
+        $orderSig = '';
+        foreach ($activeOrders as $ao) {
+            $orderSig .= $ao['id'] . ':' . $ao['status'] . ';';
+        }
+        $printSig = '';
+        foreach ($activePrinting as $ap) {
+            $printSig .= $ap['id'] . ':' . $ap['status'] . ';';
+        }
+
+        // Fast path: if client provided previous hashes and no new notifications or status transitions occurred
+        if ($rawLastNotifId !== null && $rawLastOrderSig !== null && $rawLastPrintSig !== null) {
+            $lastNotifId = (int) $rawLastNotifId;
+            if ($currentMaxNotifId <= $lastNotifId && $rawLastOrderSig === $orderSig && $rawLastPrintSig === $printSig) {
+                return $this->response
+                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    ->setJSON([
+                        'success'             => true,
+                        'changed'             => false,
+                        'unread_count'        => $unreadCount,
+                        'max_notif_id'        => $currentMaxNotifId,
+                        'order_sig'           => $orderSig,
+                        'print_sig'           => $printSig,
+                        'has_new'             => false,
+                        'new_notifs'          => [],
+                        'active_orders'       => $activeOrders,
+                        'active_printing'     => $activePrinting,
+                        'timestamp'           => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
+
+        // Full payload when changes detected or initial heartbeat
+        $newNotifs = [];
+        if ($rawLastNotifId !== null && (int)$rawLastNotifId > 0) {
+            $newNotifs = $notifModel->where('user_id', $userId)
+                ->where('id >', (int)$rawLastNotifId)
+                ->orderBy('id', 'DESC')
+                ->limit(5)
+                ->findAll();
+        }
 
         $headerStats = (new \App\Models\UserModel())->getCustomerHeaderStats($userId);
         $recentNotifs = $notifModel->getRecent($userId, 6);
@@ -976,10 +1013,13 @@ class Customer extends BaseController
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
                 'success'             => true,
+                'changed'             => true,
                 'unread_count'        => $unreadCount,
                 'cart_count'          => (int) ($headerStats['cart_count'] ?? 0),
                 'active_orders_count' => (int) ($headerStats['active_orders_count'] ?? count($activeOrders)),
-                'max_notif_id'        => $maxNotifId,
+                'max_notif_id'        => $currentMaxNotifId,
+                'order_sig'           => $orderSig,
+                'print_sig'           => $printSig,
                 'new_notifs'          => $newNotifs,
                 'notifications'       => $recentNotifs,
                 'has_new'             => !empty($newNotifs),

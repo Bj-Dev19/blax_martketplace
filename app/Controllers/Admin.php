@@ -376,9 +376,47 @@ class Admin extends BaseController
 
         $rawLastOrderId = $this->request->getGet('last_order_id');
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
+        $rawLastNotifId = $this->request->getGet('last_notif_id');
 
         $orderModel = new \App\Models\OrderModel();
         $printingModel = new \App\Models\PrintingRequestModel();
+
+        $maxOrdRow = $orderModel->selectMax('id')->first();
+        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
+
+        $maxPrRow = $printingModel->selectMax('id')->first();
+        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
+
+        $notifModel = new \App\Models\NotificationModel();
+        $maxNotifRow = $adminUserId > 0 ? $notifModel->where('user_id', $adminUserId)->selectMax('id')->first() : null;
+        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
+        $unreadCount = $adminUserId > 0 ? $notifModel->getUnreadCount($adminUserId) : 0;
+
+        // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately
+        if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
+            $lastOrderId = (int) $rawLastOrderId;
+            $lastPrintingId = (int) $rawLastPrintingId;
+            $lastNotifId = $rawLastNotifId !== null && $rawLastNotifId !== '' ? (int) $rawLastNotifId : null;
+
+            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId)) {
+                return $this->response
+                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    ->setJSON([
+                        'success'          => true,
+                        'changed'          => false,
+                        'max_order_id'     => $currentMaxOrderId,
+                        'max_printing_id'  => $currentMaxPrintId,
+                        'max_notif_id'     => $currentMaxNotifId,
+                        'has_new_orders'   => false,
+                        'new_orders'       => [],
+                        'has_new_printing' => false,
+                        'new_printing'     => [],
+                        'unread_count'     => $unreadCount,
+                        'notifications'    => [],
+                        'timestamp'        => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
 
         // 1. Fetch new orders for admin across all shops with a single JOIN query
         $newOrders = [];
@@ -438,14 +476,6 @@ class Admin extends BaseController
             }
         }
 
-        $maxOrdRow = $orderModel->selectMax('id')->first();
-        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
-
-        $maxPrRow = $printingModel->selectMax('id')->first();
-        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
-
-        $notifModel = new \App\Models\NotificationModel();
-        $unreadCount = $adminUserId > 0 ? $notifModel->getUnreadCount($adminUserId) : 0;
         $recentNotifs = $adminUserId > 0 ? $notifModel->getRecent($adminUserId, 6) : [];
 
         $db = \Config\Database::connect();
@@ -457,8 +487,10 @@ class Admin extends BaseController
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
                 'success'          => true,
+                'changed'          => true,
                 'max_order_id'     => $currentMaxOrderId,
                 'max_printing_id'  => $currentMaxPrintId,
+                'max_notif_id'     => $currentMaxNotifId,
                 'has_new_orders'   => !empty($newOrders),
                 'new_orders'       => $newOrders,
                 'has_new_printing' => !empty($newPrinting),
