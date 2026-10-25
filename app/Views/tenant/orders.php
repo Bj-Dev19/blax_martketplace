@@ -1834,7 +1834,7 @@
                         <div class="flex items-center gap-2.5 min-w-0 flex-1">
                             <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs relative overflow-hidden">
                                 <span>${order.customer_initials || 'CU'}</span>
-                                ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
+                                ${(order.profile_image_url || order.customer_image) ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url || order.customer_image}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                             </div>
                             <span class="font-bold text-xs text-slate-900 dark:text-white truncate">${order.customer_name || 'Customer'}</span>
                         </div>
@@ -1953,7 +1953,7 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden shadow-2xs">
                             <span>${order.customer_initials || 'CU'}</span>
-                            ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
+                            ${(order.profile_image_url || order.customer_image) ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url || order.customer_image}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                         </div>
                         <div class="min-w-0">
                             <p class="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">${order.customer_name || 'Customer'}</p>
@@ -2081,7 +2081,7 @@
                     <div class="flex items-center gap-2 min-w-0">
                         <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center text-xs font-bold shrink-0 relative overflow-hidden">
                             <span>${order.customer_initials || 'CU'}</span>
-                            ${order.profile_image_url ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
+                            ${(order.profile_image_url || order.customer_image) ? `<img class="absolute inset-0 w-full h-full object-cover rounded-full" src="${order.profile_image_url || order.customer_image}" alt="${order.customer_name}" loading="lazy" onerror="this.remove();">` : ''}
                         </div>
                         <div class="min-w-0">
                             <p class="font-bold text-slate-900 dark:text-white truncate">${order.customer_name || 'Customer'}</p>

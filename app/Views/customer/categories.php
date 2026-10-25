@@ -92,7 +92,7 @@
                                  src="<?= esc($imgSrc) ?>" 
                                  alt="<?= esc($tCat['name']) ?>" 
                                  loading="lazy"
-                                 onerror="this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
                             
                             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
 
@@ -153,7 +153,7 @@
                                      src="<?= esc(product_image_url($cat['image_url'], 'card')) ?>" 
                                      alt="<?= esc($cat['name']) ?>" 
                                      loading="lazy"
-                                     onerror="this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
                             <?php else: ?>
                                 <div class="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                     <span class="material-symbols-outlined text-terra-green/60 text-4xl group-hover:scale-110 transition-transform">category</span>

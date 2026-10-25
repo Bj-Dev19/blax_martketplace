@@ -82,7 +82,7 @@
                     
                     <div class="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-3">
                         <a href="<?= base_url('product/' . $p['id']) ?>" class="block w-full h-full flex items-center justify-center">
-                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
                         </a>
 
                         <?php if ($hasDiscount): ?>

@@ -736,7 +736,7 @@
 
                         <a href="<?= base_url('product/' . $p['id']) ?>" class="block relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-3">
 
-                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc(product_image_url($p['image_url'] ?? null)) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc(product_image_url($p['image_url'] ?? null)) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
 
                             <?php if (!empty($p['is_bestseller'])): ?>
                                 <span class="absolute top-2.5 right-2.5 bg-amber-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-xs z-10 uppercase tracking-wide">

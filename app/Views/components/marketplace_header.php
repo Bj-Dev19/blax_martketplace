@@ -194,24 +194,22 @@
                 <?php if ($isLogged): ?>
 
                     <div class="relative">
-                        <button id="profile-dropdown-toggle" type="button" class="profile-dropdown-toggle w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green hover:ring-2 hover:ring-terra-green/30 transition-all text-xs sm:text-sm shrink-0" aria-haspopup="true" aria-expanded="false" aria-label="Profile menu">
+                        <button id="profile-dropdown-toggle" type="button" class="profile-dropdown-toggle w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green hover:ring-2 hover:ring-terra-green/30 transition-all text-xs sm:text-sm shrink-0 relative" aria-haspopup="true" aria-expanded="false" aria-label="Profile menu">
                             <?php if (!empty($profileImage)): ?>
-                                <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="36" height="36" loading="lazy" decoding="async">
-                            <?php else: ?>
-                                <?= $avatarChar ?>
+                                <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="36" height="36" loading="eager" decoding="async" onerror="this.remove();">
                             <?php endif; ?>
+                            <span><?= $avatarChar ?></span>
                         </button>
 
                         <!-- Profile Dropdown -->
                         <div id="profile-dropdown" class="dropdown-menu absolute right-0 top-full mt-2 min-w-[240px] w-max max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 origin-top-right">
 
                             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0">
+                                <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0 relative">
                                     <?php if (!empty($profileImage)): ?>
-                                        <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="lazy" decoding="async">
-                                    <?php else: ?>
-                                        <?= $avatarChar ?>
+                                        <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="eager" decoding="async" onerror="this.remove();">
                                     <?php endif; ?>
+                                    <span><?= $avatarChar ?></span>
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-bold text-slate-900 dark:text-white text-xs truncate"><?= esc($userName) ?></p>
@@ -287,12 +285,11 @@
             <!-- User Profile Summary in Drawer -->
             <div class="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0 relative">
                         <?php if (!empty($profileImage)): ?>
-                            <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="lazy" decoding="async">
-                        <?php else: ?>
-                            <?= $avatarChar ?>
+                            <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="eager" decoding="async" onerror="this.remove();">
                         <?php endif; ?>
+                        <span><?= $avatarChar ?></span>
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="font-bold text-xs text-slate-900 dark:text-white truncate"><?= esc($userName) ?></p>
