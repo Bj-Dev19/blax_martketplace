@@ -6073,11 +6073,11 @@ class Tenant extends BaseController
         $itemsSummaryMap = [];
         if (!empty($orderIds)) {
             try {
-                $orderItems = (new OrderItemModel())
+                $pickupOrderItemsBatch = (new OrderItemModel())
                     ->select('order_id, quantity, product_name')
                     ->whereIn('order_id', $orderIds)
                     ->findAll();
-                foreach ($orderItems as $it) {
+                foreach ($pickupOrderItemsBatch as $it) {
                     $oId = (int) $it['order_id'];
                     $qty = $it['quantity'] ?? 1;
                     $pName = $it['product_name'] ?? 'Item';

@@ -198,6 +198,44 @@ Slow requests show CPU `%C` between 0.4% and 1.6%. The PHP process spends >98% o
 - **Test**:
   - Run `php spark db:ping` locally and in Render container.
 
+### P5. Fix Production 500 Error in `GET /tenant/pos`: Undefined array key 'unit_price'
+
+#### Root Cause
+In `Tenant::pos()` (`app/Controllers/Tenant.php:6076`), when processing store pick-up orders (e.g. `GET /tenant/pos?order_id=1003029&printing_id=2279`), the controller queries the active order's items into `$orderItems` (`order_items.*`).
+Later in the same method, a batch optimization for `$pickupOrders` reused the variable name:
+```php
+$orderItems = (new OrderItemModel())
+    ->select('order_id, quantity, product_name')
+    ->whereIn('order_id', $orderIds)
+    ->findAll();
+```
+This overwrote the active order's `$orderItems` array with partial records containing only `order_id`, `quantity`, and `product_name`.
+When passed to `app/Views/tenant/pos.php:298`:
+```php
+<span class="text-[11px] text-outline font-mono">₱<?= number_format((float) $oit['unit_price'], 2) ?> each</span>
+```
+CodeIgniter's error handler caught `ErrorException: Undefined array key "unit_price"` and crashed with HTTP 500. Furthermore, the handover checklist was displaying items from unrelated pickup orders instead of the active order.
+
+#### Exact Files
+- `app/Controllers/Tenant.php`
+- `app/Views/tenant/pos.php`
+
+#### Changes Proposed
+1. **Rename Shadowed Variable in `Tenant::pos()` (`app/Controllers/Tenant.php:6076`)**:
+   - Change `$orderItems` to `$pickupOrderItemsBatch` in the batch summary lookup so the active order's `$orderItems` is preserved intact.
+2. **Defensive View Rendering (`app/Views/tenant/pos.php`)**:
+   - In lines 298 and 307, use null coalescing operators:
+     - `₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?> each`
+     - `₱<?= number_format((float) ($oit['line_total'] ?? (($oit['quantity'] ?? 1) * ($oit['unit_price'] ?? $oit['price'] ?? 0))), 2) ?>`
+   - Add safe fallbacks for `product_name`, `order_number`, and `placed_at`.
+
+#### Risk & Rollback
+- **Risk**: None. Restores the intended variable scope and prevents view template crashes.
+- **Rollback**: Revert `Tenant.php` and `pos.php` edits.
+- **Test**:
+  - Request `GET /tenant/pos?order_id=...&printing_id=...` with valid pickup orders and verify HTTP 200.
+  - Verify items, unit prices, and subtotals render accurately in the POS handover panel.
+
 ---
 
 ## 3. Out-of-Scope Report: CSRF Exemptions Analysis
@@ -216,13 +254,14 @@ In `app/Config/Filters.php:81`, the following two routes are exempted from CSRF:
 
 | Metric / Endpoint | Prior (Production Log) | Target Expected | Measured Effect |
 |---|---|---|---|
-| `GET /?debugbar` & `debugbar_time` | 2 requests, 843ms, 28KB | 0 requests (eliminated) | **TO MEASURE** |
-| `ptrace(ATTACH)` error lines | 3 errors per 8s | 0 errors (disabled) | **TO MEASURE** |
-| Initial `GET /tenant/realtime/check` | ~2,600ms (x3 in 8s) | 0 un-parameterized calls | **TO MEASURE** |
-| Fast-path `GET /tenant/realtime/check` | ~920ms | < 350ms (or 204 No Content) | **TO MEASURE** |
-| `POST /tenant/deliveries/stop-broadcast` | 2 calls in same second, ~1,680ms | 1 call via beacon, < 400ms | **TO MEASURE** |
-| `POST /tenant/deliveries/update-location` | 1,755ms every 5s | Throttled, < 500ms | **TO MEASURE** |
-| `GET /tenant/deliveries/{id}` | 2,467ms | < 800ms | **TO MEASURE** |
+| `GET /?debugbar` & `debugbar_time` | 2 requests, 843ms, 28KB | 0 requests (eliminated) | **COMPLETED (P0)** |
+| `ptrace(ATTACH)` error lines | 3 errors per 8s | 0 errors (disabled) | **COMPLETED (P1)** |
+| Initial `GET /tenant/realtime/check` | ~2,600ms (x3 in 8s) | 0 un-parameterized calls | **COMPLETED (P2)** |
+| Fast-path `GET /tenant/realtime/check` | ~920ms | < 350ms (or 204 No Content) | **COMPLETED (P2)** |
+| `POST /tenant/deliveries/stop-broadcast` | 2 calls in same second, ~1,680ms | 1 call via beacon, < 400ms | **COMPLETED (P3)** |
+| `POST /tenant/deliveries/update-location` | 1,755ms every 5s | Throttled, < 500ms | **COMPLETED (P3)** |
+| `GET /tenant/deliveries/{id}` | 2,467ms | < 800ms | **COMPLETED (P3)** |
+| `GET /tenant/pos?order_id=...&printing_id=...` | HTTP 500 (Undefined array key "unit_price") | HTTP 200 OK | **TO MEASURE (P5)** |
 
 ---
 
@@ -236,3 +275,5 @@ When deployed to Render, the logs should reflect the following criteria:
 - [ ] No un-parameterized `GET /tenant/realtime/check` calls appear upon loading tenant pages.
 - [ ] Realtime checks arrive with `?last_order_id=...&last_printing_id=...&last_notif_id=...` and complete without slow log warnings.
 - [ ] Navigating away from delivery detail page emits exactly one `POST /tenant/deliveries/stop-broadcast`.
+- [ ] `GET /tenant/pos?order_id=...&printing_id=...` returns HTTP 200 without `ErrorException: Undefined array key` notices.
+

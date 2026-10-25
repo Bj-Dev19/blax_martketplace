@@ -172,13 +172,13 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                     </div>
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="font-mono text-base sm:text-lg font-extrabold text-on-surface leading-none">#<?= esc($order['order_number']) ?></h3>
+                            <h3 class="font-mono text-base sm:text-lg font-extrabold text-on-surface leading-none">#<?= esc($order['order_number'] ?? ($order['id'] ?? '')) ?></h3>
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-secondary/15 text-secondary border border-secondary/25">
                                 <span class="material-symbols-outlined text-[13px]">check_circle</span>
                                 <span>Ready for Pick-up</span>
                             </span>
                         </div>
-                        <p class="text-[11px] text-outline font-medium mt-1">Placed on <?= esc(date('M d, Y h:i A', strtotime($order['placed_at']))) ?></p>
+                        <p class="text-[11px] text-outline font-medium mt-1">Placed on <?= esc(date('M d, Y h:i A', strtotime($order['placed_at'] ?? 'now'))) ?></p>
                     </div>
                 </div>
 
@@ -281,30 +281,30 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                                         <div class="flex items-center gap-2.5 min-w-0 flex-1">
                                             <?php $itemImg = trim((string) ($oit['gallery_image'] ?? '')); ?>
                                             <?php if ($itemImg !== ''): ?>
-                                                <img src="<?= esc(product_image_url($itemImg, 'thumbnail')) ?>" alt="<?= esc($oit['product_name']) ?>" class="w-11 h-11 object-cover rounded-lg border border-outline-variant/25 shrink-0 bg-surface-container" loading="lazy" onerror="this.remove();">
+                                                <img src="<?= esc(product_image_url($itemImg, 'thumbnail')) ?>" alt="<?= esc($oit['product_name'] ?? 'Product') ?>" class="w-11 h-11 object-cover rounded-lg border border-outline-variant/25 shrink-0 bg-surface-container" loading="lazy" onerror="this.remove();">
                                             <?php else: ?>
                                                 <div class="w-11 h-11 rounded-lg bg-surface-container flex items-center justify-center text-outline shrink-0">
                                                     <span class="material-symbols-outlined text-[20px]">inventory_2</span>
                                                 </div>
                                             <?php endif; ?>
                                             <div class="min-w-0 flex-1">
-                                                <h5 class="font-extrabold text-xs sm:text-sm text-on-surface truncate leading-tight"><?= esc($oit['product_name']) ?></h5>
+                                                <h5 class="font-extrabold text-xs sm:text-sm text-on-surface truncate leading-tight"><?= esc($oit['product_name'] ?? 'Product') ?></h5>
                                                 <div class="flex items-center gap-2 mt-1 flex-wrap">
                                                     <?php if (!empty($oit['variant_label'])): ?>
                                                         <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
                                                             <?= esc($oit['variant_label']) ?>
                                                         </span>
                                                     <?php endif; ?>
-                                                    <span class="text-[11px] text-outline font-mono">₱<?= number_format((float) $oit['unit_price'], 2) ?> each</span>
+                                                    <span class="text-[11px] text-outline font-mono">₱<?= number_format((float) ($oit['unit_price'] ?? $oit['price'] ?? 0), 2) ?> each</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="text-right shrink-0">
                                             <span class="inline-flex items-center justify-center px-2 py-0.5 bg-secondary-container/50 text-secondary text-xs font-extrabold rounded-md font-mono">
-                                                <?= (int) $oit['quantity'] ?>×
+                                                <?= (int) ($oit['quantity'] ?? 1) ?>×
                                             </span>
                                             <p class="font-mono text-xs sm:text-sm font-bold text-on-surface mt-0.5">
-                                                ₱<?= number_format((float) $oit['line_total'], 2) ?>
+                                                ₱<?= number_format((float) ($oit['line_total'] ?? (($oit['quantity'] ?? 1) * ($oit['unit_price'] ?? $oit['price'] ?? 0))), 2) ?>
                                             </p>
                                         </div>
                                     </div>
