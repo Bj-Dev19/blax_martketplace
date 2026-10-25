@@ -403,11 +403,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    }
+    let isCustomerPollInFlight = false;
 
     function pollCustomerRealtime() {
-        // Skip background polling if tab is inactive/hidden to save resources
-        if (document.visibilityState === 'hidden') return;
+        // Skip background polling if tab is inactive/hidden or already running to save resources
+        if (document.visibilityState === 'hidden' || isCustomerPollInFlight) return;
+        isCustomerPollInFlight = true;
 
         let url = '<?= base_url('customer/realtime/check') ?>';
         const params = new URLSearchParams();
@@ -517,7 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => {
+                isCustomerPollInFlight = false;
+            });
     }
 
     let pollIntervalMs = 25000;

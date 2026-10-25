@@ -581,8 +581,12 @@
             }, 7000);
         }
 
+        let isAdminPollInFlight = false;
+
         function checkAdminRealtime() {
-            if (document.visibilityState === 'hidden') return;
+            if (document.visibilityState === 'hidden' || isAdminPollInFlight) return;
+            isAdminPollInFlight = true;
+
             let url = '<?= base_url('admin/realtime/check') ?>';
             const params = [];
             if (lastOrderId !== null) params.push('last_order_id=' + encodeURIComponent(lastOrderId));
@@ -644,11 +648,14 @@
                 })
                 .catch(err => {
                     console.debug('Admin realtime poll skipped:', err);
+                })
+                .finally(() => {
+                    isAdminPollInFlight = false;
                 });
         }
 
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'visible' && !isAdminPollInFlight) {
                 checkAdminRealtime();
             }
         });

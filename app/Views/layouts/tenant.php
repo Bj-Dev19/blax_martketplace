@@ -746,13 +746,28 @@
     });
     </script>
 
+    <script id="blax-tenant-watermark" type="application/json">
+    <?= json_encode($realtimeBootstrap ?? null) ?>
+    </script>
+
     <script>
     (function() {
-        let lastOrderId = null;
-        let lastPrintingId = null;
-        let lastNotifId = null;
+        const watermarkEl = document.getElementById('blax-tenant-watermark');
+        let bootstrap = null;
+        try {
+            if (watermarkEl && watermarkEl.textContent) {
+                bootstrap = JSON.parse(watermarkEl.textContent);
+            }
+        } catch(e) {}
+
+        let lastOrderId = bootstrap && typeof bootstrap.max_order_id !== 'undefined' ? bootstrap.max_order_id : null;
+        let lastPrintingId = bootstrap && typeof bootstrap.max_printing_id !== 'undefined' ? bootstrap.max_printing_id : null;
+        let lastNotifId = bootstrap && typeof bootstrap.max_notif_id !== 'undefined' ? bootstrap.max_notif_id : null;
+        let isInitial = !(bootstrap && lastOrderId !== null && lastPrintingId !== null);
+        let isPollInFlight = false;
+        let abortCtrl = null;
+        let lastPollTime = Date.now();
         let pollTimer = null;
-        let isInitial = true;
 
         function getTenantToastContainer() {
             let container = document.getElementById('blax-tenant-toast-container');
@@ -969,8 +984,15 @@
         }
 
         async function pollTenantUpdates() {
-            if (document.visibilityState === 'hidden' || !navigator.onLine) return;
+            if (document.visibilityState === 'hidden' || !navigator.onLine || isPollInFlight) return;
+            isPollInFlight = true;
+            lastPollTime = Date.now();
             try {
+                if (abortCtrl) {
+                    try { abortCtrl.abort(); } catch(e) {}
+                }
+                abortCtrl = new AbortController();
+
                 let url = '<?= base_url('tenant/realtime/check') ?>';
                 if (!isInitial && lastOrderId !== null && lastPrintingId !== null) {
                     url += `?last_order_id=${encodeURIComponent(lastOrderId)}&last_printing_id=${encodeURIComponent(lastPrintingId)}`;
@@ -980,17 +1002,16 @@
                 }
 
                 const res = await fetch(url, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: abortCtrl.signal
                 });
                 if (!res.ok) {
                     pollInterval = Math.min(pollInterval * 1.5, 60000);
-                    scheduleNextPoll();
                     return;
                 }
                 pollInterval = 20000;
                 const data = await res.json();
                 if (!data || !data.success) {
-                    scheduleNextPoll();
                     return;
                 }
 
@@ -1002,7 +1023,6 @@
                     if (typeof data.unread_count !== 'undefined') {
                         updateNotificationsUI(data.unread_count, data.notifications);
                     }
-                    scheduleNextPoll();
                     return;
                 }
 
@@ -1014,7 +1034,6 @@
                     if (typeof data.unread_count !== 'undefined') {
                         updateNotificationsUI(data.unread_count);
                     }
-                    scheduleNextPoll();
                     return;
                 }
 
@@ -1056,26 +1075,40 @@
                     updateNotificationsUI(data.unread_count, data.notifications);
                 }
             } catch(e) {
-                console.debug('Tenant realtime poll failed:', e);
-                pollInterval = Math.min(pollInterval * 1.5, 60000);
+                if (e.name !== 'AbortError') {
+                    console.debug('Tenant realtime poll failed:', e);
+                    pollInterval = Math.min(pollInterval * 1.5, 60000);
+                }
+            } finally {
+                isPollInFlight = false;
+                scheduleNextPoll();
             }
-            scheduleNextPoll();
         }
 
-        // Start polling: initial check after 1.5s, then scheduled
-        pollTimer = setTimeout(pollTenantUpdates, 1500);
+        // Start polling: if bootstrapped from server HTML, start first poll at 20s (skips heavy initial poll). Fallback 1.5s if not bootstrapped.
+        const initialDelay = isInitial ? 1500 : 20000;
+        pollTimer = setTimeout(pollTenantUpdates, initialDelay);
 
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                pollTenantUpdates();
+            if (document.visibilityState === 'visible' && !isPollInFlight) {
+                if (Date.now() - lastPollTime >= 15000) {
+                    clearTimeout(pollTimer);
+                    pollTenantUpdates();
+                }
             }
         });
 
         window.addEventListener('pagehide', () => {
             clearTimeout(pollTimer);
+            if (abortCtrl) {
+                try { abortCtrl.abort(); } catch(e) {}
+            }
         });
         window.addEventListener('beforeunload', () => {
             clearTimeout(pollTimer);
+            if (abortCtrl) {
+                try { abortCtrl.abort(); } catch(e) {}
+            }
         });
 
         // Mark All As Read AJAX handling

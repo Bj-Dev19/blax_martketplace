@@ -68,15 +68,27 @@ class Tenant extends BaseController
             $shop = $shopModel->find($shopId);
         }
 
-        $userId        = (int) $session->get('user_id');
-        $notifModel    = new NotificationModel();
-        $unreadCount   = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
-        $notifications = []; // Populated via initial real-time poll / dynamic render
+        $userId = (int) $session->get('user_id');
+        $db = \Config\Database::connect();
+        $snapshotSql = "SELECT 
+            (SELECT COALESCE(MAX(id), 0) FROM orders WHERE shop_id = ?) AS max_order_id,
+            (SELECT COALESCE(MAX(id), 0) FROM printing_requests WHERE shop_id = ?) AS max_printing_id,
+            (SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = ?) AS max_notif_id,
+            (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count";
+        $snapRow = $db->query($snapshotSql, [$shopId, $shopId, $userId, $userId])->getRowArray() ?? [];
+
+        $realtimeBootstrap = [
+            'max_order_id'    => (int) ($snapRow['max_order_id'] ?? 0),
+            'max_printing_id' => (int) ($snapRow['max_printing_id'] ?? 0),
+            'max_notif_id'    => (int) ($snapRow['max_notif_id'] ?? 0),
+            'unread_count'    => (int) ($snapRow['unread_count'] ?? 0),
+        ];
 
         service('renderer')->setData([
-            'shop'          => $shop,
-            'unread_count'  => $unreadCount,
-            'notifications' => $notifications,
+            'shop'              => $shop,
+            'unread_count'      => $realtimeBootstrap['unread_count'],
+            'notifications'     => [],
+            'realtimeBootstrap' => $realtimeBootstrap,
         ]);
 
         return ['shop' => $shop, 'shopId' => $shopId];
@@ -667,18 +679,12 @@ class Tenant extends BaseController
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
                     ->setJSON([
-                        'success'           => true,
-                        'changed'           => false,
-                        'max_order_id'      => $currentMaxOrderId,
-                        'max_printing_id'   => $currentMaxPrintId,
-                        'max_notif_id'      => $currentMaxNotifId,
-                        'has_new_orders'    => false,
-                        'new_orders'        => [],
-                        'has_new_printing'  => false,
-                        'new_printing'      => [],
-                        'unread_count'      => $unreadCount,
-                        'notifications'     => [],
-                        'timestamp'         => date('Y-m-d H:i:s'),
+                        'success'         => true,
+                        'changed'         => false,
+                        'max_order_id'    => $currentMaxOrderId,
+                        'max_printing_id' => $currentMaxPrintId,
+                        'max_notif_id'    => $currentMaxNotifId,
+                        'unread_count'    => $unreadCount,
                     ]);
             }
         }
