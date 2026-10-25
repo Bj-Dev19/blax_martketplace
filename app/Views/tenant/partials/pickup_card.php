@@ -83,39 +83,11 @@ if ($hasLinked) {
     $statusTag .= ' linked';
 }
 
-// Confirmation Payloads
-$confirmPayload = [
-    'order_id'       => $orderId,
-    'printing_id'    => $printingId,
-    'customer_name'  => $custName,
-    'phone'          => $phone,
-    'is_combined'    => $hasLinked,
-    'order_ref'      => $isProduct ? $rawRef : ($linkedItem ? ($linkedItem['order_number'] ?? '') : ''),
-    'printing_ref'   => !$isProduct ? $rawRef : ($linkedItem ? ($linkedItem['request_number'] ?? '') : ''),
-    'order_summary'  => $orderSummary,
-    'order_due'      => $orderCollect,
-    'is_order_paid'  => $isOrderPaid,
-    'print_summary'  => $printSummary,
-    'print_due'      => $printCollect,
-    'is_print_paid'  => $isPrintPaid,
-    'total_collect'  => $totalCollect,
-];
-
-// Single Confirm Payload (for secondary link)
-$singleConfirmPayload = $confirmPayload;
-if ($isProduct) {
-    $singleConfirmPayload['printing_id'] = 0;
-    $singleConfirmPayload['is_combined'] = false;
-    $singleConfirmPayload['print_summary'] = '';
-    $singleConfirmPayload['print_due'] = 0;
-    $singleConfirmPayload['total_collect'] = $orderCollect;
-} else {
-    $singleConfirmPayload['order_id'] = 0;
-    $singleConfirmPayload['is_combined'] = false;
-    $singleConfirmPayload['order_summary'] = '';
-    $singleConfirmPayload['order_due'] = 0;
-    $singleConfirmPayload['total_collect'] = $printCollect;
-}
+// Target URLs to load order/print into active POS register session
+$posCombinedUrl = base_url('tenant/pos?order_id=' . $orderId . '&printing_id=' . $printingId);
+$posSingleUrl = $isProduct 
+    ? base_url('tenant/pos?order_id=' . (int)$item['id'])
+    : base_url('tenant/pos?printing_id=' . (int)$item['id']);
 
 $searchString = strtolower($rawRef . ' ' . $custName . ' ' . $phone . ' ' . ($isProduct ? $orderSummary : $printSummary) . ($hasLinked ? (' ' . ($isProduct ? $printSummary : $orderSummary)) : ''));
 ?>
@@ -257,27 +229,24 @@ $searchString = strtolower($rawRef . ' ' . $custName . ' ' . $phone . ' ' . ($is
             <?php endif; ?>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons (Load into active POS register session) -->
         <div class="flex flex-col items-end gap-1 w-full sm:w-auto">
             <?php if ($hasLinked): ?>
-                <button type="button" 
-                        onclick="openHandoverConfirm(<?= htmlspecialchars(json_encode($confirmPayload), ENT_QUOTES, 'UTF-8') ?>)" 
-                        class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span class="material-symbols-outlined text-[17px]">inventory</span>
-                    <span>Hand over both · Collect ₱<?= number_format($totalCollect, 2) ?></span>
-                </button>
-                <button type="button" 
-                        onclick="openHandoverConfirm(<?= htmlspecialchars(json_encode($singleConfirmPayload), ENT_QUOTES, 'UTF-8') ?>)" 
-                        class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium transition-colors cursor-pointer pt-0.5">
+                <a href="<?= esc($posCombinedUrl) ?>" 
+                   class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+                    <span><?= $totalCollect > 0 ? 'Load Both to POS · Collect ₱' . number_format($totalCollect, 2) : 'Load Both to POS · Paid ✓' ?></span>
+                </a>
+                <a href="<?= esc($posSingleUrl) ?>" 
+                   class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium transition-colors cursor-pointer pt-0.5">
                     Only this <?= $isProduct ? 'order' : 'print job' ?>
-                </button>
+                </a>
             <?php else: ?>
-                <button type="button" 
-                        onclick="openHandoverConfirm(<?= htmlspecialchars(json_encode($confirmPayload), ENT_QUOTES, 'UTF-8') ?>)" 
-                        class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span><?= $totalCollect > 0 ? 'Hand over · Collect ₱' . number_format($totalCollect, 2) : 'Hand over' ?></span>
-                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
+                <a href="<?= esc($posSingleUrl) ?>" 
+                   class="w-full sm:w-auto min-h-[44px] px-4 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+                    <span><?= $totalCollect > 0 ? 'Load to POS · Collect ₱' . number_format($totalCollect, 2) : 'Load to POS · Paid ✓' ?></span>
+                </a>
             <?php endif; ?>
         </div>
     </div>

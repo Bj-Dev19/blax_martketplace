@@ -800,78 +800,6 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
     'footerCountId' => 'posPrintingFooterCount',
 ]) ?>
 
-<!-- Lightweight Handover Confirmation Dialog (Inline Sheet / Modal) -->
-<div id="posHandoverConfirmModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col font-sans">
-        
-        <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div class="flex items-center gap-2.5">
-                <span class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold">
-                    <span class="material-symbols-outlined text-[20px]">check_circle</span>
-                </span>
-                <div>
-                    <h3 class="font-display font-bold text-base text-slate-900 dark:text-white">Confirm Customer Handover</h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400" id="posConfirmCustomerSub">Customer Details</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeHandoverConfirm()" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer">
-                <span class="material-symbols-outlined text-[18px]">close</span>
-            </button>
-        </div>
-
-        <!-- Items to Hand Over List -->
-        <div class="space-y-2 overflow-y-auto max-h-[35vh] custom-scrollbar">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Items to Hand Over:</span>
-            <div id="posConfirmItemsList" class="space-y-2"></div>
-        </div>
-
-        <!-- Payment Section (if money is due) -->
-        <div id="posConfirmPaymentSection" class="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 space-y-3">
-            <div class="flex items-baseline justify-between">
-                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Amount to Collect:</span>
-                <span class="font-mono text-xl font-black text-amber-600 dark:text-amber-400" id="posConfirmCollectAmount">₱0.00</span>
-            </div>
-            <div id="posConfirmMethodSelector" class="space-y-1.5 pt-1 border-t border-amber-200/60 dark:border-amber-800/60">
-                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 block">Payment Method:</span>
-                <div class="grid grid-cols-3 gap-1.5 text-xs">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="confirm_payment_method" value="cash" class="peer sr-only" checked>
-                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">Cash</span>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="confirm_payment_method" value="gcash" class="peer sr-only">
-                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">GCash</span>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="confirm_payment_method" value="card" class="peer sr-only">
-                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">Card</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Paid Online Notice (if ₱0 due) -->
-        <div id="posConfirmPaidNotice" class="hidden p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
-            <span class="material-symbols-outlined text-[18px]">verified</span>
-            <span>Fully paid online · No counter payment required.</span>
-        </div>
-
-        <!-- Inline Error Banner -->
-        <div id="posConfirmError" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 font-medium"></div>
-
-        <!-- Footer Actions -->
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button type="button" onclick="closeHandoverConfirm()" class="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer">
-                Cancel
-            </button>
-            <button type="button" id="posConfirmSubmitBtn" onclick="submitHandoverConfirm()" class="min-h-[44px] px-5 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center gap-2 cursor-pointer">
-                <span class="material-symbols-outlined text-[17px]">done_all</span>
-                <span id="posConfirmSubmitBtnText">Confirm Handover</span>
-            </button>
-        </div>
-    </div>
-</div>
 <!-- Receipt / Success Modal -->
 <div id="posSuccessModal" class="hidden fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="w-full max-w-[420px] my-auto space-y-3">
@@ -1970,8 +1898,6 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
     // ==========================================
     let currentPickupTab = '';
     let currentPrintingTab = '';
-    let activeHandoverPayload = null;
-    let isSubmittingHandover = false;
 
     // Open/Close Queue Modals
     window.openPickupSelectorModal = function() {
@@ -2129,171 +2055,6 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
     }
 
     // ==========================================
-    // Confirmation Dialog & Handover Execution
-    // ==========================================
-    window.openHandoverConfirm = function(payload) {
-        activeHandoverPayload = payload;
-        const modal = document.getElementById('posHandoverConfirmModal');
-        if (!modal) return;
-
-        // Customer Subtitle
-        const subEl = document.getElementById('posConfirmCustomerSub');
-        if (subEl) {
-            subEl.textContent = `Customer: ${payload.customer_name || 'Online Customer'}`;
-        }
-
-        // Items List
-        const listEl = document.getElementById('posConfirmItemsList');
-        if (listEl) {
-            listEl.innerHTML = '';
-            (payload.items || []).forEach(item => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-xs';
-                const icon = item.type === 'product' ? 'shopping_bag' : 'print';
-                const iconColor = item.type === 'product' ? 'text-terra-green' : 'text-blue-500';
-                row.innerHTML = `
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="material-symbols-outlined text-[17px] ${iconColor} shrink-0">${icon}</span>
-                        <div class="min-w-0">
-                            <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">${item.summary || 'Item'}</span>
-                            <span class="font-mono text-[10px] text-slate-400">#${item.ref || ''}</span>
-                        </div>
-                    </div>
-                    <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">₱${Number(item.price || 0).toFixed(2)}</span>
-                `;
-                listEl.appendChild(row);
-            });
-        }
-
-        // Payment vs Paid Handling
-        const paySec = document.getElementById('posConfirmPaymentSection');
-        const paidNot = document.getElementById('posConfirmPaidNotice');
-        const collectEl = document.getElementById('posConfirmCollectAmount');
-        const btnText = document.getElementById('posConfirmSubmitBtnText');
-        const errEl = document.getElementById('posConfirmError');
-
-        if (errEl) {
-            errEl.classList.add('hidden');
-            errEl.textContent = '';
-        }
-
-        const totalCollect = Number(payload.total_collect || 0);
-        if (totalCollect > 0) {
-            if (paySec) paySec.classList.remove('hidden');
-            if (paidNot) paidNot.classList.add('hidden');
-            if (collectEl) collectEl.textContent = `₱${totalCollect.toFixed(2)}`;
-            if (btnText) btnText.textContent = `Confirm Handover & Collect ₱${totalCollect.toFixed(2)}`;
-            
-            // Default select cash
-            const cashRadio = modal.querySelector('input[name="confirm_payment_method"][value="cash"]');
-            if (cashRadio) cashRadio.checked = true;
-        } else {
-            if (paySec) paySec.classList.add('hidden');
-            if (paidNot) paidNot.classList.remove('hidden');
-            if (btnText) btnText.textContent = 'Confirm Handover';
-        }
-
-        modal.classList.remove('hidden');
-    };
-
-    window.closeHandoverConfirm = function() {
-        const modal = document.getElementById('posHandoverConfirmModal');
-        if (modal) modal.classList.add('hidden');
-        activeHandoverPayload = null;
-    };
-
-    window.submitHandoverConfirm = async function() {
-        if (!activeHandoverPayload || isSubmittingHandover) return;
-
-        const btn = document.getElementById('posConfirmSubmitBtn');
-        const btnText = document.getElementById('posConfirmSubmitBtnText');
-        const errEl = document.getElementById('posConfirmError');
-
-        isSubmittingHandover = true;
-        if (btn) btn.disabled = true;
-        if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin inline-block mr-1">progress_activity</span>Processing...';
-        if (errEl) errEl.classList.add('hidden');
-
-        const totalCollect = Number(activeHandoverPayload.total_collect || 0);
-        let selectedMethod = 'none';
-        if (totalCollect > 0) {
-            const checkedRadio = document.querySelector('input[name="confirm_payment_method"]:checked');
-            selectedMethod = checkedRadio ? checkedRadio.value : 'cash';
-        }
-
-        const fd = new FormData();
-        fd.append(CSRF_TOKEN_NAME, CSRF_HASH_VAL);
-        if (activeHandoverPayload.order_id) {
-            fd.append('order_id', activeHandoverPayload.order_id);
-        }
-        if (activeHandoverPayload.printing_id) {
-            fd.append('printing_id', activeHandoverPayload.printing_id);
-        }
-        fd.append('counter_payment_method', selectedMethod);
-        fd.append('items', JSON.stringify([]));
-
-        try {
-            const response = await fetch(`${BASE_URL}/tenant/pos/complete-pickup`, {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: fd
-            });
-
-            const data = await response.json();
-
-            // Refresh CSRF Token
-            if (data.csrf_hash) {
-                CSRF_HASH_VAL = data.csrf_hash;
-                const meta = document.querySelector('meta[name="csrf-token"]');
-                if (meta) meta.setAttribute('content', data.csrf_hash);
-            }
-
-            if (!data.success) {
-                if (errEl) {
-                    errEl.textContent = data.error || 'Failed to complete handover. Please try again.';
-                    errEl.classList.remove('hidden');
-                }
-                isSubmittingHandover = false;
-                if (btn) btn.disabled = false;
-                if (btnText) btnText.textContent = totalCollect > 0 ? `Confirm Handover & Collect ₱${totalCollect.toFixed(2)}` : 'Confirm Handover';
-                return;
-            }
-
-            // Success Handover
-            const handledOrderId = activeHandoverPayload.order_id;
-            const handledPrintingId = activeHandoverPayload.printing_id;
-
-            closeHandoverConfirm();
-            closePickupSelectorModal();
-            closePrintingSelectorModal();
-
-            // Remove handled cards from DOM across both modals
-            if (handledOrderId) {
-                document.querySelectorAll(`.pos-pickup-card[data-type="product"][data-id="${handledOrderId}"]`).forEach(el => el.remove());
-            }
-            if (handledPrintingId) {
-                document.querySelectorAll(`.pos-pickup-card[data-type="print"][data-id="${handledPrintingId}"]`).forEach(el => el.remove());
-            }
-
-            // Refresh Queue counts and update UI
-            refreshQueueCounters('posPickupSelectorModal');
-            refreshQueueCounters('posPrintingSelectorModal');
-
-            // Trigger POS Success Receipt
-            showSuccessReceipt(data, selectedMethod, totalCollect);
-
-        } catch (err) {
-            if (errEl) {
-                errEl.textContent = 'Network or server error while completing handover. Please try again.';
-                errEl.classList.remove('hidden');
-            }
-        } finally {
-            isSubmittingHandover = false;
-            if (btn) btn.disabled = false;
-            if (btnText) btnText.textContent = 'Confirm Handover';
-        }
-    };
-
     function refreshQueueCounters(modalId) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
@@ -2336,12 +2097,6 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
 
     // Keyboard support: Esc closes modals
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const confirmModal = document.getElementById('posHandoverConfirmModal');
-            if (confirmModal && !confirmModal.classList.contains('hidden')) {
-                closeHandoverConfirm();
-                return;
-            }
             const pickupModal = document.getElementById('posPickupSelectorModal');
             if (pickupModal && !pickupModal.classList.contains('hidden')) {
                 closePickupSelectorModal();
