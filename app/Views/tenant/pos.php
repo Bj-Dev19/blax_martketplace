@@ -1159,8 +1159,7 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
             </div>
         `;
 
-        let base = (window.BASE_URL || '<?= rtrim(base_url(), "/") ?>/').replace(/^http:\/\//i, window.location.protocol + '//');
-        let url = `${base}tenant/pos/search-products?q=${encodeURIComponent(query)}`;
+        let url = `${BASE_URL}/tenant/pos/search-products?q=${encodeURIComponent(query)}`;
         if (categoryId) {
             url += `&category_id=${encodeURIComponent(categoryId)}`;
         }
@@ -2097,6 +2096,7 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
 
     // Keyboard support: Esc closes modals
     document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
             const pickupModal = document.getElementById('posPickupSelectorModal');
             if (pickupModal && !pickupModal.classList.contains('hidden')) {
                 closePickupSelectorModal();

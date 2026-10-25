@@ -4513,6 +4513,9 @@ class Tenant extends BaseController
         }
 
         $shopId     = (int) $res['shopId'];
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         $query      = trim((string) $this->request->getGet('q'));
         $categoryId = (int) $this->request->getGet('category_id');
 
