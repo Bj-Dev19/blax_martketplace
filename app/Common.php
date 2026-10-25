@@ -121,6 +121,34 @@ if (!function_exists('profile_image_url')) {
     }
 }
 
+if (!function_exists('cover_photo_url')) {
+    function cover_photo_url(?string $url, string $variant = 'banner', string $fallback = ''): string
+    {
+        if (str_starts_with($variant, 'http://') || str_starts_with($variant, 'https://')) {
+            $fallback = $variant;
+            $variant  = 'banner';
+        }
+
+        $url = trim((string) $url);
+        if ($url === '') {
+            return $fallback;
+        }
+
+        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+            return cloudinary_transform_url($url, $variant);
+        }
+
+        if (defined('FCPATH')) {
+            $localDiskPath = FCPATH . ltrim($url, '/\\');
+            if (!is_file($localDiskPath)) {
+                return $fallback;
+            }
+        }
+
+        return base_url($url);
+    }
+}
+
 if (!function_exists('humanize_status')) {
     function humanize_status(?string $status): string
     {

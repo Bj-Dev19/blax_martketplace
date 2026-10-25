@@ -7,8 +7,9 @@
     $satOpen   = isset($businessHours[6]) && !empty($businessHours[6]['open_time'])  ? substr($businessHours[6]['open_time'], 0, 5)  : '09:00';
     $satClose  = isset($businessHours[6]) && !empty($businessHours[6]['close_time']) ? substr($businessHours[6]['close_time'], 0, 5) : '15:00';
     $sunClosed = (int) ($businessHours[0]['is_closed'] ?? 1);
-    $logoUrl   = $shop['logo_url'] ?? '';
-    $initials  = strtoupper(substr(trim((string) ($shop['shop_name'] ?? 'RHK')), 0, 2));
+    $logoUrl       = $shop['logo_url'] ?? '';
+    $coverPhotoUrl = $shop['cover_photo_url'] ?? '';
+    $initials      = strtoupper(substr(trim((string) ($shop['shop_name'] ?? 'RHK')), 0, 2));
     $shopSlug  = $shop['slug'] ?? $shop['id'] ?? '';
     $hasCoords = !empty($shop['latitude']) && !empty($shop['longitude']);
 ?>
@@ -131,6 +132,63 @@
                             <span>Upload New Logo</span>
                         </button>
                         <span id="logoUploadHint" class="text-xs text-slate-500 hidden"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cover Photo Upload Card -->
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+                <!-- Cover Banner with Preview -->
+                <div class="relative w-full md:w-64 h-32 rounded-2xl overflow-hidden flex items-center justify-center bg-slate-200 dark:bg-slate-700/60 border-2 border-slate-200 dark:border-slate-700 shrink-0 shadow-2xs group">
+                    <img id="coverPreviewImg" src="<?= !empty($coverPhotoUrl) ? esc(cover_photo_url($coverPhotoUrl, 'card')) : '' ?>" alt="Cover Photo" class="w-full h-full object-cover <?= empty($coverPhotoUrl) ? 'hidden' : '' ?>">
+                    <div id="coverPlaceholder" class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 <?= !empty($coverPhotoUrl) ? 'hidden' : '' ?>">
+                        <span class="material-symbols-outlined text-[32px]">panorama</span>
+                        <span class="text-[11px] font-bold mt-1">No Cover Photo</span>
+                    </div>
+                    
+                    <button type="button" onclick="document.getElementById('coverInput').click()" class="absolute inset-0 bg-slate-950/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold gap-1 cursor-pointer" title="Change cover photo">
+                        <span class="material-symbols-outlined text-[20px]">photo_camera</span>
+                        <span>Change Cover</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2 flex-1">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white font-display">Storefront Cover Banner</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">Displays prominently as the header banner on your public shop storefront, and on the marketplace directory.</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                            Landscape 16:9 • Min 1200×400px • Max 5MB
+                        </span>
+                        <span class="text-[11px] text-slate-400">JPG, PNG, WEBP, GIF</span>
+                    </div>
+
+                    <!-- Hidden Cover Form for Direct Upload -->
+                    <form action="<?= base_url('tenant/settings/cover') ?>" method="POST" enctype="multipart/form-data" id="coverForm" class="hidden">
+                        <?= csrf_field() ?>
+                        <input type="file" name="cover_photo" id="coverInput" accept="image/jpeg,image/png,image/webp,image/gif">
+                    </form>
+
+                    <div class="pt-1 flex items-center gap-2 flex-wrap">
+                        <button type="button" onclick="document.getElementById('coverInput').click()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition-colors text-xs border border-slate-200 dark:border-slate-700 shadow-2xs cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px] text-terra-green">add_photo_alternate</span>
+                            <span>Upload Cover Photo</span>
+                        </button>
+
+                        <?php if (!empty($coverPhotoUrl)): ?>
+                            <form action="<?= base_url('tenant/settings/cover') ?>" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to remove your cover photo?');">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="remove_cover" value="1">
+                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-bold transition-colors text-xs border border-rose-200 dark:border-rose-800 cursor-pointer">
+                                    <span class="material-symbols-outlined text-[15px]">delete</span>
+                                    <span>Remove Cover</span>
+                                </button>
+                            </form>
+                        <?php endif; ?>
+
+                        <span id="coverUploadHint" class="text-xs text-slate-500 hidden"></span>
                     </div>
                 </div>
             </div>
@@ -1258,6 +1316,34 @@
                         logoUploadHint.classList.remove('hidden');
                     }
                     document.getElementById('logoForm').submit();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // ── 5.1 Instant Cover Photo Preview & Immediate Submit ─────────
+    var coverInput = document.getElementById('coverInput');
+    var coverPreviewImg = document.getElementById('coverPreviewImg');
+    var coverPlaceholder = document.getElementById('coverPlaceholder');
+    var coverUploadHint = document.getElementById('coverUploadHint');
+
+    if (coverInput) {
+        coverInput.addEventListener('change', function () {
+            if (coverInput.files && coverInput.files[0]) {
+                var file = coverInput.files[0];
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    if (coverPreviewImg) {
+                        coverPreviewImg.src = e.target.result;
+                        coverPreviewImg.classList.remove('hidden');
+                    }
+                    if (coverPlaceholder) coverPlaceholder.classList.add('hidden');
+                    if (coverUploadHint) {
+                        coverUploadHint.textContent = 'Uploading cover photo...';
+                        coverUploadHint.classList.remove('hidden');
+                    }
+                    document.getElementById('coverForm').submit();
                 };
                 reader.readAsDataURL(file);
             }

@@ -10,8 +10,19 @@
 
 <main class="max-w-container-max mx-auto px-4 md:px-8 lg:px-10 py-8 md:py-12 flex-grow w-full">
 
+    <?php 
+        $stCover = !empty($shop['cover_photo_url']) ? cover_photo_url($shop['cover_photo_url'], 'banner') : ''; 
+    ?>
+    <?php if (!empty($stCover)): ?>
+        <!-- Hero Cover Photo Banner -->
+        <div class="w-full h-44 sm:h-64 md:h-80 rounded-3xl overflow-hidden mb-4 border border-slate-200/90 dark:border-slate-800 shadow-xs relative bg-slate-100 dark:bg-slate-800">
+            <img src="<?= esc($stCover) ?>" alt="<?= esc($shop['shop_name']) ?> cover" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10"></div>
+        </div>
+    <?php endif; ?>
+
     <!-- Shop Header Bento Stage -->
-    <section class="bento-card bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs mb-8 flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-start text-center md:text-left relative">
+    <section class="bento-card bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs mb-8 flex flex-col md:flex-row gap-6 sm:gap-8 items-center md:items-start text-center md:text-left relative <?= !empty($stCover) ? '-mt-16 sm:-mt-24 z-10 mx-3 sm:mx-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md' : '' ?>">
         
         <!-- Ambient Terra Glow (Isolated clipping layer so child popovers do not get sliced) -->
         <div class="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">

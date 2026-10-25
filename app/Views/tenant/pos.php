@@ -7,7 +7,7 @@ $isStorePickup = !empty($order);
 $customerFullName = trim(($order['first_name'] ?? '') . ' ' . ($order['last_name'] ?? ''));
 $customerPhone = trim((string) ($order['customer_phone'] ?? ($order['phone'] ?? '')));
 $customerEmail = trim((string) ($order['customer_email'] ?? ($order['email'] ?? '')));
-$customerProfileImg = trim((string) ($order['profile_image_url'] ?? ''));
+$customerProfileImg = trim((string) ($order['profile_image_url'] ?? ($printingRequest['profile_image_url'] ?? '')));
 $customerInitials = $customerFullName !== '' ? mb_strtoupper(mb_substr($customerFullName, 0, 2)) : 'OC';
 $isOnlinePaid = ($order['payment_status'] ?? '') === 'paid';
 $originalTotal = (float) ($order['total_amount'] ?? 0);
@@ -120,6 +120,7 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
             $customerFullName = trim(($printingRequest['first_name'] ?? '') . ' ' . ($printingRequest['last_name'] ?? ''));
             $customerPhone = trim((string) ($printingRequest['phone'] ?? ''));
             $customerEmail = trim((string) ($printingRequest['email'] ?? ''));
+            $customerProfileImg = trim((string) ($printingRequest['profile_image_url'] ?? $customerProfileImg));
             $customerInitials = $customerFullName !== '' ? mb_strtoupper(mb_substr($customerFullName, 0, 2)) : 'OC';
         }
         

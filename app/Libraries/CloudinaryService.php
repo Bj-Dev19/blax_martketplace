@@ -21,6 +21,7 @@ class CloudinaryService
     public const FOLDER_PRINTING_REFS    = 'blax/printing/references';
     public const FOLDER_PROFILES         = 'blax/profiles';
     public const FOLDER_SHOP_LOGOS       = 'blax/shop_logos';
+    public const FOLDER_SHOP_COVERS      = 'blax/shop_covers';
     public const FOLDER_PRODUCTS         = 'blax/products';
     public const FOLDER_CMS              = 'blax/cms';
 

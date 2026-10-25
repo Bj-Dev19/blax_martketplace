@@ -15,6 +15,8 @@ $custName = trim(($item['first_name'] ?? '') . ' ' . ($item['last_name'] ?? ''))
 if ($custName === '') {
     $custName = 'Online Customer';
 }
+$custInitials = $custName !== '' ? mb_strtoupper(mb_substr($custName, 0, 2)) : 'OC';
+$custProfileImg = trim((string)($item['profile_image_url'] ?? ''));
 $phone = trim((string) ($item['phone'] ?? ($item['customer_phone'] ?? '')));
 
 // Reference & Short Ref
@@ -98,15 +100,25 @@ $searchString = strtolower($rawRef . ' ' . $custName . ' ' . $phone . ' ' . ($is
      data-search="<?= esc($searchString) ?>"
      data-collectible="<?= $totalCollect ?>">
 
-    <!-- 1. Top Row: Customer Name + Relative Time + Monospace Short Ref -->
+    <!-- 1. Top Row: Customer Avatar + Name + Relative Time + Monospace Short Ref -->
     <div class="flex items-center justify-between gap-2.5 flex-wrap">
-        <div class="flex items-baseline gap-2 min-w-0">
-            <h4 class="font-display font-extrabold text-base sm:text-lg text-slate-900 dark:text-white truncate" title="<?= esc($custName) ?>">
-                <?= esc($custName) ?>
-            </h4>
-            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0" title="<?= esc($fullDate) ?>">
-                <?= esc($relTime) ?>
-            </span>
+        <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg <?= $isProduct ? 'bg-terra-green/15 text-terra-green' : 'bg-terra-earth/15 text-terra-earth dark:text-terra-amber' ?> flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs relative overflow-hidden">
+                <?php if ($custProfileImg !== ''): ?>
+                    <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($custProfileImg, 'avatar')) ?>" alt="<?= esc($custName) ?>" loading="lazy" onerror="this.remove();">
+                <?php endif; ?>
+                <span><?= esc($custInitials) ?></span>
+            </div>
+            <div class="min-w-0">
+                <div class="flex items-baseline gap-2">
+                    <h4 class="font-display font-extrabold text-base sm:text-lg text-slate-900 dark:text-white truncate" title="<?= esc($custName) ?>">
+                        <?= esc($custName) ?>
+                    </h4>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0" title="<?= esc($fullDate) ?>">
+                        <?= esc($relTime) ?>
+                    </span>
+                </div>
+            </div>
         </div>
 
         <div class="flex items-center gap-1.5 shrink-0">

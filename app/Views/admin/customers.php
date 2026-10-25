@@ -157,13 +157,17 @@
                         $fullName = trim(($c['first_name']??'') . ' ' . ($c['last_name']??'')) ?: 'Anonymous Customer';
                         $initials = esc(mb_strtoupper(mb_substr(($c['first_name']??'') . ($c['last_name']??''), 0, 2) ?: 'CU'));
                         $customerStatus = $c['status'] ?? 'active';
+                        $profileImg = trim((string)($c['profile_image_url'] ?? ''));
                         ?>
                         <tr class="hover:bg-surface-container-low/40 transition-colors group">
                             <!-- Customer Name -->
                             <td class="py-4 px-5">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs font-display">
-                                        <?= $initials ?>
+                                    <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs font-display relative overflow-hidden">
+                                        <?php if ($profileImg !== ''): ?>
+                                            <img class="absolute inset-0 w-full h-full object-cover" src="<?= esc(profile_image_url($profileImg, 'avatar')) ?>" alt="<?= esc($fullName) ?>" loading="lazy" onerror="this.remove();">
+                                        <?php endif; ?>
+                                        <span><?= $initials ?></span>
                                     </div>
                                     <div class="min-w-0">
                                         <p class="font-bold text-on-surface group-hover:text-terra-green transition-colors truncate">

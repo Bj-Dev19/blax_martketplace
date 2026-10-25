@@ -243,10 +243,12 @@
                 <?php foreach ($shops as $s): ?>
                     <?php
                         $slug = $s['slug'] ?? '';
-                        $coverUrl = $curatedCovers[$slug] 
-                            ?? (!empty($s['offers_printing'])
-                                ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80'
-                                : 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80');
+                        $coverUrl = !empty($s['cover_photo_url'])
+                            ? cover_photo_url($s['cover_photo_url'], 'card')
+                            : ($curatedCovers[$slug] 
+                                ?? (!empty($s['offers_printing'])
+                                    ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80'
+                                    : 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80'));
                         $categoryName = $curatedCategories[$slug]
                             ?? (!empty($s['offers_printing']) ? 'Printing & Digital Services' : 'Retail General Merchandise');
                         $location = !empty($s['barangay']) ? $s['barangay'] . ', ' . ($s['city'] ?? 'Polomolok') : ($s['city'] ?? 'Polomolok');

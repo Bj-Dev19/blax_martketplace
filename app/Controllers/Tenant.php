@@ -3552,6 +3552,72 @@ class Tenant extends BaseController
         return redirect()->back()->with('success', 'Shop logo updated.');
     }
 
+    public function saveShopCover()
+    {
+        $res = $this->getShopOrRedirect();
+        if ($res instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $res;
+        }
+
+        $shopId = $res['shopId'];
+        $shop   = $res['shop'];
+
+        // Option to remove existing cover photo
+        if ($this->request->getPost('remove_cover')) {
+            if (!empty($shop['cover_photo_url'])) {
+                (new \App\Libraries\CloudinaryService())->deleteOldAsset($shop['cover_photo_url'], 'image');
+                (new ShopModel())->update($shopId, ['cover_photo_url' => null]);
+            }
+            return redirect()->back()->with('success', 'Store cover photo removed.');
+        }
+
+        $file = $this->request->getFile('cover_photo') ?? $this->request->getFile('cover');
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()->with('error', 'Please choose an image file to upload as your cover photo.');
+        }
+        if ($file->hasMoved()) {
+            return redirect()->back()->with('error', 'Cover photo upload failed. Please try again.');
+        }
+
+        $mimeMap = [
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+        ];
+        $mime = $file->getMimeType();
+        if (!isset($mimeMap[$mime])) {
+            return redirect()->back()->with('error', 'Only JPG, PNG, WEBP or GIF images are allowed for the cover photo.');
+        }
+        if ($file->getSize() > 5242880) { // 5MB
+            return redirect()->back()->with('error', 'Cover photo must be 5 MB or smaller.');
+        }
+
+        $cloudinary = new \App\Libraries\CloudinaryService();
+        $publicId   = 'cover_' . $shopId . '_' . time() . '_' . bin2hex(random_bytes(4));
+        $newCoverUrl = $cloudinary->uploadOrFallback(
+            $file,
+            \App\Libraries\CloudinaryService::FOLDER_SHOP_COVERS,
+            'shop_covers',
+            $publicId
+        );
+
+        if (!$newCoverUrl) {
+            $err = $cloudinary->getLastError();
+            log_message('error', '[Tenant::saveShopCover] Upload failed: ' . ($err ?: 'Unknown error'));
+            return redirect()->back()->with('error', 'Failed to save store cover photo' . ($err ? ': ' . $err : '. Please try again.'));
+        }
+
+        (new ShopModel())->update($shopId, ['cover_photo_url' => $newCoverUrl]);
+
+        // Safe cleanup: only clean up old cover asset after successful DB update
+        if (!empty($shop['cover_photo_url']) && $shop['cover_photo_url'] !== $newCoverUrl) {
+            $cloudinary->deleteOldAsset($shop['cover_photo_url'], 'image');
+        }
+
+        return redirect()->back()->with('success', 'Store cover photo updated successfully.');
+    }
+
     public function saveProduct()
     {
         $res = $this->getShopOrRedirect();
@@ -6029,7 +6095,7 @@ class Tenant extends BaseController
         if ($printingId) {
             $prModel = new PrintingRequestModel();
             $printingRequest = $prModel
-                ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email')
+                ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email, u.profile_image_url')
                 ->join('users u', 'u.id = printing_requests.customer_id', 'left')
                 ->where('printing_requests.id', $printingId)
                 ->where('printing_requests.shop_id', $shopId)
@@ -6063,7 +6129,7 @@ class Tenant extends BaseController
 
         // Available store-pickup product orders for quick selection (ONLY ready_for_pickup, capped to recent 50)
         $pickupOrders = $orderModel
-            ->select('orders.*, u.first_name, u.last_name, u.phone')
+            ->select('orders.*, u.first_name, u.last_name, u.phone, u.profile_image_url')
             ->join('users u', 'u.id = orders.customer_id', 'left')
             ->where('orders.shop_id', $shopId)
             ->where('orders.fulfillment_method', 'pickup')
@@ -6103,7 +6169,7 @@ class Tenant extends BaseController
         // Available store-pickup printing requests for quick selection (ONLY ready_for_pickup, capped to recent 50)
         try {
             $printingPickupRequests = (new PrintingRequestModel())
-                ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email')
+                ->select('printing_requests.*, u.first_name, u.last_name, u.phone, u.email, u.profile_image_url')
                 ->join('users u', 'u.id = printing_requests.customer_id', 'left')
                 ->where('printing_requests.shop_id', $shopId)
                 ->where('printing_requests.fulfillment_method', 'pickup')

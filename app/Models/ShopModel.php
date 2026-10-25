@@ -17,6 +17,7 @@ class ShopModel extends Model
         'slug',
         'description',
         'logo_url',
+        'cover_photo_url',
         'address_line',
         'street',
         'barangay',

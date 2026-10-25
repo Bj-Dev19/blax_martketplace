@@ -145,6 +145,7 @@ $routes->group('tenant', ['filter' => 'roleAccess:tenant'], function ($routes) {
     $routes->post('withdrawals/request', 'Tenant::requestWithdrawal');
     $routes->post('settings/save', 'Tenant::saveSettings');
     $routes->post('settings/logo', 'Tenant::saveShopLogo');
+    $routes->post('settings/cover', 'Tenant::saveShopCover');
     $routes->post('products/save', 'Tenant::saveProduct');
     $routes->post('products/images/delete/(:num)', 'Tenant::deleteProductImage/$1');
     $routes->post('products/delete/(:num)', 'Tenant::deleteProduct/$1');
