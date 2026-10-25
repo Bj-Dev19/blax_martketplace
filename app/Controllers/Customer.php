@@ -232,7 +232,7 @@ class Customer extends BaseController
         $total = $pager ? (int) $pager->getTotal() : count($result['products']);
         $totalPages = max(1, (int) ceil($total / $perPage));
 
-        $categories = $categoryModel->orderBy('name', 'ASC')->findAll();
+        $categories = $categoryModel->getAllCached();
 
         return view('customer/search_results', [
             'title'         => $search !== '' ? 'Search: ' . esc($search) : 'Search Products',
@@ -376,7 +376,8 @@ class Customer extends BaseController
         }
 
         $orderModel = new OrderModel();
-        $orders     = $orderModel->getOrdersByCustomer($userId);
+        $cutoff2Days = date('Y-m-d H:i:s', time() - 2 * 86400);
+        $orders     = $orderModel->getOrdersByCustomer($userId, $cutoff2Days);
 
         $orderItemModel    = new OrderItemModel();
         $productImageModel = new ProductImageModel();
@@ -403,16 +404,14 @@ class Customer extends BaseController
         $productNames = [];
         if (!empty($productIds)) {
             $imageRows = $productImageModel->builder()
+                ->select('product_id, image_url')
                 ->whereIn('product_id', array_keys($productIds))
-                ->orderBy('is_primary', 'DESC')
-                ->orderBy('sort_order', 'ASC')
+                ->where('is_primary', 1)
                 ->get()->getResultArray();
 
             foreach ($imageRows as $img) {
                 $pid = (int) $img['product_id'];
-                if (!isset($imageByProduct[$pid])) {
-                    $imageByProduct[$pid] = $img['image_url'];
-                }
+                $imageByProduct[$pid] = $img['image_url'];
             }
 
             $prodRows = $productModel->builder()
@@ -619,10 +618,8 @@ class Customer extends BaseController
         }
 
         $prModel  = new PrintingRequestModel();
-        $requests = $prModel->getRequestsByCustomer($userId);
-
-        // Filter out cancelled printing requests older than 5 days
         $cutoff5Days = date('Y-m-d H:i:s', time() - 5 * 86400);
+        $requests = $prModel->getRequestsByCustomer($userId, $cutoff5Days);
         $requests = array_values(array_filter($requests, static function ($r) use ($cutoff5Days) {
             $status = $r['status'] ?? 'new';
             if ($status === 'cancelled') {
@@ -919,6 +916,34 @@ class Customer extends BaseController
     }
 
     /**
+     * Deferred customer notifications for header dropdown (on-demand click).
+     * Route: GET /customer/notifications/recent
+     */
+    public function recentNotifications()
+    {
+        $session = session();
+        $userId  = (int) $session->get('user_id');
+
+        if (!$userId) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'error' => 'Unauthorized']);
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        $notifModel = new \App\Models\NotificationModel();
+        $recent = $notifModel->getRecent($userId, 6);
+
+        return $this->response
+            ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->setJSON([
+                'success'       => true,
+                'notifications' => $recent,
+            ]);
+    }
+
+    /**
      * Customer real-time notifications & order status polling endpoint.
      * Route: GET /customer/realtime/check
      */
@@ -936,18 +961,60 @@ class Customer extends BaseController
             session_write_close();
         }
 
-        $notifModel = new \App\Models\NotificationModel();
-        $orderModel = new \App\Models\OrderModel();
-        $prModel    = new \App\Models\PrintingRequestModel();
+        $db = \Config\Database::connect();
+        $isSqlite = stripos($db->DBDriver ?? '', 'sqlite') !== false;
 
         $rawLastNotifId = $this->request->getGet('last_notif_id');
         $rawLastOrderSig = $this->request->getGet('last_order_sig');
         $rawLastPrintSig = $this->request->getGet('last_print_sig');
 
-        // Fast change-detection snapshots
-        $maxNotifRow = $notifModel->where('user_id', $userId)->selectMax('id')->first();
-        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
-        $unreadCount = $notifModel->getUnreadCount($userId);
+        // Consolidated single-query change-detection snapshot (1 query instead of 4)
+        if ($isSqlite) {
+            $sql = "SELECT 
+                (SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = ?) AS max_notif_id,
+                (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count,
+                (SELECT GROUP_CONCAT(id || ':' || status, ';') FROM orders WHERE customer_id = ? AND status IN ('pending', 'processing', 'shipped', 'in_transit', 'ready_for_pickup')) AS order_sig,
+                (SELECT GROUP_CONCAT(id || ':' || status, ';') FROM printing_requests WHERE customer_id = ? AND status IN ('new', 'in_production', 'ready_for_pickup', 'ready_for_delivery')) AS print_sig";
+        } else {
+            $sql = "SELECT 
+                (SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = ?) AS max_notif_id,
+                (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count,
+                (SELECT COALESCE(SUM(CRC32(CONCAT(id, ':', status))), 0) FROM orders 
+                   WHERE customer_id = ? AND status IN ('pending', 'processing', 'shipped', 'in_transit', 'ready_for_pickup')) AS order_sig,
+                (SELECT COALESCE(SUM(CRC32(CONCAT(id, ':', status))), 0) FROM printing_requests 
+                   WHERE customer_id = ? AND status IN ('new', 'in_production', 'ready_for_pickup', 'ready_for_delivery')) AS print_sig";
+        }
+
+        $snapshot = $db->query($sql, [$userId, $userId, $userId, $userId])->getRowArray() ?? [];
+        $currentMaxNotifId = (int) ($snapshot['max_notif_id'] ?? 0);
+        $unreadCount       = (int) ($snapshot['unread_count'] ?? 0);
+        $orderSig          = (string) ($snapshot['order_sig'] ?? '0');
+        $printSig          = (string) ($snapshot['print_sig'] ?? '0');
+
+        // Fast path: if client provided previous hashes and no new notifications or status transitions occurred
+        if ($rawLastNotifId !== null && $rawLastOrderSig !== null && $rawLastPrintSig !== null) {
+            $lastNotifId = (int) $rawLastNotifId;
+            if ($currentMaxNotifId <= $lastNotifId && (string)$rawLastOrderSig === $orderSig && (string)$rawLastPrintSig === $printSig) {
+                return $this->response
+                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    ->setJSON([
+                        'success'             => true,
+                        'changed'             => false,
+                        'unread_count'        => $unreadCount,
+                        'max_notif_id'        => $currentMaxNotifId,
+                        'order_sig'           => $orderSig,
+                        'print_sig'           => $printSig,
+                        'has_new'             => false,
+                        'new_notifs'          => [],
+                        'timestamp'           => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
+
+        // Full payload when changes detected or initial heartbeat
+        $notifModel = new \App\Models\NotificationModel();
+        $orderModel = new \App\Models\OrderModel();
+        $prModel    = new \App\Models\PrintingRequestModel();
 
         $activeOrders = $orderModel
             ->select('id, order_number, status, placed_at')
@@ -965,38 +1032,6 @@ class Customer extends BaseController
             ->limit(10)
             ->findAll();
 
-        $orderSig = '';
-        foreach ($activeOrders as $ao) {
-            $orderSig .= $ao['id'] . ':' . $ao['status'] . ';';
-        }
-        $printSig = '';
-        foreach ($activePrinting as $ap) {
-            $printSig .= $ap['id'] . ':' . $ap['status'] . ';';
-        }
-
-        // Fast path: if client provided previous hashes and no new notifications or status transitions occurred
-        if ($rawLastNotifId !== null && $rawLastOrderSig !== null && $rawLastPrintSig !== null) {
-            $lastNotifId = (int) $rawLastNotifId;
-            if ($currentMaxNotifId <= $lastNotifId && $rawLastOrderSig === $orderSig && $rawLastPrintSig === $printSig) {
-                return $this->response
-                    ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
-                    ->setJSON([
-                        'success'             => true,
-                        'changed'             => false,
-                        'unread_count'        => $unreadCount,
-                        'max_notif_id'        => $currentMaxNotifId,
-                        'order_sig'           => $orderSig,
-                        'print_sig'           => $printSig,
-                        'has_new'             => false,
-                        'new_notifs'          => [],
-                        'active_orders'       => $activeOrders,
-                        'active_printing'     => $activePrinting,
-                        'timestamp'           => date('Y-m-d H:i:s'),
-                    ]);
-            }
-        }
-
-        // Full payload when changes detected or initial heartbeat
         $newNotifs = [];
         if ($rawLastNotifId !== null && (int)$rawLastNotifId > 0) {
             $newNotifs = $notifModel->where('user_id', $userId)
@@ -1014,7 +1049,7 @@ class Customer extends BaseController
             ->setJSON([
                 'success'             => true,
                 'changed'             => true,
-                'unread_count'        => $unreadCount,
+                'unread_count'        => (int) ($headerStats['unread_count'] ?? $unreadCount),
                 'cart_count'          => (int) ($headerStats['cart_count'] ?? 0),
                 'active_orders_count' => (int) ($headerStats['active_orders_count'] ?? count($activeOrders)),
                 'max_notif_id'        => $currentMaxNotifId,

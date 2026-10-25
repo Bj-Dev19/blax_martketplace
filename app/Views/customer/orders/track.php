@@ -794,9 +794,11 @@
     function startPositionPolling() {
         if (['delivered', 'completed', 'cancelled'].includes(ORDER_STATUS)) return;
 
+        let isTrackingTerminated = false;
+
         function fetchRiderPosition() {
-            if (document.visibilityState === 'hidden') return;
-            fetch('<?= !empty($pollPositionUrl) ? esc($pollPositionUrl) : base_url('customer/orders/track/' . ($order['order_number'] ?? $order['id']) . '/position') ?>', {
+            if (isTrackingTerminated || document.visibilityState === 'hidden') return Promise.resolve();
+            return fetch('<?= !empty($pollPositionUrl) ? esc($pollPositionUrl) : base_url('customer/orders/track/' . ($order['order_number'] ?? $order['id']) . '/position') ?>', {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
@@ -824,7 +826,8 @@
                     }
 
                     if (data.status === 'delivered' || data.status === 'completed' || data.status === 'cancelled') {
-                        if (pollInterval) clearInterval(pollInterval);
+                        isTrackingTerminated = true;
+                        if (pollInterval) clearTimeout(pollInterval);
                         setTimeout(() => location.reload(), 1500);
                     }
                 }
@@ -834,12 +837,30 @@
             });
         }
 
-        pollInterval = setInterval(fetchRiderPosition, 12000);
+        function scheduleNextRiderPoll() {
+            if (pollInterval) clearTimeout(pollInterval);
+            if (isTrackingTerminated || document.visibilityState === 'hidden') return;
+            pollInterval = setTimeout(() => {
+                fetchRiderPosition().finally(() => {
+                    scheduleNextRiderPoll();
+                });
+            }, 12000);
+        }
+
+        scheduleNextRiderPoll();
 
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                fetchRiderPosition();
+            if (document.visibilityState === 'visible' && !isTrackingTerminated) {
+                fetchRiderPosition().finally(() => {
+                    scheduleNextRiderPoll();
+                });
+            } else {
+                if (pollInterval) clearTimeout(pollInterval);
             }
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (pollInterval) clearTimeout(pollInterval);
         });
     }
 

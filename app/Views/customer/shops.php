@@ -158,7 +158,7 @@
                         <div>
                             <!-- Real-World Storefront Cover Image -->
                             <div class="h-24 sm:h-32 md:h-36 w-full overflow-hidden relative bg-slate-100 dark:bg-slate-800">
-                                <img src="<?= esc($coverUrl) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <img src="<?= esc($coverUrl) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/25 pointer-events-none"></div>
 
                                 <!-- Floating Status Badges -->
@@ -192,7 +192,7 @@
                                 <div class="absolute bottom-2 left-2">
                                     <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg p-0.5 bg-white dark:bg-slate-900 shadow-md ring-2 ring-white/90 dark:ring-slate-900 overflow-hidden shrink-0">
                                         <?php if (!empty($sLogo)): ?>
-                                            <img src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover rounded-md" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                            <img src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover rounded-md" loading="lazy" decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
                                             <div class="hidden w-full h-full bg-emerald-600 rounded-md flex items-center justify-center text-white font-extrabold text-[10px] font-mono">
                                                 <?= esc(substr($s['shop_name'], 0, 2)) ?>
                                             </div>

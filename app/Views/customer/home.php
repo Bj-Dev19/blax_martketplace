@@ -193,7 +193,7 @@
                         <a href="<?= base_url('shop/' . ($s['slug'] ?? $s['id'])) ?>" class="bento-card rounded-2xl p-4 flex flex-col items-center text-center group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:border-terra-green/40 transition-all">
                             <div class="w-16 h-16 rounded-full border-2 border-terra-green/20 overflow-hidden mb-2 bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-105 transition-transform">
                                 <?php if (!empty($s['logo_url'])): ?>
-                                    <img class="w-full h-full object-cover" src="<?= esc(logo_url($s['logo_url'])) ?>" alt="<?= esc($s['shop_name']) ?>">
+                                    <img class="w-full h-full object-cover" src="<?= esc(logo_url($s['logo_url'])) ?>" alt="<?= esc($s['shop_name']) ?>" loading="lazy" decoding="async">
                                 <?php else: ?>
                                     <span class="material-symbols-outlined text-terra-green text-3xl">storefront</span>
                                 <?php endif; ?>
@@ -257,7 +257,7 @@
                         <div>
                             <!-- Real-World Storefront Cover Image -->
                             <div class="h-24 sm:h-28 md:h-32 w-full overflow-hidden relative bg-slate-100 dark:bg-slate-800">
-                                <img src="<?= esc($coverUrl) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <img src="<?= esc($coverUrl) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/25 pointer-events-none"></div>
 
                                 <!-- Floating Status Badges -->
@@ -291,7 +291,7 @@
                                 <div class="absolute bottom-2 left-2">
                                     <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg p-0.5 bg-white dark:bg-slate-900 shadow-md ring-2 ring-white/90 dark:ring-slate-900 overflow-hidden shrink-0">
                                         <?php if (!empty($sLogo)): ?>
-                                            <img src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover rounded-md" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                            <img src="<?= esc($sLogo) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover rounded-md" loading="lazy" decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
                                             <div class="hidden w-full h-full bg-emerald-600 rounded-md flex items-center justify-center text-white font-extrabold text-[10px] font-mono">
                                                 <?= esc(substr($s['shop_name'], 0, 2)) ?>
                                             </div>

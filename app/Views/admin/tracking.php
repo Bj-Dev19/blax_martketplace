@@ -540,19 +540,39 @@
             syncLabel.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        // Start 15-second auto-refresh polling (pauses when tab is hidden)
-        setInterval(refreshFleetPins, 15000);
+        // Start 15-second auto-refresh polling with self-scheduling timer (pauses when tab is hidden)
+        let fleetPollTimer = null;
+
+        function scheduleNextFleetPoll() {
+            if (fleetPollTimer) clearTimeout(fleetPollTimer);
+            if (document.visibilityState === 'hidden') return;
+            fleetPollTimer = setTimeout(() => {
+                refreshFleetPins().finally(() => {
+                    scheduleNextFleetPoll();
+                });
+            }, 15000);
+        }
+
+        scheduleNextFleetPoll();
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                refreshFleetPins();
+                refreshFleetPins().finally(() => {
+                    scheduleNextFleetPoll();
+                });
+            } else {
+                if (fleetPollTimer) clearTimeout(fleetPollTimer);
             }
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (fleetPollTimer) clearTimeout(fleetPollTimer);
         });
     };
 
     function refreshFleetPins() {
-        if (document.visibilityState === 'hidden') return;
-        fetch('<?= base_url('admin/tracking/pins') ?>', {
+        if (document.visibilityState === 'hidden') return Promise.resolve();
+        return fetch('<?= base_url('admin/tracking/pins') ?>', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }

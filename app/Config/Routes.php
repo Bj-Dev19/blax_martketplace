@@ -95,6 +95,7 @@ $routes->group('customer', ['filter' => 'roleAccess:customer'], function ($route
     $routes->post('favorites/add', 'Customer::favoriteShop');
     $routes->post('shop/report', 'Customer::reportShop', ['filter' => 'actionThrottle']);
     $routes->get('realtime/check', 'Customer::realtimeCheck');
+    $routes->get('notifications/recent', 'Customer::recentNotifications');
     $routes->post('shipping/quote', 'Checkout::shippingQuote');
 });
 
@@ -131,6 +132,7 @@ $routes->group('tenant', ['filter' => 'roleAccess:tenant'], function ($routes) {
     $routes->get('settings', 'Tenant::settings');
     $routes->get('archive', 'Tenant::archive');
     $routes->get('dashboard/sales', 'Tenant::dashboardSalesData');
+    $routes->get('dashboard/widgets', 'Tenant::dashboardWidgets');
 
     $routes->post('orders/update-status', 'Tenant::updateOrderStatus');
     $routes->post('printing/update-status', 'Tenant::updatePrintingStatus');

@@ -30,6 +30,15 @@ class PerformanceFilter implements FilterInterface
         self::$enabled = true;
         self::$startTime = microtime(true);
         self::$startMemory = memory_get_usage(false);
+
+        try {
+            $db = \Config\Database::connect(null, false);
+            if ($db) {
+                $db->saveQueries = true;
+            }
+        } catch (\Throwable $e) {
+            // Ignore DB connect errors in before filter
+        }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
@@ -45,24 +54,42 @@ class PerformanceFilter implements FilterInterface
         $status    = $response->getStatusCode();
 
         $queryCount = 0;
+        $totalSqlMs = 0.0;
+        $slowQueries = [];
         try {
             $db = \Config\Database::connect(null, false);
             if ($db) {
-                $queryCount = count($db->getQueries());
+                $queries = $db->getQueries();
+                $queryCount = count($queries);
+                foreach ($queries as $q) {
+                    if (is_object($q) && method_exists($q, 'getDuration')) {
+                        $durMs = round(((float) $q->getDuration()) * 1000, 2);
+                        $totalSqlMs += $durMs;
+                        if ($durMs >= 15.0) {
+                            $sql = method_exists($q, 'getOriginalQuery') ? (string)$q->getOriginalQuery() : (string)$q;
+                            $slowQueries[] = sprintf("%.2fms: %s", $durMs, substr(preg_replace('/\s+/', ' ', trim($sql)), 0, 120));
+                        }
+                    }
+                }
             }
         } catch (\Throwable $e) {
             // Do not fail if database is not connected
         }
 
         $logMsg = sprintf(
-            "[APP_PROFILE] %s /%s %d | Time: %s ms | Peak Mem: %s MB | SQL Queries: %d\n",
+            "[APP_PROFILE] %s /%s %d | Time: %s ms | Peak Mem: %s MB | SQL Queries: %d | SQL Time: %s ms\n",
             $method,
             ltrim($uri, '/'),
             $status,
             number_format($elapsedMs, 2),
             number_format($peakMemMb, 2),
-            $queryCount
+            $queryCount,
+            number_format($totalSqlMs, 2)
         );
+
+        if (!empty($slowQueries)) {
+            $logMsg .= "  [SLOW SQL] " . implode(" | ", array_slice($slowQueries, 0, 3)) . "\n";
+        }
 
         if (defined('STDERR') && is_resource(STDERR)) {
             fwrite(STDERR, $logMsg);

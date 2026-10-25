@@ -378,19 +378,19 @@ class Admin extends BaseController
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
         $rawLastNotifId = $this->request->getGet('last_notif_id');
 
-        $orderModel = new \App\Models\OrderModel();
-        $printingModel = new \App\Models\PrintingRequestModel();
+        // Consolidated platform snapshot in 1 single round-trip query
+        $db = \Config\Database::connect();
+        $snapshotSql = "SELECT 
+            (SELECT COALESCE(MAX(id), 0) FROM orders) AS max_order_id,
+            (SELECT COALESCE(MAX(id), 0) FROM printing_requests) AS max_printing_id,
+            (SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = ?) AS max_notif_id,
+            (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count";
+        $snapRow = $db->query($snapshotSql, [$adminUserId, $adminUserId])->getRowArray() ?? [];
 
-        $maxOrdRow = $orderModel->selectMax('id')->first();
-        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
-
-        $maxPrRow = $printingModel->selectMax('id')->first();
-        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
-
-        $notifModel = new \App\Models\NotificationModel();
-        $maxNotifRow = $adminUserId > 0 ? $notifModel->where('user_id', $adminUserId)->selectMax('id')->first() : null;
-        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
-        $unreadCount = $adminUserId > 0 ? $notifModel->getUnreadCount($adminUserId) : 0;
+        $currentMaxOrderId = (int) ($snapRow['max_order_id'] ?? 0);
+        $currentMaxPrintId = (int) ($snapRow['max_printing_id'] ?? 0);
+        $currentMaxNotifId = (int) ($snapRow['max_notif_id'] ?? 0);
+        $unreadCount       = (int) ($snapRow['unread_count'] ?? 0);
 
         // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately
         if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
@@ -418,6 +418,10 @@ class Admin extends BaseController
             }
         }
 
+        $orderModel = new \App\Models\OrderModel();
+        $printingModel = new \App\Models\PrintingRequestModel();
+        $notifModel = new \App\Models\NotificationModel();
+
         // 1. Fetch new orders for admin across all shops with a single JOIN query
         $newOrders = [];
         if ($rawLastOrderId !== null && $rawLastOrderId !== '') {
@@ -427,6 +431,7 @@ class Admin extends BaseController
                 ->join('users', 'users.id = orders.customer_id', 'left')
                 ->where('orders.id >', $lastOrderId)
                 ->orderBy('orders.id', 'ASC')
+                ->limit(20)
                 ->findAll();
 
             foreach ($raw as $ord) {
@@ -456,6 +461,7 @@ class Admin extends BaseController
                 ->join('users', 'users.id = printing_requests.customer_id', 'left')
                 ->where('printing_requests.id >', $lastPrintingId)
                 ->orderBy('printing_requests.id', 'ASC')
+                ->limit(20)
                 ->findAll();
 
             foreach ($rawPr as $pr) {

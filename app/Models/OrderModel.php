@@ -33,13 +33,18 @@ class OrderModel extends Model
         'cancel_reason',
     ];
 
-    public function getOrdersByCustomer(int $customerId)
+    public function getOrdersByCustomer(int $customerId, ?string $cutoffDate = null)
     {
-        return $this->db->table('orders o')
+        $builder = $this->db->table('orders o')
             ->select('o.*, s.shop_name, s.logo_url as shop_logo, s.address_line as shop_address, s.city as shop_city, s.province as shop_province')
             ->join('shops s', 's.id = o.shop_id', 'left')
-            ->where('o.customer_id', $customerId)
-            ->orderBy('o.placed_at', 'DESC')
+            ->where('o.customer_id', $customerId);
+
+        if ($cutoffDate !== null) {
+            $builder->where("(o.status NOT IN ('completed', 'delivered', 'cancelled') OR COALESCE(o.completed_at, o.cancelled_at, o.placed_at) >= " . $this->db->escape($cutoffDate) . ")");
+        }
+
+        return $builder->orderBy('o.placed_at', 'DESC')
             ->get()->getResultArray();
     }
 

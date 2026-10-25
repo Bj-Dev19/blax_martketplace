@@ -407,8 +407,17 @@ class SeasonalAiService
         try {
             foreach (array_keys(self::$seasons) as $sKey) {
                 cache()->delete("cohere_seasonal_v1_{$shopId}_{$sKey}");
+                cache()->delete("seasonal_calc_v1_{$shopId}_{$sKey}");
             }
         } catch (\Throwable $e) {}
+    }
+
+    /**
+     * Static helper to invalidate all cached seasonal calculations for a shop.
+     */
+    public static function forgetShop(int $shopId): void
+    {
+        (new self())->invalidateShopCache($shopId);
     }
 
     /**
@@ -627,9 +636,18 @@ class SeasonalAiService
      * @param int $shopId
      * @return array
      */
-    public function getDashboardSpotlight(int $shopId): array
+    public function getDashboardSpotlight(int $shopId, bool $forceRefresh = false): array
     {
-        $analysis = $this->getSeasonalAnalysis($shopId, null, false);
+        $activeSeason = $this->detectActiveSeason();
+        $cacheKey = "seasonal_calc_v1_{$shopId}_{$activeSeason}";
+        if (!$forceRefresh) {
+            $cached = cache($cacheKey);
+            if ($cached !== null && is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $analysis = $this->getSeasonalAnalysis($shopId, $activeSeason, false, $forceRefresh);
 
         // Filter top 3 highest urgency items that need restock
         $urgentItems = array_values(array_filter($analysis['recommendations'], function ($r) {
@@ -638,7 +656,7 @@ class SeasonalAiService
 
         $topThree = array_slice($urgentItems, 0, 3);
 
-        return [
+        $spotlight = [
             'season_name'          => $analysis['season']['name'],
             'short_name'           => $analysis['season']['short_name'],
             'icon'                 => $analysis['season']['icon'],
@@ -651,6 +669,10 @@ class SeasonalAiService
             'cohere_powered'       => $analysis['cohere_powered'] ?? false,
             'cohere_summary'       => $analysis['cohere_summary'] ?? null,
         ];
+
+        cache()->save($cacheKey, $spotlight, 300);
+
+        return $spotlight;
     }
 
     /**

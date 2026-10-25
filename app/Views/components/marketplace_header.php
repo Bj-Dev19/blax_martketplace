@@ -110,28 +110,60 @@
                                 </form>
                             <?php endif; ?>
                         </div>
-                        <div class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-xs custom-scrollbar">
-                            <?php if (!empty($recentNotifs)): ?>
-                                <?php foreach ($recentNotifs as $n): ?>
-                                    <a href="<?= base_url('notifications/click/' . (int)$n['id']) ?>" class="block p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors <?= empty($n['is_read']) ? 'bg-terra-green/5 dark:bg-terra-green/10' : 'opacity-70 hover:opacity-100' ?>">
-                                        <div class="font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1">
-                                            <div class="flex items-center gap-1.5 truncate">
-                                                <?php if (empty($n['is_read'])): ?>
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-terra-green shrink-0"></span>
-                                                <?php endif; ?>
-                                                <span class="truncate"><?= esc($n['title']) ?></span>
-                                            </div>
-                                            <span class="text-[10px] text-slate-400 font-normal shrink-0 font-mono"><?= date('M d, H:i', strtotime($n['created_at'])) ?></span>
-                                        </div>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug"><?= esc($n['message']) ?></p>
-                                    </a>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="p-6 text-center text-slate-400 text-xs">No notifications yet.</div>
-                            <?php endif; ?>
+                        <div id="customer-notif-dropdown-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-xs custom-scrollbar">
+                            <div class="p-6 text-center text-slate-400 text-xs">Click to load recent notifications...</div>
                         </div>
                     </div>
                 </div>
+
+                <script>
+                (function() {
+                    let notifsLoaded = false;
+                    let notifsLoading = false;
+                    const btn = document.getElementById('notif-dropdown-toggle');
+                    const container = document.getElementById('customer-notif-dropdown-list');
+                    if (!btn || !container) return;
+
+                    btn.addEventListener('click', function() {
+                        if (notifsLoaded || notifsLoading) return;
+                        notifsLoading = true;
+                        container.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs animate-pulse">Loading notifications...</div>';
+                        fetch('<?= base_url('customer/notifications/recent') ?>', {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            notifsLoading = false;
+                            notifsLoaded = true;
+                            if (data && data.success && Array.isArray(data.notifications) && data.notifications.length > 0) {
+                                container.innerHTML = data.notifications.map(n => {
+                                    const isUnread = !n.is_read || n.is_read === '0' || n.is_read === 0;
+                                    const createdDate = new Date(n.created_at);
+                                    const dateFmt = isNaN(createdDate.getTime()) ? '' : createdDate.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                    const safeTitle = (n.title || 'Notification').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                    const safeMsg = (n.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                    return `<a href="<?= base_url('notifications/click/') ?>${parseInt(n.id)}" class="block p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${isUnread ? 'bg-terra-green/5 dark:bg-terra-green/10' : 'opacity-70 hover:opacity-100'}">
+                                        <div class="font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1">
+                                            <div class="flex items-center gap-1.5 truncate">
+                                                ${isUnread ? '<span class="w-1.5 h-1.5 rounded-full bg-terra-green shrink-0"></span>' : ''}
+                                                <span class="truncate">${safeTitle}</span>
+                                            </div>
+                                            <span class="text-[10px] text-slate-400 font-normal shrink-0 font-mono">${dateFmt}</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">${safeMsg}</p>
+                                    </a>`;
+                                }).join('');
+                            } else {
+                                container.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">No notifications yet.</div>';
+                            }
+                        })
+                        .catch(() => {
+                            notifsLoading = false;
+                            container.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs">Unable to load notifications.</div>';
+                        });
+                    });
+                })();
+                </script>
 
                 <!-- Shopping Cart Pill Trigger -->
                 <a href="<?= base_url('cart') ?>" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" title="Shopping Cart" aria-label="Shopping Cart">
@@ -164,7 +196,7 @@
                     <div class="relative">
                         <button id="profile-dropdown-toggle" type="button" class="profile-dropdown-toggle w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green hover:ring-2 hover:ring-terra-green/30 transition-all text-xs sm:text-sm shrink-0" aria-haspopup="true" aria-expanded="false" aria-label="Profile menu">
                             <?php if (!empty($profileImage)): ?>
-                                <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar">
+                                <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="36" height="36" loading="lazy" decoding="async">
                             <?php else: ?>
                                 <?= $avatarChar ?>
                             <?php endif; ?>
@@ -176,7 +208,7 @@
                             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0">
                                     <?php if (!empty($profileImage)): ?>
-                                        <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar">
+                                        <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="lazy" decoding="async">
                                     <?php else: ?>
                                         <?= $avatarChar ?>
                                     <?php endif; ?>
@@ -257,7 +289,7 @@
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl overflow-hidden bg-terra-green/10 border border-terra-green/30 flex items-center justify-center font-bold text-terra-green shrink-0">
                         <?php if (!empty($profileImage)): ?>
-                            <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar">
+                            <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($profileImage)) ?>" alt="<?= esc($userName) ?> avatar" width="40" height="40" loading="lazy" decoding="async">
                         <?php else: ?>
                             <?= $avatarChar ?>
                         <?php endif; ?>

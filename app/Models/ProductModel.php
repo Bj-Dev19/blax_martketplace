@@ -155,7 +155,7 @@ class ProductModel extends Model
         ?int $rotationSeed = null
     ) {
         $this->builder()
-            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
+            ->select('products.id, products.shop_id, products.category_id, products.name, products.price, products.compare_at_price, products.stock_quantity, products.is_bestseller, products.rating_average, products.rating_count, products.created_at, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
             ->join('shops s', 's.id = products.shop_id', 'left')
             ->join('categories c', 'c.id = products.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = products.id AND pi.is_primary = 1', 'left')
@@ -228,7 +228,7 @@ class ProductModel extends Model
     public function getProductsWithDetailsPaginated(int $shopId, ?string $search = null, int $perPage = 6, int $page = 1)
     {
         $this->builder()
-            ->select('products.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
+            ->select('products.id, products.shop_id, products.category_id, products.name, products.price, products.compare_at_price, products.stock_quantity, products.is_bestseller, products.rating_average, products.rating_count, products.created_at, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id) as variant_count', false)
             ->join('shops s', 's.id = products.shop_id', 'left')
             ->join('categories c', 'c.id = products.category_id', 'left')
             ->join('product_images pi', 'pi.product_id = products.id AND pi.is_primary = 1', 'left')
@@ -540,5 +540,15 @@ class ProductModel extends Model
             'stock_quantity' => (int) $r['stock_quantity'],
             'shop_name'      => $r['shop_name'] !== null ? (string) $r['shop_name'] : null,
         ], $rows);
+    }
+
+    /**
+     * Invalidate cached home page and catalog payloads when catalog products change.
+     */
+    public static function invalidateCatalogCache(): void
+    {
+        try {
+            cache()->delete('blax_home_default_payload');
+        } catch (\Throwable $e) {}
     }
 }

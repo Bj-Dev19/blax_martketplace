@@ -141,8 +141,8 @@ Comparison of sequential query execution times over emulated network latencies (
 | WP ID | Title | Primary Files | Risk | Needs Approval? | Target RCs Fixed | Status |
 |---|---|---|---|---|---|---|
 | **WP-1** | Observability & Diagnostic Profiling | `docker/entrypoint.sh`, `docker/nginx.conf.template`, `app/Config/Filters.php` | Low | No | RC-08 | **Done** |
-| **WP-2** | Realtime Background Traffic Elimination | `app/Views/layouts/*.php`, `app/Controllers/Customer.php`, `app/Controllers/Tenant.php` | Medium | No | RC-01, RC-03 | Pending |
-| **WP-3** | Database Query Optimization & Caching | `app/Database/Migrations/*`, `app/Models/*`, `app/Views/layouts/*.php` | Medium | No | RC-02 | Pending |
+| **WP-2** | Realtime Background Traffic Elimination | `app/Views/layouts/*.php`, `app/Controllers/Customer.php`, `app/Controllers/Tenant.php` | Medium | No | RC-01, RC-03 | **Done** |
+| **WP-3** | Database Query Optimization & Caching | `app/Database/Migrations/*`, `app/Models/*`, `app/Views/layouts/*.php` | Medium | No | RC-02 | **Done** |
 | **WP-4** | Session Handler Optimization | `app/Session/Handlers/OptimizedDatabaseHandler.php`, `app/Config/App.php` | Medium | Yes (File Session option) | RC-04 | Pending |
 | **WP-5** | Runtime Server & Cold-Start Tuning | `docker/entrypoint.sh`, `docker/nginx.conf.template`, `Dockerfile` | Medium | No | RC-10 | Pending |
 | **WP-6** | Frontend Perceived Speed & Asset Purge | `app/Views/components/head.php`, `tailwind.config.js`, `public/js/blax-ui.js` | Low | Yes (Guarded prefetch) | RC-09 | Pending |

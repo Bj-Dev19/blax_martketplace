@@ -22,8 +22,7 @@
         $activeOrdersCount = $stats['active_orders_count'];
         $unreadCount = $stats['unread_count'];
 
-        $notifModel = new \App\Models\NotificationModel();
-        $recentNotifs = $notifModel->getRecent($userId, 6);
+        $recentNotifs = [];
     }
 
     // Global CMS contents for announcement bar and footer across all customer pages
@@ -536,10 +535,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.visibilityState === 'hidden') return;
 
         const idleSeconds = (Date.now() - lastActivityTime) / 1000;
-        if (idleSeconds > 300) {
-            pollIntervalMs = 60000;
-        } else if (idleSeconds > 120) {
-            pollIntervalMs = 45000;
+        if (idleSeconds > 120) {
+            pollIntervalMs = 30000;
         }
 
         customerPollTimer = setTimeout(() => {

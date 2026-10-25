@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <a href="<?= base_url('customer/profile') ?>" class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 hover:border-terra-green/30 transition-colors">
             <div class="w-10 h-10 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-sm overflow-hidden border border-terra-green/20 shrink-0">
                 <?php if (!empty($userImage)): ?>
-                    <img src="<?= esc(profile_image_url($userImage, 'thumbnail')) ?>" alt="<?= esc($userName) ?>" class="w-full h-full object-cover">
+                    <img src="<?= esc(profile_image_url($userImage, 'thumbnail')) ?>" alt="<?= esc($userName) ?>" class="w-full h-full object-cover" width="40" height="40" loading="lazy" decoding="async">
                 <?php else: ?>
                     <span class="font-mono"><?= esc($userInitial) ?></span>
                 <?php endif; ?>

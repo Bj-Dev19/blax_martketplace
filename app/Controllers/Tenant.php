@@ -71,7 +71,7 @@ class Tenant extends BaseController
         $userId        = (int) $session->get('user_id');
         $notifModel    = new NotificationModel();
         $unreadCount   = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
-        $notifications = $userId > 0 ? $notifModel->getRecent($userId, 10) : [];
+        $notifications = []; // Populated via initial real-time poll / dynamic render
 
         service('renderer')->setData([
             'shop'          => $shop,
@@ -80,6 +80,50 @@ class Tenant extends BaseController
         ]);
 
         return ['shop' => $shop, 'shopId' => $shopId];
+    }
+
+    /**
+     * Lightweight shop resolver specifically for background polling.
+     * Avoids heavy database find(), unread notification counting, and renderer setup on every poll cycle.
+     */
+    private function resolveShopIdForPoll(): ?int
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return null;
+        }
+
+        $userRole = (string) ($session->get('user_role') ?? '');
+        if ($userRole !== 'shop_owner' && $userRole !== 'tenant') {
+            return null;
+        }
+
+        $shopId = $session->get('shop_id');
+        if ($shopId) {
+            return (int) $shopId;
+        }
+
+        $userId = (int) $session->get('user_id');
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $shopModel = new ShopModel();
+        $shop = $shopModel->getShopByOwnerId($userId);
+        if ($shop) {
+            $resolvedId = (int) $shop['id'];
+            $session->set('shop_id', $resolvedId);
+            return $resolvedId;
+        }
+
+        $shop = $shopModel->first();
+        if (isset($shop['id'])) {
+            $resolvedId = (int) $shop['id'];
+            $session->set('shop_id', $resolvedId);
+            return $resolvedId;
+        }
+
+        return null;
     }
 
     public function dashboard()
@@ -112,30 +156,14 @@ class Tenant extends BaseController
         // ---- Lists (Directly limited to 8 in SQL) ----
         $recentOrders   = $orderModel->getOrdersByShop($shopId, 8);
         $recentRequests = $prModel->getRequestsByShop($shopId, 8);
+        // Low stock products directly bounded
         $lowStockItems  = $productModel->getLowStockProducts($shopId);
         $lowStockCount  = $productModel->countLowStockProducts($shopId);
 
-        // ---- Active Compliance Warning & Notifications ----
-        $userId        = (int) session()->get('user_id');
-        $db = \Config\Database::connect();
-        $activeWarning = $userId > 0 ? $db->table('notifications')
-            ->where('user_id', $userId)
-            ->where('type', 'compliance_warning')
-            ->orderBy('created_at', 'DESC')
-            ->limit(1)
-            ->get()->getRowArray() : null;
-
-        $notifications = $notifModel->getRecent($userId);
-        $unreadCount   = $notifModel->getUnreadCount($userId);
-
-        // ---- AI Seasonal Intelligence Spotlight for Dashboard ----
-        $seasonalService   = new \App\Libraries\SeasonalAiService();
-        $seasonalSpotlight = $seasonalService->getDashboardSpotlight($shopId);
-
         return view('tenant/dashboard', [
             'shop'               => $shop,
-            'active_warning'     => $activeWarning,
-            'seasonal_spotlight' => $seasonalSpotlight,
+            'active_warning'     => null,
+            'seasonal_spotlight' => null,
             // KPI values
             'total_revenue'      => $kpis['total_revenue'],
             'total_sales'        => $kpis['total_sales'],
@@ -162,9 +190,47 @@ class Tenant extends BaseController
             'low_stock_count'    => $lowStockCount,
             'recent_orders'      => $recentOrders,
             'recent_requests'    => $recentRequests,
-            // Header notifications
-            'notifications'      => $notifications,
-            'unread_count'       => $unreadCount,
+            // Header notifications (rendered by layout / realtime telemetry)
+            'notifications'      => [],
+            'unread_count'       => $kpis['unread_count'] ?? 0,
+        ]);
+    }
+
+    /**
+     * Deferred widget endpoint for Tenant Dashboard.
+     * Loads low-stock count, compliance warning, and AI seasonal intelligence off the critical path.
+     * Route: GET /tenant/dashboard/widgets
+     */
+    public function dashboardWidgets()
+    {
+        $shopId = $this->resolveShopIdForPoll();
+        if ($shopId === null || $shopId <= 0) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'error' => 'Unauthorized']);
+        }
+
+        $userId = (int) session()->get('user_id');
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+
+        $productModel = new ProductModel();
+        $lowStockCount = $productModel->countLowStockProducts($shopId);
+
+        $db = \Config\Database::connect();
+        $activeWarning = $userId > 0 ? $db->table('notifications')
+            ->where('user_id', $userId)
+            ->where('type', 'compliance_warning')
+            ->orderBy('created_at', 'DESC')
+            ->limit(1)
+            ->get()->getRowArray() : null;
+
+        $seasonalService   = new \App\Libraries\SeasonalAiService();
+        $seasonalSpotlight = $seasonalService->getDashboardSpotlight($shopId);
+
+        return view('tenant/dashboard_widgets', [
+            'active_warning'     => $activeWarning,
+            'low_stock_count'    => $lowStockCount,
+            'seasonal_spotlight' => $seasonalSpotlight,
         ]);
     }
 
@@ -562,8 +628,8 @@ class Tenant extends BaseController
      */
     public function realtimeCheck()
     {
-        $res = $this->getShopOrRedirect();
-        if ($res instanceof \CodeIgniter\HTTP\RedirectResponse) {
+        $shopId = $this->resolveShopIdForPoll();
+        if ($shopId === null || $shopId <= 0) {
             return $this->response->setStatusCode(401)->setJSON(['success' => false, 'error' => 'Unauthorized']);
         }
 
@@ -573,25 +639,23 @@ class Tenant extends BaseController
             session_write_close();
         }
 
-        $shopId = (int) $res['shopId'];
         $rawLastOrderId = $this->request->getGet('last_order_id');
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
         $rawLastNotifId = $this->request->getGet('last_notif_id');
 
-        $orderModel = new OrderModel();
-        $printingModel = new PrintingRequestModel();
+        // Consolidated snapshot in 1 single round-trip query
+        $db = \Config\Database::connect();
+        $snapshotSql = "SELECT 
+            (SELECT COALESCE(MAX(id), 0) FROM orders WHERE shop_id = ?) AS max_order_id,
+            (SELECT COALESCE(MAX(id), 0) FROM printing_requests WHERE shop_id = ?) AS max_printing_id,
+            (SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = ?) AS max_notif_id,
+            (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count";
+        $snapRow = $db->query($snapshotSql, [$shopId, $shopId, $userId, $userId])->getRowArray() ?? [];
 
-        $maxOrdRow = $orderModel->where('shop_id', $shopId)->selectMax('id')->first();
-        $currentMaxOrderId = (int) ($maxOrdRow['id'] ?? 0);
-
-        $maxPrRow = $printingModel->where('shop_id', $shopId)->selectMax('id')->first();
-        $currentMaxPrintId = (int) ($maxPrRow['id'] ?? 0);
-
-        // Live Notification Telemetry
-        $notifModel = new \App\Models\NotificationModel();
-        $maxNotifRow = $userId > 0 ? $notifModel->where('user_id', $userId)->selectMax('id')->first() : null;
-        $currentMaxNotifId = (int) ($maxNotifRow['id'] ?? 0);
-        $unreadCount = $userId > 0 ? $notifModel->getUnreadCount($userId) : 0;
+        $currentMaxOrderId = (int) ($snapRow['max_order_id'] ?? 0);
+        $currentMaxPrintId = (int) ($snapRow['max_printing_id'] ?? 0);
+        $currentMaxNotifId = (int) ($snapRow['max_notif_id'] ?? 0);
+        $unreadCount       = (int) ($snapRow['unread_count'] ?? 0);
 
         // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately (skips 8+ heavy summary queries & recent notifs fetch)
         if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
@@ -619,7 +683,10 @@ class Tenant extends BaseController
             }
         }
 
+        $notifModel = new \App\Models\NotificationModel();
         $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
+        $orderModel = new OrderModel();
+        $printingModel = new PrintingRequestModel();
 
         // 1. Fetch new orders for this shop in a single JOIN query (0 N+1 roundtrips)
         $newOrders = [];
@@ -631,6 +698,7 @@ class Tenant extends BaseController
                 ->where('orders.shop_id', $shopId)
                 ->where('orders.id >', $lastOrderId)
                 ->orderBy('orders.id', 'ASC')
+                ->limit(20)
                 ->findAll();
 
             $orderIds = [];
@@ -720,6 +788,7 @@ class Tenant extends BaseController
                 ->where('printing_requests.shop_id', $shopId)
                 ->where('printing_requests.id >', $lastPrintingId)
                 ->orderBy('printing_requests.id', 'ASC')
+                ->limit(20)
                 ->findAll();
 
             foreach ($rawPrinting as $pr) {

@@ -1,374 +1,322 @@
 # Blax Marketplace: Performance & Scalability Plan
 
-**Target Architecture**: Render Free Web Service (Docker: Nginx + PHP-FPM 8.3, region `singapore`, ~0.1 vCPU, 512 MB RAM, spins down after 15m idle) + Aiven Managed MySQL (remote, over the internet)  
-**Deliverable**: Comprehensive Architecture & Performance Roadmap (`docs/PERF_PLAN.md`)  
-**Status**: Plan Only — Awaiting Work Package Approvals (No code changes applied)
+**Status:** WP-0, WP-A, WP-B, WP-C, WP-D, and WP-E implemented and verified. Ready for baseline measurement and production deployment.
+**Stack:** CodeIgniter 4, PHP 8.3, Nginx + PHP-FPM on Render Free (region `singapore`), Aiven MySQL over the internet.
+**Rule used throughout:** numbers are either *counted from code* (labelled), *estimates* (labelled), or **TO MEASURE**. Nothing here is a measurement.
+
+> This file replaces an earlier draft of `docs/PERF_PLAN.md` (recoverable from git). The old draft contained claims the code contradicts. They are listed in section 0.1 so they are not re-introduced.
 
 ---
 
-## 1. Audit Status Matrix (Verified Against Codebase)
+## 0. Audit notes
 
-Every item from the initial architecture audit has been re-verified directly against the active codebase:
+### 0.1 Where my verification differs from the brief or the earlier draft
 
-| # | Audit Item | Status | Verified Evidence (`file:line`) | Analysis & Findings |
-|---|---|---|---|---|
-| **1** | **Baseline Measurements in `FIX_PLAN.md`** | **Missing** | `.gitignore:178` (`scratch/`) | All performance metrics, k6 figures, and toxiproxy timings in `docs/FIX_PLAN.md` are unverified. No `scratch/` test harness exists in version control. All baseline values must be measured anew. |
-| **2** | **`Customer::realtimeCheck` Fast Path** | **Missing** | `app/Controllers/Customer.php:925-990` | Runs 6 sequential queries on every single poll (`unreadCount`, `newNotifs`, `activeOrders`, `activePrinting`, `getCustomerHeaderStats`, `recentNotifs`). `getUnreadCount` duplicates count in `getCustomerHeaderStats`. No change-detection hash or fast return exists. |
-| **3** | **`Tenant::realtimeCheck` Fast Path Overhead** | **Partial** | `app/Controllers/Tenant.php:563-614` | Has a fast-path return (`lines 595-614`), but runs 4 database queries (`orders.selectMax`, `printing_requests.selectMax`, `getUnreadCount`, `getRecent(6)`) plus `getShopOrRedirect` *before* evaluating whether data has changed. |
-| **4** | **Customer Layout Overhead on Logged-in Pages** | **Missing** | `app/Views/layouts/marketplace.php:17-27` | Eagerly executes `getCustomerHeaderStats` (3 combined counts) and `getRecent(6)` on every single page load for logged-in users, even if the user never opens the notification dropdown. |
-| **5** | **`Tenant::dashboard` Monolithic Loading** | **Missing** | `app/Controllers/Tenant.php:85-169`, `app/Libraries/SeasonalAiService.php:630` | Single synchronous request executes: KPIs (30d/60d deltas), 7-day sales chart, 8 recent orders, 8 recent printing requests, low stock items + count, compliance warning, notifications, and seasonal AI spotlight (which queries products, joins categories/images, and calculates 60-day velocity). No widget deferral exists despite `dashboardSalesData` endpoint already existing (`line 175`). |
-| **6** | **Catalog Query (`ProductModel::getGlobalProductsPaginated`)** | **Missing** | `app/Models/ProductModel.php:157-212` | Uses `products.*`, correlated subquery `(SELECT COUNT(*) FROM product_variants WHERE ...)`, and `ORDER BY RAND(seed)` for default discovery sort. Forces full table scan and filesort on MySQL. Page 2+ and filtered queries are not cached. |
-| **7** | **Unbounded `findAll()` on User Paths** | **Partial** | `app/Controllers/Customer.php:379, 389, 641, 683`, `app/Controllers/Tenant.php:907, 1039, 4801` | Over 59 `findAll()` calls across controllers/models. Critical hot paths lack pagination: `Customer::orders` loads all customer orders with all items in one response; `Customer::printingRequests` loads all attachments unpaged. |
-| **8** | **Image Loading & Cloudinary Optimization** | **Partial** | `app/Views/customer/shops.php:161`, `app/Views/customer/home.php`, `app/Libraries/CloudinaryService.php:216` | `CloudinaryService::transformUrl()` presets (`thumbnail`, `card`, `avatar`) exist, but frontend views render raw image URLs without preset transforms. `loading="lazy"` and `decoding="async"` are missing on shop directories and product carousels. |
-| **9** | **Oversized View Files (Monolithic Markup)** | **Missing** | `app/Views/customer/shop_storefront.php` (113 KB), `tenant/printing_requests.php` (93 KB), `customer/cart.php` (73 KB), `customer/orders.php` (67 KB) | Contain massive hidden modals, large inline SVGs, multi-tab DOM trees, and heavy embedded script blocks sent on the initial wire payload instead of loaded on interaction. |
-| **10** | **Render Free Cold Starts & Idle Sleep** | **Missing** | `docker/entrypoint.sh:119-140` | Spin-down after 15m idle is platform behavior (~15-35s cold start). `RUN_MIGRATIONS` defaults to `true` on boot, running `php spark migrate --all` with retry loops on every wake-up. |
-| **11** | **Aiven MySQL vs Render Singapore Latency** | **Missing** | `app/Config/Database.php:61-105` | Render is deployed in `singapore`. The Aiven MySQL cloud region is unconfirmed. If cross-region (e.g. Frankfurt or US), every sequential query incurs 150-250ms round-trip latency. |
-| **12** | **Documentation Drift (`FIX_PLAN.md` & `README.md`)** | **Missing** | `docs/FIX_PLAN.md:143`, `README.md` | `FIX_PLAN.md` status table marks implemented features as "Pending". `README.md` references outdated security notes and nonexistent bypasses. Needs synchronization. |
-
----
-
-## 2. Measurement Plan & Baseline Metrics
-
-### 2.1 Measurement Methodology
-To establish reproducible, empirical benchmarks without phantom numbers:
-
-1. **Server Profiler (`APP_PROFILE=1`)**:
-   - `app/Filters/PerformanceFilter.php` is already configured in the application.
-   - Enabling `APP_PROFILE=1` in `.env` or Render environment variables outputs structured telemetry to `stderr` / PHP-FPM access log for every request:
-     ```text
-     [APP_PROFILE] GET /blax_inventory/public/tenant 200 | Time: 420.50 ms | Peak Mem: 18.50 MB | SQL Queries: 14
-     ```
-2. **PHP-FPM Custom Access Log**:
-   - `docker/entrypoint.sh` already configures:
-     `access.format = "[%{%Y-%m-%d %H:%M:%S}t] %m %{REQUEST_URI}e %s %{mili}dms %{kilo}Mkb %C%%"`
-   - Accurately captures request duration (`%{mili}dms`), memory (`%{kilo}Mkb`), and CPU percentage (`%C%%`).
-3. **Nginx Upstream Timing**:
-   - `docker/nginx.conf.template` logs `rt=$request_time urt=$upstream_response_time`, isolating network transit from PHP-FPM execution time.
-
-### 2.2 Baseline Measurement Table
-
-> [!NOTE]
-> All fields below are designated **TO MEASURE**. They must be filled from live production/staging Render logs with `APP_PROFILE=1` enabled on a warm container before starting work package execution.
-
-| Route / Endpoint | HTTP Method | TTFB (p50) | TTFB (p95) | SQL Query Count | Total SQL Time | Peak Memory | Measured Date / Notes |
-|---|---|---|---|---|---|---|---|
-| **Marketplace Home (`/`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Anonymous visit |
-| **Shops Directory (`/shops`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Public directory |
-| **Shop Storefront (`/shop/{slug}`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Tenant storefront |
-| **Product Detail (`/product/{id}`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Catalog product page |
-| **Shopping Cart (`/cart`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Logged-in / Guest cart |
-| **Customer Orders (`/customer/orders`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Authenticated customer |
-| **Tenant Dashboard (`/tenant`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Merchant root |
-| **Tenant Orders (`/tenant/orders`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Merchant order list |
-| **Tenant Inventory (`/tenant/inventory`)**| GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Product management |
-| **Admin Console (`/admin`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Master admin dashboard |
-| **Customer Realtime (`/customer/realtime/check`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Recurring heartbeat poll |
-| **Tenant Realtime (`/tenant/realtime/check`)** | GET | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | *TO MEASURE* | Recurring heartbeat poll |
-
----
-
-## 3. Work Packages (Ordered by Expected Gain / Risk)
-
-```mermaid
-graph TD
-    WPA[WP-A: Realtime Endpoints Fast-Path] --> WPB[WP-B: Deferred Widget & Layout Loading]
-    WPB --> WPC[WP-C: Catalog Query & Discovery RAND Elimination]
-    WPC --> WPD[WP-D: Unbounded findAll Pagination]
-    WPD --> WPE[WP-E: Modern Image Delivery & Cloudinary Transforms]
-    WPE --> WPF[WP-F: Oversized Views Modularization]
-    WPF --> WPG[WP-G: Infrastructure & Cold-Start Tuning]
-    WPG --> WPH[WP-H: Documentation Cleanup]
-```
-
----
-
-### WP-A: Realtime Endpoints Optimization (Customer Fast Path, Tenant Trim & Polling Loops)
-*Eliminates background CPU saturation and database connection contention on recurring polling requests.*
-
-- **Goal**: Reduce queries per realtime heartbeat check from 6–8 queries down to 1 lightweight query when no data has changed. Complete timer modernization for remaining tracking pages.
-- **Exact Files & Functions**:
-  - `app/Controllers/Customer.php` (`realtimeCheck`)
-  - `app/Controllers/Tenant.php` (`realtimeCheck`)
-  - `app/Views/layouts/marketplace.php` (`pollCustomerRealtime`)
-  - `app/Views/customer/orders/track.php` (`startPositionPolling`)
-  - `app/Views/admin/tracking.php` (`refreshFleetPins`)
-- **Detailed Proposed Changes**:
-  1. In `Customer::realtimeCheck`, accept `client_hash` / query parameters `last_notif_id`, `last_order_ts`, and `last_print_ts`.
-  2. Implement single consolidated change-detection query:
-     ```sql
-     SELECT 
-       (SELECT MAX(id) FROM notifications WHERE user_id = ?) AS max_notif_id,
-       (SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0) AS unread_count,
-       (SELECT MAX(UNIX_TIMESTAMP(updated_at)) FROM orders WHERE customer_id = ?) AS max_order_ts,
-       (SELECT MAX(UNIX_TIMESTAMP(updated_at)) FROM printing_requests WHERE customer_id = ?) AS max_print_ts
-     ```
-  3. If `max_notif_id <= last_notif_id`, `max_order_ts <= last_order_ts`, and `max_print_ts <= last_print_ts`, return lightweight HTTP 200 `{changed: false, unread_count}` immediately. Skip loading header stats, active order lists, active printing lists, and recent notifications.
-  4. In `Tenant::realtimeCheck`, evaluate fast-path parameters *before* calling `getRecent()` and `getUnreadCount()`. Only fetch notifications if unread count changed.
-  5. In `track.php` and `tracking.php`, replace remaining `setInterval` loops with self-scheduling `setTimeout` that pauses when `document.visibilityState === 'hidden'`.
-- **Expected Effect**:
-  - Customer poll queries: reduced from 6 queries to 1 query (*~83% query reduction on idle polls - estimate*).
-  - Tenant poll queries: reduced from 4 queries to 1 query (*~75% query reduction on idle polls - estimate*).
-  - Background database RTT: slashed from ~240ms to ~40ms per poll (*estimate*).
-- **Risk**: Low. Badge counts and toast notifications must remain synchronized upon actual events.
-- **Rollback**: Revert `Customer.php` and `Tenant.php` methods to git commit `8e64687`.
-- **Test Steps**:
-  - Open customer browser tab. Trigger an order status change in tenant portal. Verify customer toast appears within 25 seconds.
-  - Leave customer tab idle for 2 minutes. Inspect Network tab to verify response payload is `{changed: false}` (~180 bytes).
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-B: Deferred Widget & Layout Loading (On-Demand Hydration)
-*Transfers secondary widget compute off the critical rendering path to achieve instant First Paint on heavy dashboards.*
-
-- **Goal**: Deliver the primary page shell and critical KPIs in the initial HTTP response (<250ms TTFB), loading secondary charts, heavy lists, and spotlights asynchronously via AJAX.
-- **Exact Files & Functions**:
-  - `app/Controllers/Tenant.php` (`dashboard`, `dashboardLowStock`, `dashboardSeasonalSpotlight`)
-  - `app/Views/tenant/dashboard.php`
-  - `app/Views/layouts/marketplace.php` (Header notification loading)
-  - `app/Controllers/Customer.php` (`getNotificationDropdown`)
-- **Detailed Proposed Changes**:
-  1. In `Tenant::dashboard`:
-     - Render immediately after calculating core KPIs (`getShopDashboardKpis`) and recent orders/requests.
-     - Remove synchronous calls to `getSalesChartData(7)` (use existing `dashboardSalesData` endpoint to load chart via client-side fetch).
-     - Split low stock (`getLowStockProducts`) and seasonal spotlight (`getDashboardSpotlight`) into lightweight JSON endpoints (`/tenant/dashboard/widgets/low-stock` and `/tenant/dashboard/widgets/seasonal-spotlight`).
-     - In `tenant/dashboard.php`, render animated skeleton pulse placeholders for the chart, low-stock box, and seasonal spotlight. Hydrate them via `fetch()` once `DOMContentLoaded` fires.
-  2. Cache the computation in `SeasonalAiService::getSeasonalAnalysis`:
-     - Cache key: `seasonal_analysis_v1_{shopId}_{seasonKey}` with 1800s (30m) TTL.
-     - Invalidate explicitly when stock changes in `ProductModel::adjustStock` or `Tenant::saveProduct`.
-  3. In `layouts/marketplace.php`:
-     - Eliminate synchronous `NotificationModel::getRecent(6)` from every logged-in page load.
-     - In `components/marketplace_header.php`, render the notification dropdown skeleton.
-     - On `#notif-dropdown-toggle` click, fetch notifications via `/customer/notifications/dropdown` on demand (cached for 30s in browser memory).
-- **Expected Effect**:
-  - `Tenant::dashboard` initial SQL queries: reduced from ~14 queries to ~4 queries (*~70% reduction in initial queries - estimate*).
-  - Initial HTML generation time: reduced by 300–600ms on Render + Aiven (*estimate*).
-  - Customer logged-in page loads: saves 1 query (~40–60ms) across all marketplace routes (*estimate*).
-- **Risk**: Low-Medium (must ensure skeleton loaders transition smoothly without layout shifts).
-- **Rollback**: Revert `Tenant.php` and `marketplace.php` view parameters.
-- **Test Steps**:
-  - Load `/tenant` in browser with network throttling (Slow 4G). Verify KPI cards render instantly while chart and AI spotlight show neat skeleton loading states before populating.
-  - Click notification bell on customer navbar; verify dropdown populates seamlessly via AJAX on first click.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-C: Catalog Query Optimization & Discovery Filesort Elimination
-*Eliminates database-wide temporary table filesorts caused by `ORDER BY RAND()` and correlated variant subqueries.*
-
-- **Goal**: Make public marketplace browsing (`/`, `/shops`, pagination) fast and scalable as product catalog expands.
-- **Exact Files & Functions**:
-  - `app/Models/ProductModel.php` (`getGlobalProductsPaginated`, `getRotationInfo`)
-  - `app/Controllers/Home.php` (`index`)
-- **Detailed Proposed Changes**:
-  1. Eliminate `ORDER BY RAND(seed)` in `ProductModel::getGlobalProductsPaginated`:
-     - Replace `RAND(seed)` filesort with a deterministic pseudo-random hash algorithm that utilizes indexed columns or a precomputed rotation bucket:
-       ```sql
-       -- For MySQL: Uses indexed modulus ordering without temporary table creation
-       ORDER BY (products.id ^ :slot_seed) ASC
-       ```
-     - Alternatively, precompute a rotation array of product IDs for each 3-hour slot in cache (`blax_discovery_ids_slot_{n}`, TTL 3h) and query using `WHERE id IN (...) ORDER BY FIELD(...)`.
-  2. Eliminate correlated subquery `(SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = products.id)`:
-     - Replace with a `LEFT JOIN (SELECT product_id, COUNT(*) as cnt FROM product_variants GROUP BY product_id) pv ON pv.product_id = products.id`, OR denormalize a `variant_count` column on `products` maintained via database triggers or model hooks.
-  3. Replace `select('products.*, ...')` with explicit column list (`products.id, products.shop_id, products.name, products.slug, products.price, products.rating_average, products.rating_count, products.stock_quantity, products.is_bestseller`), preventing unnecessary transfer of large text/embedding columns.
-  4. Implement short-lived caching for filtered/paginated queries:
-     - Cache key: `blax_catalog_cat_{cat}_sort_{sort}_p_{page}` (TTL 60s).
-- **Expected Effect**:
-  - MySQL filesort eliminated: `EXPLAIN` changes from `Using temporary; Using filesort` to indexed range scan (*estimate*).
-  - Page 2+ response time on Aiven MySQL drops from ~600ms to <150ms (*estimate*).
-- **Risk**: Medium. Rotation behavior must maintain perceived product diversity across merchants.
-- **Rollback**: Restore previous `ORDER BY RAND(seed)` block in `ProductModel.php`.
-- **Test Steps**:
-  - Run `EXPLAIN` query on `getGlobalProductsPaginated` in MySQL console; verify absence of `Using temporary; Using filesort`.
-  - Navigate between pages 1, 2, and 3 on `/`; verify consistent pagination without duplicate items.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-D: Unbounded `findAll()` Audit & Hot-Path Pagination
-*Prevents memory exhaustion and unindexed full-table reads on growing transactional entities.*
-
-- **Goal**: Ensure every query on user-facing and background polling paths is explicitly bounded with `limit()` or pagination.
-- **Exact Files & Functions**:
-  - `app/Controllers/Customer.php` (`orders`, `orderDetail`, `printingRequests`, `addresses`)
-  - `app/Controllers/Tenant.php` (`orders`, `inventory`, `printingRequests`)
-  - `app/Models/OrderModel.php` (`getOrdersByCustomer`)
-- **Detailed Proposed Changes**:
-  1. In `Customer::orders`:
-     - Add pagination (10 orders per page) using `$orderModel->where('customer_id', $userId)->orderBy('placed_at', 'DESC')->paginate(10)`.
-     - Bound order items query (`whereIn('order_id', $pageOrderIds)`) strictly to the 10 paginated orders on the current page instead of the customer's entire lifetime history.
-  2. In `Customer::printingRequests`:
-     - Paginate custom printing history (10 requests per page) instead of unbounded `findAll()`.
-     - Bound attachment queries strictly to current page request IDs.
-  3. In `Customer::realtimeCheck`:
-     - Explicitly bound `activeOrders` and `activePrinting` queries with `->limit(10)`. Active tracking tabs only need current unfulfilled orders.
-  4. Audit and document bounded vs unbounded status for all 59 `findAll()` calls across the repository (see Audit Classification in Appendix).
-- **Expected Effect**:
-  - Memory usage on `/customer/orders` for long-time users capped at <16 MB regardless of order history (*estimate*).
-  - Database transfer payload reduced from >200 KB to <25 KB per orders view (*estimate*).
-- **Risk**: Low. Customer orders view UI requires pagination links.
-- **Rollback**: Revert `Customer.php:378-405` to lifetime fetch.
-- **Test Steps**:
-  - Seed test user with 30 orders; verify `/customer/orders` renders first 10 with functional pagination controls.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-E: Modern Image Delivery & Cloudinary Transformation Pipeline
-*Minimizes client bandwidth and accelerates Largest Contentful Paint (LCP) by serving device-optimized image dimensions.*
-
-- **Goal**: Serve compressed, dimensioned WebP thumbnails in list views and enforce lazy-loading across all product and merchant cards.
-- **Exact Files & Functions**:
-  - `app/Views/customer/shops.php`
-  - `app/Views/customer/home.php`
-  - `app/Views/customer/shop_storefront.php`
-  - `app/Views/components/product_card.php` (or product loop blocks)
-  - `app/Libraries/CloudinaryService.php` (`transformUrl`)
-- **Detailed Proposed Changes**:
-  1. In `app/Helpers/blax_helper.php` (or view helpers), introduce universal helper:
-     ```php
-     function cld_thumb(?string $url, string $preset = 'thumbnail'): string {
-         if (empty($url)) return base_url('images/placeholder.svg');
-         $cld = new \App\Libraries\CloudinaryService();
-         return $cld->transformUrl($url, $preset);
-     }
-     ```
-  2. Update presets in `CloudinaryService::transformUrl`:
-     - `thumbnail`: `c_thumb,w_120,h_120,g_auto,q_auto,f_auto`
-     - `card`: `c_fill,w_400,h_300,q_auto,f_auto`
-     - `avatar`: `c_thumb,w_80,h_80,g_face,q_auto,f_auto`
-  3. Audit all `<img>` tags in customer catalog views:
-     - Add `loading="lazy"` and `decoding="async"` to all images below the fold.
-     - Add explicit `width` and `height` attributes to prevent Cumulative Layout Shift (CLS).
-     - Keep the primary banner / hero image on `/` eager (`fetchpriority="high"`).
-- **Expected Effect**:
-  - Homepage transfer size reduced from ~480 KB to <220 KB (*~54% asset size reduction - estimate*).
-  - LCP improved by 300–500ms on mobile viewports (*estimate*).
-- **Risk**: Very Low. Fallback placeholder handles missing or local-only URLs safely.
-- **Rollback**: Revert `cld_thumb` calls back to raw image URLs.
-- **Test Steps**:
-  - Inspect Network tab on `/shops` and `/`; verify image response formats are `webp` with dimensions matching the display container.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-F: Oversized Views Modularization & On-Demand Rendering
-*Reduces initial HTML parse/render overhead by extracting hidden modals and off-canvas drawers into lazy components.*
-
-- **Goal**: Reduce HTML wire payload of bloated views (`shop_storefront.php` 113 KB, `printing_requests.php` 93 KB, `cart.php` 73 KB) by >40%.
-- **Exact Files & Functions**:
-  - `app/Views/customer/shop_storefront.php`
-  - `app/Views/tenant/printing_requests.php`
-  - `app/Views/customer/cart.php`
-- **Detailed Proposed Changes**:
-  1. Extract modal dialogs (Review submission modal, Report merchant modal, File upload preview dialogs) from the primary page view into separate partials (`app/Views/modals/*`).
-  2. Render complex modals dynamically using HTML5 `<template>` tags or fetch modal HTML on first trigger click via `data-modal-src="<?= base_url('...') ?>"`.
-  3. Extract massive inline SVG iconography and replace with optimized SVG sprite or Material Symbols classes.
-  4. Minify inline `<script>` blocks or move reusable interactive handlers into external `public/js/` bundles cached with long-lived headers.
-- **Expected Effect**:
-  - HTML document size for `/shop/{slug}` reduced from 113 KB to <45 KB (*estimate*).
-  - Browser DOM tree node count reduced by ~35%, speeding up first paint on lower-end mobile devices (*estimate*).
-- **Risk**: Low. Modal open triggers must properly initialize dynamic components.
-- **Rollback**: Revert view includes.
-- **Test Steps**:
-  - Open `/shop/{slug}`, verify page renders rapidly, click modal trigger (e.g. Write Review); verify modal appears instantly.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-### WP-G: Infrastructure & Operational Capacity Tuning (Advisory & High-Impact Config)
-*Operational recommendations and environment configuration adjustments.*
-
-- **Goal**: Eliminate boot delays and establish container runtime stability under Render Free constraints.
-- **Exact Files & Functions**:
-  - `docker/entrypoint.sh`
-  - Render Environment Variables (`RUN_MIGRATIONS`, `APP_PROFILE`)
-  - Aiven Cloud Console
-- **Detailed Proposed Changes**:
-  1. **Aiven Region Alignment [NEEDS APPROVAL]**:
-     - Verify Aiven MySQL cloud region matches Render's Singapore region (`ap-southeast-1`).
-     - *Impact*: If Aiven is currently in EU or US, migrating to Singapore reduces baseline latency from 180ms to ~8ms per query (20x improvement across all database calls).
-  2. **Fast Container Wake-up (`RUN_MIGRATIONS=false`) [NEEDS APPROVAL]**:
-     - `docker/entrypoint.sh` already supports `RUN_MIGRATIONS`.
-     - After verifying initial migrations on Render, set `RUN_MIGRATIONS=false` in the Render dashboard environment.
-     - Saves 4–8 seconds of database connectivity retry and migration checks on every container cold start.
-     - When new migrations are deployed, temporarily set `RUN_MIGRATIONS=true` for that build.
-  3. **Cold-Start Keep-Alive Strategy [NEEDS APPROVAL]**:
-     - Set up an external heartbeat ping (e.g. UptimeRobot or cron-job.org) hitting `GET /healthz` every 10 minutes.
-     - Keeps the container active during daytime business hours (subject to Render 750 free instance hours limit per month).
-  4. **Paid Plan Sizing Comparison (Render Starter vs Free)**:
-     - Render Starter ($7/month): 0.5 vCPU (5x compute), 512 MB RAM, zero sleeping.
-- **Expected Effect**:
-  - Container wake-up time reduced by 5–8 seconds (*estimate*).
-  - Eliminates 502 Bad Gateway timeouts during cold boot.
-- **Risk**: Low-Medium (requires process discipline to run migrations on schema changes).
-- **[NEEDS APPROVAL]**: **YES** (Infrastructure, hosting cost, and external service configuration).
-
----
-
-### WP-H: Documentation Cleanup & Synchronization
-*Reconciles project documentation with actual code reality.*
-
-- **Goal**: Update `docs/FIX_PLAN.md` and `README.md` to reflect true system state and remove obsolete notes.
-- **Exact Files**:
-  - `docs/FIX_PLAN.md`
-  - `README.md`
-- **Detailed Proposed Changes**:
-  1. Update `docs/FIX_PLAN.md`: Mark WP-1 as completed and synchronize remaining package references with `docs/PERF_PLAN.md`.
-  2. Update `README.md`: Remove deprecated security disclaimer notes regarding CSRF bypasses (which are active and tested in `Filters.php`), verify webhook architecture documentation, and link to this performance plan.
-- **Risk**: Zero (documentation only).
-- **Rollback**: Git checkout `docs/FIX_PLAN.md` and `README.md`.
-- **Test Steps**: Visual inspection of rendered Markdown.
-- **[NEEDS APPROVAL]**: No.
-
----
-
-## 4. Cache Invalidation Architecture Matrix
-
-To satisfy the hard requirement of explicit cache invalidation without stale data:
-
-| Cache Key Pattern | Data Stored | TTL | Invalidation Event / Trigger | Invalidation Method |
-|---|---|---|---|---|
-| `blax_home_default_payload` | Default landing page anonymous products, categories, shops | 60s | Product create/edit/delete; Shop update; Category update | `cache()->delete('blax_home_default_payload')` in `ProductModel::afterInsert/Update/Delete` |
-| `blax_all_categories_sorted` | Sorted list of all active categories | 600s | Category CRUD in Admin portal | `CategoryModel::clearCache()` |
-| `seasonal_analysis_v1_{shopId}_{seasonKey}` | Scored seasonal inventory forecast per shop | 1800s | Stock adjustment, new order placed for shop items | `SeasonalAiService::invalidateShopCache($shopId)` |
-| `cohere_seasonal_v1_{shopId}_{seasonKey}` | Cohere Generative AI text spotlight response | 86400s (24h) | Manual force-refresh click by merchant | `cache()->delete("cohere_seasonal_v1_{$shopId}_{$seasonKey}")` |
-| `blax_catalog_cat_{cat}_sort_{sort}_p_{page}` | Filtered / paginated catalog results | 60s | Product update or naturally expires | Time-to-Live expiration (60s) |
-| `blax_notif_dropdown_{userId}` | Recent notifications HTML/JSON for navbar bell | 30s | Mark notification read; New realtime notification inserted | `cache()->delete("blax_notif_dropdown_{$userId}")` in `NotificationModel` |
-
----
-
-## 5. Capacity Expectations: Render Free vs Starter Tier
-
-Based on physical compute constraints and empirical profiling on containerized PHP 8.3:
-
-| Architectural Metric | Render Free Tier (Current) | Render Starter Tier ($7/mo) |
+| # | Claim | What the code shows |
 |---|---|---|
-| **vCPU Allocation** | ~0.1 vCPU (heavily throttled cgroups) | 0.5 vCPU (guaranteed sustained burst) |
-| **RAM Allocation** | 512 MB | 512 MB |
-| **PHP-FPM Worker Pool** | `pm = dynamic`, `max_children = 4` | `pm = dynamic`, `max_children = 8` |
-| **Idle Behavior** | Sleeps after 15m; 15–35s cold start | Always on; 0s cold start delay |
-| **Max Concurrent Browsing Users (Pre-Opt)** | 3 – 5 users (100% CPU lock from 6s polls) | 12 – 18 users |
-| **Max Concurrent Browsing Users (Post-Opt)**| **20 – 30 users** (p95 < 1.5s, 0 errors) | **75 – 100 users** (p95 < 800ms) |
-| **Max Sustained Request Rate** | 4.0 – 5.5 req/s | 18.0 – 24.0 req/s |
-| **Bottleneck Factor** | 0.1 vCPU CPU-starvation + Remote DB RTT | Remote DB RTT (eliminated if same region) |
+| 1 | "No `scratch/` folder" | `scratch/` exists locally (16 ad-hoc scripts) but is **git-ignored** (`.gitignore:178`, 0 tracked files). None are benchmarks. There is no k6, toxiproxy, EXPLAIN or Playwright script, so every number in `FIX_PLAN.md` stays **unverified**. |
+| 2 | "`Customer::realtimeCheck` has no fast path" | A fast path exists (`Customer.php:978-997`, compares order/print signatures and notif id). The problem is that **4 queries run before it is reached** (`:948-966`), and the "unchanged" reply still ships both active lists. |
+| 3 | "`Tenant::realtimeCheck` runs 2x `selectMax` + unread + recent before the fast path" | It is 3x `selectMax` (orders, printing, notifications: `:584-593`). `getRecent(6)` is *after* the fast path (`:622`). The bigger cost is `getShopOrRedirect()` (`:565`, defined `:42-83`), which adds **3 more queries** (shop `find`, unread count, `getRecent(10)`) to every tenant request, including polls. Idle tenant poll = **6 queries** (counted from code). |
+| 4 | Suggested change detection via `max(updated_at)` on orders | `orders` and `printing_requests` have **no `updated_at` column** in the schema dump (`blax_marketplace.sql:460-481`, `:648-669`), and `OrderModel` / `PrintingRequestModel` do not set `useTimestamps`. The dump is a local, untracked file and may be older than production (its `orders.status` enum even lacks `in_transit`, which the code uses). Confirm on the live Aiven schema. The plan below avoids needing `updated_at`. |
+| 5 | Earlier draft: "views render raw image URLs without Cloudinary transforms" | Wrong. `product_image_url()` routes remote URLs through `CloudinaryService::transformUrl()` (`app/Helpers/status_helper.php:14-47`; presets documented as card 480px, thumbnail 160px, detail 960px). |
+| 6 | Earlier draft: replace `RAND(seed)` with `ORDER BY (id ^ seed)` | Any expression ordering still requires reading and sorting every row. Only pre-computation removes the sort (see WP-C). |
+| 7 | Earlier draft: concurrency figures ("20-30 users" etc.) and a rollback commit hash | Invented. Removed. |
+
+### 0.2 Files reviewed for this plan
+`Controllers/{Customer,Tenant,Admin,Home,Cart}.php`, `Models/{ProductModel,OrderModel,NotificationModel,UserModel}.php`, `Libraries/SeasonalAiService.php`, `Helpers/status_helper.php`, `Filters/PerformanceFilter.php`, `Config/{Filters,Database,Cache,Session}.php`, `Session/Handlers/OptimizedDatabaseHandler.php`, `Views/layouts/{marketplace,tenant,admin}.php`, `docker/{entrypoint.sh,nginx.conf.template}`, `render.yaml`, both docs, `README.md`, migrations list, `blax_marketplace.sql` (schema only).
 
 ---
 
-## 6. Open Questions for the User (Max 5)
+## 1. Status matrix
 
-1. **Aiven MySQL Region**: What is the exact cloud region of your Aiven MySQL database (e.g. `ap-southeast-1` Singapore, `eu-central-1` Frankfurt, or `us-east-1` N. Virginia)?
-2. **Cold Start Keep-Alive**: Would you like to set up a free external uptime monitor pinging `/healthz` every 10 minutes to prevent the Render Free container from sleeping during daytime hours?
-3. **Boot-Time Migration Skipping**: Once current migrations are verified on Render, do you approve setting `RUN_MIGRATIONS=false` in Render environment variables to save 5–8 seconds on every wake-up?
-4. **Cloudinary Asset Storage**: Are all product and shop images hosted on Cloudinary in production, or are some stored on the ephemeral container disk (`public/uploads`)?
-5. **Approval Order**: Which work package would you like to approve and implement first: **WP-A (Realtime fast paths & polling trim)** or **WP-B (Deferred widget & dashboard loading)**?
+### 1.1 The 12 gap items
+
+| # | Item | Status | Evidence |
+|---|---|---|---|
+| 1 | No baseline measurement | **Missing** | `scratch/` is ignored and contains no benchmark harness. `PerformanceFilter` logs time, memory and query *count* only, **not SQL time** (`Filters/PerformanceFilter.php:41-65`). |
+| 2 | `Customer::realtimeCheck` | **Partial** | Fast path at `Customer.php:978-997`. Queries before it: max notif id `:948`, unread `:950`, active orders `:952`, active printing `:960`. Changed path adds `getCustomerHeaderStats` (`:1009`) whose `unread_count` duplicates `getUnreadCount` (`:950`), plus `getRecent(6)` (`:1010`). |
+| 3 | `Tenant::realtimeCheck` | **Partial** | Fast path `Tenant.php:597-620`. Before it: `getShopOrRedirect` (3 queries, `:68`, `:73-74`) + 3x `selectMax` (`:584,587,592`). Unread count is request-cached (`NotificationModel.php:24,35`), so not duplicated. |
+| 4 | Customer layout queries on every page | **Missing** | `layouts/marketplace.php:17-27`: `getCustomerHeaderStats` + `getRecent(6)` for every logged-in page. |
+| 5 | `Tenant::dashboard` monolithic | **Missing** | `Tenant.php:85-169`. `getSeasonalAnalysis` **computation is not cached**: it loads every product of the shop (`SeasonalAiService.php:432-439`) plus a 60-day `order_items` aggregate (`:443-451`) and scores every product in PHP (`:468-574`) on each dashboard load. Only the Cohere result is cached (`cohere_seasonal_v1_{shop}_{season}`, 24h, `:673-767`). The dashboard also calls `getRecent($userId)` (`:128`) although `getShopOrRedirect` already fetched `getRecent(…,10)`: a different limit means a second query (cache key is `user:limit`, `NotificationModel.php:44`). |
+| 6 | Catalog query | **Missing** | `ProductModel.php:157-212`: `products.*` (includes `description` TEXT), correlated `variant_count` subquery (`:158`), 3 LEFT JOINs, `RAND(seed)` (`:208`), `LIKE %x%` on name and description (`:170-172`). Only page 1 of the default landing is cached (`Home.php:29-47,100-109`, 60s). |
+| 7 | Unbounded `findAll()` | **Partial** | Grep shows ~68 `findAll(` call sites under `app/` (the brief counted 59; difference is counting method). Hot-path classification in WP-D. |
+| 8 | Images | **Partial** | Cloudinary transforms: done. Product cards in `home.php:469`, `search_results.php:85`, `category_products.php:63` have `loading="lazy"`. Missing lazy on `shops.php:161,195`, `home.php:196,260,294`, avatars in `components/marketplace_header.php:167,179,260`, `profile_sidebar.php:49`. No `<img>` seen has `width`/`height`/`decoding`. Whether shop covers use a transform preset: **to verify**. |
+| 9 | Very large views | **Partial** | Sizes confirmed (`shop_storefront.php` 113,594 B; `cart.php` 72,907; `printing_requests.php` 92,765; `orders.php` 66,750). But `shop_storefront.php` has only 2 hidden modals (`:193`, `:959`) and 1 `<script>` block (`:997`), so "hidden modals" is not the whole story. Composition must be measured before refactoring. |
+| 10 | Render Free cold start | **Missing (infra)** | `entrypoint.sh:82-93` (nginx -t, php-fpm -t) and `:119-140` (migrations, default `true`). `render.yaml` does not set `RUN_MIGRATIONS`. |
+| 11 | Aiven vs Render region | **Unknown** | `render.yaml:6` is `singapore`. No Aiven region in the repo or docs. **Needs your answer.** |
+| 12 | Docs drift | **Missing** | See WP-H. |
+
+### 1.2 Items you listed as already implemented: verification
+
+| Claim | Verdict | Evidence / caveat |
+|---|---|---|
+| Polling in `marketplace.php` and `tenant.php` uses `setTimeout`, pauses when hidden, cancels on `pagehide` | **Done** | `marketplace.php:534-571`, `tenant.php:1066-1079`. **Caveat:** customer idle back-off grows to 45s then 60s (`marketplace.php:538-543`), which exceeds your "within ~30s" badge requirement (Open Question 2). |
+| `admin.php` layout poll | **Done** | `admin.php:732-761` (`setTimeout`, 25s, visibility + pagehide). |
+| Remaining `setInterval` that hit the network | **Confirmed** | `admin/tracking.php:544` (15s), `customer/orders/track.php:837` (12s). `customer/home.php:693` (1s countdown) and `tenant/settings.php:2285` (60s UI clock) make **no network calls**; leave alone. |
+| Session handler skips unchanged writes (5 min) and empty guest sessions | **Done** | `OptimizedDatabaseHandler.php:116-126`. Note it also removes session locking (`:36-49`), see section 7. |
+| `pConnect` on Render, `DBDebug=false` in production | **Done** | `Config/Database.php:217-231` (`RENDER`/`RENDER_SERVICE_ID` env → `pConnect=true`). |
+| Performance indexes migrations | **Done** | `2026-09-25-000001`, `2026-10-24-000001`. **Gap:** no `notifications(user_id, id)`; the existing index is `(user_id, is_read, created_at)`, where `id` is not a usable suffix for `MAX(id) WHERE user_id=?`. Verify with EXPLAIN. |
+| `Home::index` paginated + 60s landing cache; `getAllKeyMap`, `getAllCached` cached | **Done** | `Home.php:27-47,100-109`; `SiteContentModel.php:138-159` (600s); `CategoryModel.php:53-63` (600s). The Home payload has **no explicit invalidation**, TTL only. |
+| `getCustomerHeaderStats` combines 3 counts | **Done** | `UserModel.php:82-103`. Inconsistency: its active-order statuses (`:90`) omit `in_transit`, which `realtimeCheck` includes (`Customer.php:955`). |
+| `Tenant::realtimeCheck` fast path | **Done / Partial** | See item 3. |
+| `entrypoint.sh` FPM/OPcache tuning + `RUN_MIGRATIONS` | **Done** | `entrypoint.sh:17-77,119`. |
+| `APP_PROFILE=1` enables `PerformanceFilter` | **Done** | `Filters.php:79,85`; `PerformanceFilter.php:22-33`. Lacks SQL time (WP-0). |
 
 ---
 
-## 7. Out of Scope Findings (Security & Code Integrity)
+## 2. Measurement plan
 
-The following items were noted during the performance audit and are cataloged here for separate attention:
-1. **Cloudinary Local Disk Fallback on Render**:
-   - `CloudinaryService::uploadOrFallback` writes to local `/var/www/html/public/uploads` if Cloudinary credentials fail or are not injected. On Render Free, files written to local disk are permanently deleted when the container restarts or redeploys.
-2. **Database Logging Configuration**:
-   - Verify that `DBDebug` is set to `false` in production environment to avoid leaking database schema details or connection strings on query exceptions.
+### 2.1 What exists
+1. `APP_PROFILE=1` (set in the Render dashboard; not in `render.yaml`): one stderr line per request:
+   `[APP_PROFILE] GET /path 200 | Time: X ms | Peak Mem: Y MB | SQL Queries: N` (`PerformanceFilter.php:57-65`).
+2. FPM access log (`entrypoint.sh:32`): `[ts] METHOD URI status <ms>ms <kb>kb <cpu%>%`. The **CPU% vs wall-ms ratio** separates "CPU-bound" (0.1 vCPU starvation) from "waiting on the remote DB". That tells us which fixes matter.
+3. FPM slowlog at 2s (`entrypoint.sh:23,33-34`).
+4. Nginx `$request_time` / `$upstream_response_time` logging: **not verified** in `nginx.conf.template`; check before relying on it.
+
+### 2.2 Gaps and proposed tooling [NEEDS APPROVAL: tiny code change]
+- **WP-0:** extend `PerformanceFilter::after()` to also log total SQL time and the 3 slowest statements (use `Query::getDuration()` from `$db->getQueries()`; confirm against the installed CodeIgniter version and that `saveQueries` is enabled in production). Opt-in only, zero cost when `APP_PROFILE` is unset. Alternative without code: Aiven console query statistics, if available on your plan (verify).
+
+### 2.3 Procedure
+1. Warm the instance (hit `/healthz`), set `APP_PROFILE=1`, redeploy.
+2. For each route: 1 cold sample (after >15 min idle) + 10 warm samples; record median and worst.
+3. Client TTFB: `curl -s -o NUL -w "%{time_starttransfer} %{size_download}\n" --compressed -b <cookiejar> <url>` from your real location. Log in via the browser to obtain role cookies for customer/tenant/admin (do not reuse the stray `cookies.txt` in the repo root).
+4. Read SQL count, time and peak memory from the Render log line matching the request.
+5. For pollers, record steady state with one visible tab for 5 minutes, then count requests/min.
+
+### 2.4 Baseline table (fill in; do not estimate)
+
+| Route | Role | TTFB cold | TTFB warm p50 | Worst | SQL count | SQL time | Peak mem | FPM CPU% | HTML bytes (gz) |
+|---|---|---|---|---|---|---|---|---|---|
+| `/` | guest | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/shops` | guest | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/shop/{slug}` | guest and customer | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/product/{id}` | guest and customer | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/cart` | customer | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/customer/orders` (brief said `/orders`) | customer | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/tenant` | tenant | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/tenant/orders` | tenant | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/tenant/inventory` | tenant | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/admin` | admin | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/customer/realtime/check` (idle, with sigs) | customer | n/a | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/tenant/realtime/check` (idle) | tenant | n/a | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+| `/admin/realtime/check` (idle) | admin | n/a | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE | TO MEASURE |
+
+### 2.5 Code-derived expectations (to validate the profiler, **not** measurements)
+Counts exclude the session read (1 SELECT per request; write skipped within 5 min).
+
+| Path | Queries counted from code |
+|---|---|
+| Customer poll, nothing changed | 4 (`Customer.php:948,950,952,960`) |
+| Customer poll, changed | 4 + stats 1 + new notifs ≤1 + recent 1 = up to 7 |
+| Tenant poll, nothing changed | 6 (3 from `getShopOrRedirect` + 3 `selectMax`) |
+| Admin poll, nothing changed | 4 (`Admin.php:384,387,391,393`) plus auth cost (unverified) |
+| Customer logged-in page, layout only | 2 (`marketplace.php:20,26`) |
+| `/tenant` | about 15 (guard 3, KPIs 2, chart 2, orders 1, requests 1, low-stock 2, warning 1, recent notifs 1, seasonal 2) |
+| Poll rate per **visible** logged-in tab | 1 per 25s = 2.4/min; 1/min at 60s idle back-off (`marketplace.php:524,538-543`) |
+
+---
+
+## 3. Work packages
+
+Recommended order (gain / risk): **WP-0 → WP-A → WP-G (G1 only) → WP-B → WP-D → WP-C → WP-E → WP-F → WP-H**.
+Each WP is one atomic commit so it can be reverted with `git revert`. Re-run the section 2.4 rows touched by a WP before and after it.
+
+### WP-0: Measurement tooling [NEEDS APPROVAL: small code change]
+- **Goal:** make SQL time visible so later estimates become measurements.
+- **Files:** `app/Filters/PerformanceFilter.php`.
+- **Change:** add total SQL time + top-3 slow statements to the log line, gated by `APP_PROFILE`.
+- **Effect:** none on users. **Risk:** very low. **Rollback:** revert commit.
+- **Test:** `APP_PROFILE=1`, load a page, confirm the new fields; unset it and confirm no output.
+
+### WP-A: Realtime endpoints
+**Goal:** idle polls cost one indexed query instead of 4 to 6. Idle tabs are the only load that scales with *open tabs*, not *actions*.
+
+**A1. `Customer::realtimeCheck`** (`Customer.php:925-1030`)
+- Replace the four pre-fast-path queries with one statement:
+  ```sql
+  SELECT
+   (SELECT COALESCE(MAX(id),0)  FROM notifications WHERE user_id=?)                AS max_notif_id,
+   (SELECT COUNT(*)             FROM notifications WHERE user_id=? AND is_read=0)  AS unread_count,
+   (SELECT COALESCE(SUM(CRC32(CONCAT(id,':',status))),0) FROM orders
+      WHERE customer_id=? AND status IN ('pending','processing','shipped','in_transit','ready_for_pickup')) AS order_sig,
+   (SELECT COALESCE(SUM(CRC32(CONCAT(id,':',status))),0) FROM printing_requests
+      WHERE customer_id=? AND status IN ('new','in_production','ready_for_pickup','ready_for_delivery'))   AS print_sig
+  ```
+  No schema change needed. `orders(customer_id,status)` and `printing_requests(customer_id,status)` indexes already exist and cover `id` (InnoDB appends the PK).
+- The signature is opaque to the client (`marketplace.php:416-417,429-430`), so sending it as a string needs no JS change. It now covers *all* active rows, not only the newest 10. This is more correct, and a status change still flips it.
+- Unchanged reply: `{success, changed:false, unread_count, max_notif_id, order_sig, print_sig}` without the two arrays. The JS already ignores them when `changed === false` (`marketplace.php:454-456`) and the `blax:customer-realtime` event has **no listeners** in `app/Views` (only the dispatcher at `:436`).
+- Changed or first poll: keep the current full payload, but drop the duplicate `getUnreadCount` by taking `unread_count` from the combined row.
+- **Expected:** idle poll 4 queries → 1 (counted from code). Payload shrinks (estimate: smaller; measure).
+
+**A2. `Tenant::realtimeCheck`** (`Tenant.php:563-787`)
+- Add a private `resolveShopIdForPoll()`: same login/role checks as `getShopOrRedirect` (`:45-52`), reads `shop_id` from session, **skips** the shop `find`, unread count and `getRecent(10)` (`:68,73-80`). Fall back to `getShopOrRedirect` only if the session has no `shop_id`.
+- Replace the three `selectMax` + unread with one combined statement (max order id for shop, max printing id for shop, max notif id and unread for user).
+- **Expected:** idle poll 6 queries → 1 (counted from code).
+- **Prerequisite for WP-B:** the new deferred dashboard endpoints must use this light resolver, otherwise each widget request pays the 3-query guard again.
+
+**A3. `Admin::realtimeCheck`** (`Admin.php:364-419`): same combined-query pattern, 4 queries → 1.
+
+**A4. Remaining network `setInterval`s:** `admin/tracking.php:544` (15s) and `customer/orders/track.php:837` (12s): convert to a self-scheduling `setTimeout` that pauses when hidden. Behavior otherwise identical. Backing endpoints (`Admin::trackingPins`, `getDeliveryPosition`) unchanged.
+
+**A5. Decision (Open Question 2):** the 45s/60s idle back-off violates the 30s badge requirement. Options: cap at 30s (keeps the requirement, slightly more polls) or accept the current back-off.
+
+- **Cache:** none. **Index (optional) [NEEDS APPROVAL]:** `notifications(user_id, id)` via a new migration, non-destructive. Verify with `EXPLAIN` first.
+- **Risk:** low. Main risk is a missed badge or toast: test status transitions, new order and new notification end to end.
+- **Rollback:** `git revert`. **Test:** change an order status from the tenant side and confirm the customer toast and badge within one poll interval. Confirm an idle tab produces `changed:false` with 1 query in the profiler. Confirm `session_write_close()` is still reached before the combined query.
+
+### WP-B: Deferred widget loading
+**Goal:** first paint needs shell + KPIs only; secondary widgets load after paint, without multiplying DB work.
+
+**B1. `Tenant::dashboard`** (`Tenant.php:85-169`, view `tenant/dashboard.php`)
+- Keep server-side: guard, `getShopDashboardKpis` (2 queries), recent orders (8), recent requests (8).
+- Defer: sales chart (the endpoint `dashboardSalesData` already exists at `:175`; the view currently gets `chart_*` vars at `:150-159`), low-stock list + count (`ProductModel.php:259-284`), seasonal spotlight, compliance warning (`:121-126`).
+- **One deferred request for low-stock + spotlight + warning** (not three). On 0.1 vCPU and 4 FPM workers, three parallel XHRs would contend with the user's own navigation. The chart loads separately when visible (IntersectionObserver).
+- New endpoint: `GET tenant/dashboard/widgets`, tenant-auth, returns an HTML fragment (reuses current markup, so no visual change) using the light resolver from A2.
+- Remove the duplicate `getRecent($userId)` at `:128` (reuse what the guard already loaded).
+- Skeleton placeholders with fixed heights to avoid layout shift.
+- **Expected:** initial `/tenant` ≈15 → ≈7 queries (counted from code; estimate for the result). The deferred call costs about 5, but off the critical path.
+
+**B2. Cache `SeasonalAiService` computation** (`SeasonalAiService.php:423-621`)
+- Only for the dashboard path (`getDashboardSpotlight`, `:630`, which already passes `allowExternalAi=false`). Bypass the cache for `forceRefresh` and for the full seasonal analysis page (`Tenant.php:1904,1953`, which labels results `is_realtime`).
+- Key `seasonal_calc_v1_{shopId}_{seasonKey}`, TTL 300s. Clear via a new `SeasonalAiService::forgetShop($shopId)` that deletes every season key (same loop shape as the existing cohere clear at `:409`).
+- Explicit clear events: product create/update/delete/stock edit in `Tenant`, POS sale, order placement or cancellation that changes stock (`CheckoutProcessorTrait`), order status → cancelled. Because stock mutations are spread over many sites, the 300s TTL is the safety net and must stay.
+- Also trim the product select (it loads `description`, used only for keyword match) only if profiling shows memory pressure.
+
+**B3. Sales chart queries:** `OrderModel.php:697-698` uses `COALESCE(completed_at, placed_at) >= ?`, which is not index-sargable, so each call scans the shop's orders. Do **not** change until WP-0 shows its SQL time. The endpoint is already browser-cacheable (`Tenant.php:196`, `max-age=30`).
+
+**B4. Customer layout** (`layouts/marketplace.php:17-27`, `components/marketplace_header.php`)
+- Keep **one** query server-side (`getCustomerHeaderStats`) for badges. Remove `getRecent(6)` (`:25-26`).
+- Load the dropdown on first bell click from a new `GET customer/notifications/recent` (JSON, `getRecent(…,6)`), memoized in JS for 30s. The poll's changed payload already carries `notifications` (`Customer.php:1024`), which can refresh an open dropdown.
+- Do **not** cache header stats server-side: cart changes, order status and notification inserts would all need explicit clears.
+- **Expected:** 1 query fewer per logged-in page.
+
+**B5. Tenant layout:** `getShopOrRedirect` loads `getRecent(…,10)` on every tenant page (`:74`). The first poll (`tenant.php:1066`, 1.5s) returns a full payload including `notifications` (`Tenant.php:781`), and `updateNotificationsUI` already renders it. So the server-rendered dropdown can be dropped with almost no new code. 1 query fewer per tenant page.
+
+**B6. Other heavy pages (decide after measurement)**
+- `/cart`: shipping quotes are computed per shop in the request (`Cart.php:73-75`, `GoogleMapsService` with a 24h *file* cache that is cold after every restart, so a cold cart can make external HTTP calls on the critical path). Candidate: render the cart first, fetch quotes after paint. `Cart::index` also runs a `DELETE` on every GET (`:38-41`).
+- `/shop/{slug}` (`Customer.php:145-210`): about 14 or more queries. Reviews, paper sizes, printing settings and calendar schedules are only needed when their section or modal is opened (`pdf-upload-modal` at `shop_storefront.php:959`).
+- `/product/{id}`: a **write per page view** (`UPDATE categories SET view_count` at `Customer.php:264`). Candidate: batch or sample the counter. Behavior change (counter accuracy): needs your approval.
+
+- **Risk:** low to medium (skeleton and layout shift). **Rollback:** revert. **Test:** throttle to Slow 4G; KPIs paint first; widgets fill in; bell click shows notifications; dashboard numbers match before and after.
+
+### WP-D: Unbounded `findAll()` on hot paths
+Classification of the call sites reviewed. The remaining ~40 in `Tenant.php` and other models are in the worklist at the end and must be classified before any change.
+
+| Site | Class | Action |
+|---|---|---|
+| `Customer::realtimeCheck` active lists (`:952-966`), new notifs (`:1002-1006`) | Safe (`limit 10 / 5`) | Replaced by A1 in the idle case |
+| `Customer::orders` → `getOrdersByCustomer` (`OrderModel.php:36-44`, `Customer.php:379`) | **Needs bound** | Loads **every order ever**, then drops old delivered/completed/cancelled ones in PHP (`Customer.php:439-450`). Push the 2-day filter into SQL (`WHERE status NOT IN (...) OR COALESCE(completed_at, cancelled_at, placed_at) >= cutoff`). **Same output, no UI change, no pagination needed.** |
+| `Customer::orders` items (`:389`) and images (`:405-409`) | **Needs bound** | Images query fetches *every* image row of every product ever ordered. Bound by the filtered order ids; select primary image only. |
+| `Customer::printingRequests` (`:612-641`) | **To review** | Same pattern; attachments `whereIn` at `:641`. |
+| `Customer::search` categories (`:235`) | Safe, cacheable | Use `CategoryModel::getAllCached()` (`:53`). 1 query fewer per search page. |
+| `Customer::product` images / variants (`:273-280`) | Safe (one product) | None |
+| `Tenant::realtimeCheck` new orders / printing (`:626-634`, `:716-723`) and `Admin::realtimeCheck` (`:425-430`) | **Unbounded after long idle** | After hours of inactivity every missed order becomes one payload and one toast each. Add `limit(20)` + `has_more`. Mild behavior change (toast cap): **[NEEDS APPROVAL]**. |
+| `CategoryModel:60`, `SiteContentModel` (several), `ShopBusinessHourModel:31`, `ShopPaperSizeSettingModel:43,80`, `NotificationModel:51` | Safe (small or limited, several cached) | None |
+| `ReviewModel:59,82`, `ReviewService:243,267`, `ShopModel:64`, `ShopCalendarScheduleModel:131,356`, `ProductVariantModel:33`, `PrintingRequestAttachmentModel:28` | **To review** | Confirm each has a limit or a bounded key |
+
+**Worklist (unclassified):** `Tenant.php` lines 377, 385, 499, 634, 723, 829, 917, 1049, 2727, 2781, 3680, 4683, 4811, 5118, 5326, 5921, 5954, 5974, 5984, 6017, 6185; `Customer.php:554`; `CustomerOrderController.php:92`; `CheckoutProcessorTrait.php:346`; plus ~9 further sites the 50-result grep cap hid.
+- **Risk:** low. **Rollback:** revert. **Test:** a customer with many old orders sees the identical list; memory and payload drop (measure).
+
+### WP-C: Catalog query (`ProductModel::getGlobalProductsPaginated`, `ProductModel.php:149-220`)
+**Why it scales badly:** the default sort has no index, so every uncached request reads all matching rows, evaluates `RAND(seed)`, sorts them (rows are wide: `products.*` includes TEXT), then discards all but 20 to 24. Cost grows with catalog size. Page 2+ and every filtered view hit this each time.
+
+Proposed, smallest first:
+- **C1. Explicit column list.** Replace `products.*` with only what product cards use. First grep the card views for fields actually used. Drop `description` unless a card shows it.
+- **C2. Two-step fetch (deferred join).** Step 1: select only `products.id` in order with filters and `LIMIT/OFFSET` (narrow rows). Step 2: hydrate those ≤24 ids with the joins and `variant_count` (`WHERE id IN (...)`, reorder in PHP). The variant count can then be one grouped query on the page's ids rather than a correlated subquery. No schema change.
+- **C3. Pre-computed rotation order (removes the sort).** For the default discovery order (no search, no explicit sort): cache the ordered id list for the current slot.
+  - Key: `blax_discovery_ids_{slot_seed}_{category_id|all}`; TTL = `seconds_remaining` of the rotation slot (`ProductModel::getRotationInfo`, `:109-140`), so it expires at the slot boundary.
+  - Computed once per slot per category, by the **same** `RAND(seed)` query as today, so the visible order is unchanged.
+  - Cap at about 1000 ids; deeper pages fall back to the current query.
+  - Pagination total = list length.
+  - Correctness: hydration (C2) re-applies `deleted_at IS NULL`, so a stale list can only shorten a page, never leak a deleted product. New products appear at the next slot or on invalidation.
+  - Invalidation: a version key `blax_catalog_ver` included in the key, bumped from the product create/update/delete/archive paths and shop approve/suspend paths in `Tenant`/`Admin`. A version bump is used because file cache cannot delete by wildcard. Stock changes do **not** bump it.
+- **C4. Search:** `LIKE '%q%'` on `name OR description` cannot use an index. FULLTEXT (`MATCH…AGAINST`) is the real fix but changes matching semantics (token length, stopwords): **[NEEDS APPROVAL]**. No change proposed until WP-0 shows search SQL time.
+- **C5. Other sorts** (`price`, `name`, `rating`, `newest`): ordered by plain columns; evaluate indexes only if EXPLAIN shows filesort on a large catalog.
+- Home payload cache (`blax_home_default_payload`, 60s) stays; additionally clear it on the same version bump.
+- **Expected:** discovery pages 2+ become one `IN` lookup instead of a full sort (estimate). Query count unchanged or +1; time per request lower. Measure.
+- **Risk:** medium (rotation behavior, invalidation sites). **Rollback:** revert; the old `RAND` path remains as fallback. **Test:** compare id order for a given slot before and after (must match); paginate pages 1-3 with no duplicates; delete a product and confirm it disappears within one request; `EXPLAIN` before and after.
+
+### WP-E: Image delivery
+- Cloudinary transforms already exist; do not rebuild them.
+- Add `loading="lazy"`, `decoding="async"` and explicit `width`/`height` (or `aspect-ratio`) to the images listed in item 8. Keep the first visible row eager.
+- Verify that shop cover/logo URLs (`$coverUrl`, `logo_url()`) go through a Cloudinary preset (`shops.php:161`).
+- **Effect:** fewer off-screen image requests and less layout shift. Unmeasured; label as estimate.
+- **Risk:** very low. **Rollback:** revert. **Test:** Network tab on `/shops` and `/`: off-screen images load on scroll; no layout jump.
+
+### WP-F: Oversized views (gated on measurement)
+- Server cost of a big view is mostly echo loops (templates are OPcache-compiled, `validate_timestamps=0`); the main cost is **client parse and DOM size**. Treat as lower priority.
+- First step is measurement only: gzip bytes per page, DOM node count, and the share of bytes per section (header, list, modal, `<script>`).
+- Candidates if justified: move the PDF-upload modal and its scripts (`shop_storefront.php:959,997`) to a lazily fetched fragment; move large inline JS to cached static files under `public/js/`.
+- **Risk:** low to medium (modal init). **Rollback:** revert.
+
+### WP-G: Infrastructure options (advisory; nothing changes without approval)
+1. **Aiven region vs Render Singapore: [NEEDS APPROVAL / needs your answer].** If they differ, every query pays a long round trip, and it is likely the largest single latency factor. Cost of fixing: move or recreate the DB in the same region (data migration, downtime, possible plan-price change). Confirm the Aiven plan tier too.
+2. **`RUN_MIGRATIONS=false` after first deploy [NEEDS APPROVAL].** The flag is supported (`entrypoint.sh:119`). Saves the migration step and its retry loop on each wake (**TO MEASURE**: log time from "Starting container" to the first 200 on `/healthz`). Trade-off: new migrations then need a deliberate step (set `true` for that one deploy, then back), and Render Free may not offer a shell (confirm in your dashboard). WP-A's optional index migration must be applied this way.
+3. **Cold start / sleep: infra, not code.** Options, no assumed fix:
+   - (a) Accept it.
+   - (b) An external pinger on `/healthz`: $0, but it consumes the monthly free instance-hour allowance and is only as reliable as the pinger.
+   - (c) A paid plan (no spin-down): Render Starter was listed at about $7/mo with 0.5 vCPU / 512 MB when this was written. **Confirm current specs and price on Render's pricing page.**
+4. **Memory vs worker count:** `pm.max_children=4` × `memory_limit=192M` (`entrypoint.sh:18,45`) is 768 MB theoretical against a 512 MB container. `memory_limit` is a cap, not typical use. Validate with measured peak memory (WP-0) before changing.
+5. **Sessions on the remote DB:** each request pays at least one WAN SELECT for the session. Alternatives (Redis/Valkey, file sessions) change cost, persistence or login retention on redeploy: **[NEEDS APPROVAL]**, not proposed now.
+6. **Cache backend:** `Config/Cache.php:25` is `file` (ephemeral disk, per instance). Fine on a single instance. If the service is ever scaled to more than one instance, cache invalidation will not propagate: a shared cache would then be required **[NEEDS APPROVAL]**.
+
+### WP-H: Docs cleanup (separate commit, docs only)
+- `docs/FIX_PLAN.md`: mark WP-1 done (`:143`); reflect that realtime fast paths landed (commit `8bb30e5`); correct the stale 5-6s polling claims (now 25s with back-off); mark all baseline and capacity tables **unverified**; remove references to `scratch/explain_queries.php`, `k6_tests`, `playwright_test` (none exist and `scratch/` is ignored).
+- `README.md` "Security Notes" (`:129-139`): CSRF filter is enabled globally (`Filters.php:81`, with an exception list); PayMongo signature header is handled in `Cart.php:590` and `Admin.php:1567`; no password bypass found (no "bypass" match in `Controllers/`); a token model exists (`PasswordResetTokenModel`); the `ANTIGRAVITY_PROMPT.md` it references is not in the repo; PHP version (8.1+ vs Docker 8.3); project name (Inventory vs Marketplace); the "do not deploy" banner contradicts the live Render deployment.
+- Do not mix into any performance commit.
+
+---
+
+## 4. Cache invalidation matrix
+
+**Existing caches** (backend: `file`)
+
+| Key | TTL | Cleared by | Gap |
+|---|---|---|---|
+| `blax_home_default_payload` (`Home.php:32,100`) | 60s | nothing (TTL only) | Up to 60s stale after catalog changes. Acceptable; add version bump in WP-C. |
+| `blax_all_categories_sorted` (`CategoryModel.php:53,63`) | 600s | `CategoryModel.php:36` | OK |
+| `blax_site_contents_*`, `blax_platform_deduction_percent`, `blax_shipping_fee_settings` (`SiteContentModel.php:66-69,91-262`) | 600s | `SiteContentModel.php:66-69` | OK |
+| `cohere_seasonal_v1_{shop}_{season}` (`SeasonalAiService.php:673,767`) | 24h | `:409`, `:676` (force refresh) | OK |
+| `ShopModel` cache (`ShopModel.php:95-109`) | 300s | not reviewed | Confirm key and clearing |
+| Google Maps quotes (`GoogleMapsService.php:163-182`) | 24h | n/a | Cold after every restart |
+
+**Proposed caches**
+
+| Key | Data | TTL | Cleared when |
+|---|---|---|---|
+| `seasonal_calc_v1_{shopId}_{seasonKey}` | Dashboard seasonal computation | 300s | `SeasonalAiService::forgetShop` on product/stock/order-cancel events; TTL is the safety net |
+| `blax_catalog_ver` | Catalog version counter | none | Bumped on product create/update/delete/archive and shop approve/suspend |
+| `blax_discovery_ids_{slot_seed}_{cat\|all}` | Ordered ids for the current rotation slot | until slot end | Slot rollover or `blax_catalog_ver` bump |
+| *(none)* | Customer header stats | not cached on purpose | Too many invalidating events (cart, orders, notifications) |
+
+---
+
+## 5. Capacity expectations
+
+**No capacity numbers are given.** Nothing has been measured, and the earlier figures were invented. What can be stated from code and constants:
+
+- **Hard ceiling:** `pm.max_children=4` (`entrypoint.sh:18`). Max throughput ≈ 4 / (average request seconds), whether the worker is computing or waiting on the DB. Cutting query count helps only when requests are wait-bound; cutting CPU work helps only when CPU-bound. The FPM access log's CPU% against wall ms (section 2.1) shows which one applies.
+- **Background load per visible logged-in tab:** 2.4 requests/min at 25s, 1/min at the 60s idle back-off (`marketplace.php:524,538-543`). Each is currently 4 to 6 queries, so 10 visible tabs ≈ 24 polls/min ≈ 100 to 140 queries/min before any user action (counted from code).
+- **Free vs paid:** the plan difference is CPU (0.1 vs 0.5 vCPU as published), no sleep, and possibly more RAM on higher tiers. Re-derive "how many concurrent users" only after the section 2.4 table is filled: users ≈ (4 / avg service time) × think time, using measured service times.
+
+---
+
+## 6. Open questions (max 5)
+
+1. **Aiven:** which cloud and region is the MySQL service in, and which plan tier? (Same-region as Render Singapore or not is the first thing to settle.)
+2. **Poll cadence:** the customer poll backs off to 45s then 60s when idle (`marketplace.php:538-543`), which breaks your "~30s" requirement. Cap at 30s, or keep the back-off?
+3. **Index migration:** may WP-A add `notifications(user_id, id)` (non-destructive, applied at deploy)? And do you want the `limit(20)` + `has_more` cap on missed-order payloads (WP-D)?
+4. **Images:** are all product and shop images on Cloudinary in production, or are some still under `public/uploads` (ephemeral on Render, and `product_image_url` silently falls back to a stock photo when the file is missing)?
+5. **Cold start:** accept, use an external pinger, or consider a paid plan?
+
+---
+
+## 7. Out-of-scope findings (not touched in this plan)
+
+- **Possible visibility gap in the public catalog.** `getGlobalProductsPaginated` filters only `products.deleted_at IS NULL` (`ProductModel.php:162`). It does not filter `products.status = 'active'`, and shops are LEFT JOINed with no shop-status filter (`:159`), although the docblock says "active products". Draft or archived products, or products of suspended shops, may be listed. Verify against intended behavior.
+- **Writes on GET:** `Cart::index` deletes expired items (`Cart.php:38-41`); `Customer::product` increments `categories.view_count` (`Customer.php:264`).
+- **Status mismatch:** header "active orders" omits `in_transit` (`UserModel.php:90`) but the poll includes it (`Customer.php:955`); the schema dump's `orders.status` enum has no `in_transit` (`blax_marketplace.sql:475`). Check the live schema and strict-mode behavior.
+- **Session locking removed** (`OptimizedDatabaseHandler.php:36-49`): concurrent requests can overwrite each other's session changes (flash data, CSRF token, cart-related keys). It is a deliberate speed trade-off; note only.
+- **CSRF exemptions** include `api/route` and `tenant/deliveries/stop-broadcast` (`Filters.php:81`): confirm each has an alternative authentication check.
+- **Repository hygiene:** `approval_test.php` and `builds` are tracked at the repo root; `.env`, `env`, `cookies.txt` and the SQL dumps are untracked (good), but the dumps are local and may be stale.
+- Webhook signature-verification logic (`Cart.php:590`, `Admin.php:1567`) was not reviewed, since payment flows are out of scope.

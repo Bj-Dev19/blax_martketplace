@@ -36,14 +36,18 @@ class PrintingRequestModel extends Model
         'completed_at',
     ];
 
-    public function getRequestsByCustomer(int $customerId)
+    public function getRequestsByCustomer(int $customerId, ?string $cancelledCutoff = null)
     {
-        return $this->db->table('printing_requests pr')
+        $builder = $this->db->table('printing_requests pr')
             ->select('pr.*, s.shop_name')
             ->join('shops s', 's.id = pr.shop_id', 'left')
-            ->where('pr.customer_id', $customerId)
-            ->orderBy('pr.created_at', 'DESC')
-            ->get()->getResultArray();
+            ->where('pr.customer_id', $customerId);
+
+        if ($cancelledCutoff !== null) {
+            $builder->where("(pr.status != 'cancelled' OR pr.created_at >= " . $this->db->escape($cancelledCutoff) . ")");
+        }
+
+        return $builder->orderBy('pr.created_at', 'DESC')->get()->getResultArray();
     }
 
     public function getRequestsByShop(int $shopId, ?int $limit = null)
