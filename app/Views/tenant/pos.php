@@ -774,529 +774,104 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
     </button>
 </div>
 
-<!-- Modal: Store Pick-up Order Selector -->
-<?php
-$poTotalCount = count($pickupOrders);
-$poUnpaidCount = 0;
-$poPaidCount = 0;
-$poCombinedCount = 0;
-foreach ($pickupOrders as $p_item) {
-    if (($p_item['payment_status'] ?? '') === 'paid') {
-        $poPaidCount++;
-    } else {
-        $poUnpaidCount++;
-    }
-    $cId = (int)($p_item['customer_id'] ?? 0);
-    if (!empty($customerHasPrintingMap[$cId])) {
-        $poCombinedCount++;
-    }
-}
-?>
-<div id="posPickupSelectorModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-[#FAF6F0] dark:bg-slate-900 border border-[#E8E1D5] dark:border-slate-800 rounded-[28px] max-w-4xl w-full p-5 sm:p-7 shadow-2xl space-y-4 max-h-[92vh] flex flex-col font-sans">
+<!-- Modal: Product Orders Ready for Pick-up -->
+<?= view('tenant/partials/pickup_modal', [
+    'modalId'       => 'posPickupSelectorModal',
+    'modalType'     => 'product',
+    'title'         => 'Select Ready for Pick-up',
+    'subtitle'      => 'Select an active ready-for-pickup product order to fulfill at counter',
+    'icon'          => 'storefront',
+    'items'         => $pickupOrders,
+    'linkedMap'     => $customerHasPrintingMap,
+    'searchInputId' => 'posPickupFilterInput',
+    'footerCountId' => 'posPickupFooterCount',
+]) ?>
+
+<!-- Modal: Printing Ready for Pick-up -->
+<?= view('tenant/partials/pickup_modal', [
+    'modalId'       => 'posPrintingSelectorModal',
+    'modalType'     => 'print',
+    'title'         => 'Printing Ready for Pick-up',
+    'subtitle'      => 'Select a ready-for-pickup printing request to fulfill and collect at counter',
+    'icon'          => 'print',
+    'items'         => $printingPickupRequests,
+    'linkedMap'     => $customerHasOrderMap,
+    'searchInputId' => 'posPrintingFilterInput',
+    'footerCountId' => 'posPrintingFooterCount',
+]) ?>
+
+<!-- Lightweight Handover Confirmation Dialog (Inline Sheet / Modal) -->
+<div id="posHandoverConfirmModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col font-sans">
         
-        <!-- Top Telemetry & Header -->
-        <div class="flex items-start justify-between border-b border-[#E8E1D5] dark:border-slate-800 pb-3.5 shrink-0">
-            <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#E8F0EA] text-[#2A6038] dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span><?= $poTotalCount ?> Orders Awaiting Handover</span>
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold">
+                    <span class="material-symbols-outlined text-[20px]">check_circle</span>
+                </span>
+                <div>
+                    <h3 class="font-display font-bold text-base text-slate-900 dark:text-white">Confirm Customer Handover</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" id="posConfirmCustomerSub">Customer Details</p>
                 </div>
-                <h2 class="font-serif text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Ready for Pick-up Orders</h2>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Customer Pick-up Queue & Combined Printing Dispatch</p>
             </div>
-            <button type="button" onclick="closePickupSelectorModal()" class="px-2.5 py-1 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
-                <span>✕</span>
-                <span class="text-[10px] bg-slate-200/80 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">Esc</span>
+            <button type="button" onclick="closeHandoverConfirm()" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
         </div>
 
-        <!-- Search & Segmented Filter Controls -->
-        <div class="space-y-2.5 shrink-0">
-            <div class="relative">
-                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                <input type="text" 
-                       id="posPickupFilterInput" 
-                       placeholder="Search customer, phone, order #, or item..." 
-                       oninput="filterPickupOrders(this.value)"
-                       class="w-full pl-11 pr-20 py-2.5 bg-white dark:bg-slate-800 border border-[#E8E1D5] dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4A7C59] shadow-2xs">
-                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600">Ctrl + K</span>
-            </div>
-
-            <!-- Segmented Filter Pills -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar text-xs">
-                <button type="button" 
-                        class="pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-[#4A7C59] text-white shadow-xs" 
-                        onclick="setPickupTabFilter('', this)">
-                    All Orders (<?= $poTotalCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-50" 
-                        onclick="setPickupTabFilter('unpaid', this)">
-                    ⚠️ Unpaid (<?= $poUnpaidCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50" 
-                        onclick="setPickupTabFilter('paid', this)">
-                    ✓ Paid Online (<?= $poPaidCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60 hover:bg-purple-50" 
-                        onclick="setPickupTabFilter('combined', this)">
-                    🔗 Has Print Job (<?= $poCombinedCount ?>)
-                </button>
-            </div>
+        <!-- Items to Hand Over List -->
+        <div class="space-y-2 overflow-y-auto max-h-[35vh] custom-scrollbar">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Items to Hand Over:</span>
+            <div id="posConfirmItemsList" class="space-y-2"></div>
         </div>
 
-        <!-- Boarding-Pass Ticket Queue List -->
-        <div class="overflow-y-auto space-y-3 flex-1 pr-1 custom-scrollbar" id="posPickupOrdersList">
-            <?php if (!empty($pickupOrders)): ?>
-                <?php foreach ($pickupOrders as $po): ?>
-                    <?php 
-                    $poName = trim(($po['first_name'] ?? '') . ' ' . ($po['last_name'] ?? ''));
-                    $poInitials = $poName !== '' ? mb_strtoupper(mb_substr($poName, 0, 2)) : 'OC';
-                    $poPhone = trim((string) ($po['phone'] ?? ''));
-                    $isPoPaid = ($po['payment_status'] ?? '') === 'paid';
-                    $itemsSummary = trim((string) ($po['items_summary'] ?? ''));
-                    $poCustId = (int) ($po['customer_id'] ?? 0);
-                    $matchingPr = !empty($customerHasPrintingMap[$poCustId]) ? $customerHasPrintingMap[$poCustId][0] : null;
-                    $statusTag = $isPoPaid ? 'paid' : 'unpaid';
-                    if ($matchingPr) {
-                        $statusTag .= ' combined';
-                    }
-                    $orderTotal = (float)($po['total_amount'] ?? 0);
-
-                    // Combined financial calculations
-                    $matchPrTotal = $matchingPr ? (float)($matchingPr['total_price'] ?? 0) : 0;
-                    $matchPrDp = $matchingPr ? (float)($matchingPr['down_payment'] ?? 0) : 0;
-                    $matchPrDue = max(0.0, round($matchPrTotal - $matchPrDp, 2));
-                    $combinedCollect = ($isPoPaid ? 0.0 : $orderTotal) + $matchPrDue;
-
-                    // Parse item chips cleanly
-                    $rawItems = $itemsSummary !== '' ? $itemsSummary : 'Store Pick-up items';
-                    $itemChips = array_filter(array_map('trim', explode(',', $rawItems)));
-                    ?>
-                    <div class="pos-pickup-row bg-white dark:bg-slate-800/90 border border-[#E8E1D5] dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3"
-                         data-search="<?= strtolower(esc(($po['order_number'] ?? '') . ' ' . $poName . ' ' . $poPhone . ' ' . $itemsSummary)) ?>"
-                         data-status="<?= $statusTag ?>">
-                        
-                        <!-- Ticket Top: Customer & Tag -->
-                        <div class="flex items-center justify-between gap-3 flex-wrap">
-                            <div class="flex items-center gap-3">
-                                <div class="w-11 h-11 rounded-full bg-[#E8F0EA] text-[#2A6038] dark:bg-emerald-950/70 dark:text-emerald-300 font-black text-sm flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-800/50 shadow-2xs">
-                                    <?= esc($poInitials) ?>
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="font-bold text-base text-slate-900 dark:text-white"><?= esc($poName ?: 'Online Customer') ?></span>
-                                        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                                            #<?= esc($po['order_number'] ?? $po['id']) ?>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        <?php if ($poPhone !== ''): ?>
-                                            <a href="tel:<?= esc($poPhone) ?>" class="hover:text-[#4A7C59] flex items-center gap-0.5 font-mono">
-                                                <span class="material-symbols-outlined text-[13px]">phone</span>
-                                                <span><?= esc($poPhone) ?></span>
-                                            </a>
-                                            <span class="text-slate-300 dark:text-slate-600">•</span>
-                                        <?php endif; ?>
-                                        <span><?= esc(date('M d, h:i A', strtotime($po['placed_at'] ?? 'now'))) ?></span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1 border border-slate-200 dark:border-slate-600">
-                                    <span class="material-symbols-outlined text-[15px]">inventory_2</span>
-                                    <span>Ready at Counter</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Ticket Middle: Items Manifest Chips -->
-                        <div class="pt-2 border-t border-dashed border-[#E8E1D5] dark:border-slate-700/60 flex items-center gap-1.5 flex-wrap">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">ITEMS:</span>
-                            <?php foreach ($itemChips as $chip): ?>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#FAF6F0] dark:bg-slate-700/50 text-slate-800 dark:text-slate-200 border border-[#E8E1D5] dark:border-slate-600">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-[#4A7C59]"></span>
-                                    <span><?= esc($chip) ?></span>
-                                </span>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <!-- Ticket Cross-Order Bridge (If Linked Print Job exists) -->
-                        <?php if ($matchingPr): ?>
-                            <div class="p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between gap-2 text-xs">
-                                <div class="flex items-center gap-2 text-amber-900 dark:text-amber-200 truncate">
-                                    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px] shrink-0">link</span>
-                                    <span class="font-bold">Linked Printing Ready:</span>
-                                    <span class="truncate"><?= esc($matchingPr['file_name'] ?? ('#' . $matchingPr['request_number'])) ?></span>
-                                    <span class="text-amber-400">•</span>
-                                    <span class="font-mono font-bold text-amber-700 dark:text-amber-300">₱<?= number_format($matchPrDue, 2) ?> Bal Due</span>
-                                </div>
-                                <span class="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider shrink-0">Combine Available</span>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Ticket Bottom: Financial Due & Action Buttons -->
-                        <div class="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3 flex-wrap">
-                            <div>
-                                <?php if ($matchingPr): ?>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-amber-500 text-[18px]">payments</span>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                            <?= $combinedCollect > 0 ? 'Collect at Counter:' : 'All Verified Paid Online' ?>
-                                        </span>
-                                        <span class="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400">
-                                            ₱<?= number_format($combinedCollect, 2) ?> Total
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">
-                                        (<?= $isPoPaid ? 'Order Paid Online' : '₱' . number_format($orderTotal, 2) . ' order' ?> + ₱<?= number_format($matchPrDue, 2) ?> print bal)
-                                    </div>
-                                <?php elseif ($isPoPaid): ?>
-                                    <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
-                                        <span class="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
-                                        <span class="text-xs font-bold">Fully Paid Online (₱<?= number_format($orderTotal, 2) ?>)</span>
-                                        <span class="text-xs font-medium text-slate-400">• Collect ₱0.00</span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 mt-0.5">Verified payment • Release upon signature or ID check</div>
-                                <?php else: ?>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-amber-500 text-[18px]">payments</span>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Collect at Counter:</span>
-                                        <span class="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400">
-                                            ₱<?= number_format($orderTotal, 2) ?>
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 mt-0.5">Unpaid order • Collect cash or GCash at counter</div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <?php if ($matchingPr): ?>
-                                    <a href="<?= base_url('tenant/pos?order_id=' . $po['id']) ?>" 
-                                       class="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center transition-all">
-                                        Order Only
-                                    </a>
-                                    <a href="<?= base_url('tenant/pos?order_id=' . $po['id'] . '&printing_id=' . $matchingPr['id']) ?>" 
-                                       class="h-10 px-4 bg-[#4A7C59] hover:bg-[#3D664A] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
-                                        <span class="material-symbols-outlined text-[17px]">bolt</span>
-                                        <span>Fulfill Both Together (₱<?= number_format($combinedCollect, 2) ?>)</span>
-                                    </a>
-                                <?php else: ?>
-                                    <a href="<?= base_url('tenant/pos?order_id=' . $po['id']) ?>" 
-                                       class="h-10 px-4 bg-[#4A7C59] hover:bg-[#3D664A] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
-                                        <span><?= $isPoPaid ? 'Handover Items' : 'Fulfill Order' ?></span>
-                                        <span class="material-symbols-outlined text-[17px]">arrow_forward</span>
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="py-14 text-center text-slate-400 text-xs flex flex-col items-center gap-2.5">
-                    <span class="material-symbols-outlined text-5xl text-slate-300">inventory_2</span>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">No Orders in Pick-up Queue</span>
-                    <span class="text-xs text-slate-400">All customer store pick-up orders have been fulfilled or are being packed.</span>
+        <!-- Payment Section (if money is due) -->
+        <div id="posConfirmPaymentSection" class="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 space-y-3">
+            <div class="flex items-baseline justify-between">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Amount to Collect:</span>
+                <span class="font-mono text-xl font-black text-amber-600 dark:text-amber-400" id="posConfirmCollectAmount">₱0.00</span>
+            </div>
+            <div id="posConfirmMethodSelector" class="space-y-1.5 pt-1 border-t border-amber-200/60 dark:border-amber-800/60">
+                <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 block">Payment Method:</span>
+                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="confirm_payment_method" value="cash" class="peer sr-only" checked>
+                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">Cash</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="confirm_payment_method" value="gcash" class="peer sr-only">
+                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">GCash</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="confirm_payment_method" value="card" class="peer sr-only">
+                        <span class="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 peer-checked:bg-terra-green peer-checked:text-white peer-checked:border-terra-green shadow-xs transition-all">Card</span>
+                    </label>
                 </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Ticket Queue Footer -->
-        <div class="flex items-center justify-between border-t border-[#E8E1D5] dark:border-slate-800 pt-3 shrink-0 text-xs text-slate-500">
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span id="posPickupFooterCount">Showing <?= $poTotalCount ?> active pick-up tickets • Register Terminal 01</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="openPosQrScanner()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-all">
-                    <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
-                    <span>Scan Pick-up QR</span>
-                </button>
-                <button type="button" onclick="closePickupSelectorModal()" class="px-4 py-1.5 rounded-xl border border-[#E8E1D5] dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors">
-                    Close [ESC]
-                </button>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal: Printing Ready for Pick-up Selector -->
-<?php
-$prTotalCount = count($printingPickupRequests);
-$prUnpaidCount = 0;
-$prPaidCount = 0;
-$prDpCount = 0;
-$prCombinedCount = 0;
-foreach ($printingPickupRequests as $pr_item) {
-    $prTot = (float)($pr_item['total_price'] ?? 0);
-    $prDp = (float)($pr_item['down_payment'] ?? 0);
-    if ($prTot > 0 && $prDp >= $prTot) {
-        $prPaidCount++;
-    } elseif ($prDp > 0) {
-        $prDpCount++;
-    } else {
-        $prUnpaidCount++;
-    }
-    $prCId = (int)($pr_item['customer_id'] ?? 0);
-    if (!empty($customerHasOrderMap[$prCId])) {
-        $prCombinedCount++;
-    }
-}
-?>
-<div id="posPrintingSelectorModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5">
-    <div class="bg-[#FAF6F0] dark:bg-slate-900 border border-[#E8E1D5] dark:border-slate-800 rounded-[28px] max-w-4xl w-full p-5 sm:p-7 shadow-2xl space-y-4 max-h-[92vh] flex flex-col font-sans">
-        
-        <!-- Top Telemetry & Header -->
-        <div class="flex items-start justify-between border-b border-[#E8E1D5] dark:border-slate-800 pb-3.5 shrink-0">
-            <div class="space-y-1">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#E8F0EA] text-[#2A6038] dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span><?= $prTotalCount ?> Print Jobs Awaiting Handover</span>
-                </div>
-                <h2 class="font-serif text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Printing Ready for Pick-up</h2>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Customer Print Dispatch & Combined Order Queue</p>
-            </div>
-            <button type="button" onclick="closePrintingSelectorModal()" class="px-2.5 py-1 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
-                <span>✕</span>
-                <span class="text-[10px] bg-slate-200/80 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">Esc</span>
+        <!-- Paid Online Notice (if ₱0 due) -->
+        <div id="posConfirmPaidNotice" class="hidden p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">verified</span>
+            <span>Fully paid online · No counter payment required.</span>
+        </div>
+
+        <!-- Inline Error Banner -->
+        <div id="posConfirmError" class="hidden p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 font-medium"></div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" onclick="closeHandoverConfirm()" class="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer">
+                Cancel
             </button>
-        </div>
-
-        <!-- Search & Segmented Filter Controls -->
-        <div class="space-y-2.5 shrink-0">
-            <div class="relative">
-                <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
-                <input type="text" 
-                       id="posPrintingFilterInput" 
-                       placeholder="Search customer, phone, request #, or file name..." 
-                       oninput="filterPrintingRequests(this.value)"
-                       class="w-full pl-11 pr-20 py-2.5 bg-white dark:bg-slate-800 border border-[#E8E1D5] dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4A7C59] shadow-2xs">
-                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600">Ctrl + K</span>
-            </div>
-
-            <!-- Segmented Filter Pills -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar text-xs">
-                <button type="button" 
-                        class="pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-[#4A7C59] text-white shadow-xs" 
-                        onclick="setPrintingTabFilter('', this)">
-                    All Requests (<?= $prTotalCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-50" 
-                        onclick="setPrintingTabFilter('unpaid', this)">
-                    ⚠️ Unpaid (<?= $prUnpaidCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50" 
-                        onclick="setPrintingTabFilter('paid', this)">
-                    ✓ Paid Online (<?= $prPaidCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-50" 
-                        onclick="setPrintingTabFilter('downpayment', this)">
-                    💰 DP Paid (<?= $prDpCount ?>)
-                </button>
-                <button type="button" 
-                        class="pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-50" 
-                        onclick="setPrintingTabFilter('combined', this)">
-                    🛍️ Has Product Order (<?= $prCombinedCount ?>)
-                </button>
-            </div>
-        </div>
-
-        <!-- Printing Tickets Queue List -->
-        <div class="overflow-y-auto space-y-3 flex-1 pr-1 custom-scrollbar" id="posPrintingRequestsList">
-            <?php if (!empty($printingPickupRequests)): ?>
-                <?php foreach ($printingPickupRequests as $pr): ?>
-                    <?php 
-                    $prCustName = trim(($pr['first_name'] ?? '') . ' ' . ($pr['last_name'] ?? ''));
-                    $prInitials = $prCustName !== '' ? mb_strtoupper(mb_substr($prCustName, 0, 2)) : 'OC';
-                    $prPhone = trim((string) ($pr['phone'] ?? ''));
-                    $prDownPayment = (float) ($pr['down_payment'] ?? 0);
-                    $prTotalPrice = (float) ($pr['total_price'] ?? 0);
-                    $prIsFullyPaid = ($prTotalPrice > 0 && $prDownPayment >= $prTotalPrice);
-                    $prRemainingDue = max(0.0, round($prTotalPrice - $prDownPayment, 2));
-                    $prSpecs = (int)($pr['page_count'] ?? 1) . ' pgs • ' . (int)($pr['copies'] ?? 1) . ' cop • ' . strtoupper((string)($pr['color_mode'] ?? 'BW')) . ' • ' . esc($pr['paper_size'] ?? 'Letter');
-                    $prCustId = (int) ($pr['customer_id'] ?? 0);
-                    $matchingPo = !empty($customerHasOrderMap[$prCustId]) ? $customerHasOrderMap[$prCustId][0] : null;
-                    
-                    $prStatusTag = 'unpaid';
-                    if ($prIsFullyPaid) {
-                        $prStatusTag = 'paid';
-                    } elseif ($prDownPayment > 0) {
-                        $prStatusTag = 'downpayment';
-                    }
-                    if ($matchingPo) {
-                        $prStatusTag .= ' combined';
-                    }
-
-                    // Combined financial calculations
-                    $poAmount = $matchingPo ? (float)($matchingPo['total_amount'] ?? 0) : 0;
-                    $isPoPaid = $matchingPo ? (($matchingPo['payment_status'] ?? '') === 'paid') : false;
-                    $combinedCollect = $prRemainingDue + ($isPoPaid ? 0.0 : $poAmount);
-                    ?>
-                    <div class="pos-printing-row bg-white dark:bg-slate-800/90 border border-[#E8E1D5] dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3"
-                         data-search="<?= strtolower(esc(($pr['request_number'] ?? '') . ' ' . $prCustName . ' ' . $prPhone . ' ' . ($pr['file_name'] ?? ''))) ?>"
-                         data-status="<?= $prStatusTag ?>">
-                        
-                        <!-- Ticket Top: Customer & Tag -->
-                        <div class="flex items-center justify-between gap-3 flex-wrap">
-                            <div class="flex items-center gap-3">
-                                <div class="w-11 h-11 rounded-full bg-[#E8F0EA] text-[#2A6038] dark:bg-emerald-950/70 dark:text-emerald-300 font-black text-sm flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-800/50 shadow-2xs">
-                                    <?= esc($prInitials) ?>
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="font-bold text-base text-slate-900 dark:text-white"><?= esc($prCustName ?: 'Online Customer') ?></span>
-                                        <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                                            #<?= esc($pr['request_number']) ?>
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        <?php if ($prPhone !== ''): ?>
-                                            <a href="tel:<?= esc($prPhone) ?>" class="hover:text-[#4A7C59] flex items-center gap-0.5 font-mono">
-                                                <span class="material-symbols-outlined text-[13px]">phone</span>
-                                                <span><?= esc($prPhone) ?></span>
-                                            </a>
-                                            <span class="text-slate-300 dark:text-slate-600">•</span>
-                                        <?php endif; ?>
-                                        <span><?= esc(date('M d, h:i A', strtotime($pr['created_at'] ?? 'now'))) ?></span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-1 border border-slate-200 dark:border-slate-600">
-                                    <span class="material-symbols-outlined text-[15px]">print</span>
-                                    <span>Printed & Bound</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Ticket Middle: Document Details & Specs Chips -->
-                        <div class="pt-2 border-t border-dashed border-[#E8E1D5] dark:border-slate-700/60 flex items-center gap-2 flex-wrap">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">DOCUMENT:</span>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#FAF6F0] dark:bg-slate-700/50 text-slate-900 dark:text-white border border-[#E8E1D5] dark:border-slate-600">
-                                <span class="material-symbols-outlined text-[15px] text-[#4A7C59]">description</span>
-                                <span class="truncate max-w-[280px]" title="<?= esc($pr['file_name'] ?? 'Document.pdf') ?>">
-                                    <?= esc($pr['file_name'] ?? 'Document.pdf') ?>
-                                </span>
-                            </span>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                                <?= esc($prSpecs) ?>
-                            </span>
-                        </div>
-
-                        <!-- Ticket Cross-Order Bridge (If Linked Product Order exists) -->
-                        <?php if ($matchingPo): ?>
-                            <div class="p-2.5 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center justify-between gap-2 text-xs">
-                                <div class="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 truncate">
-                                    <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[18px] shrink-0">shopping_bag</span>
-                                    <span class="font-bold">Linked Product Order Ready:</span>
-                                    <span class="truncate">#<?= esc($matchingPo['order_number']) ?> (<?= esc($matchingPo['items_summary'] ?? 'Items') ?>)</span>
-                                    <span class="text-indigo-400">•</span>
-                                    <span class="font-mono font-bold text-indigo-700 dark:text-indigo-300">
-                                        <?= $isPoPaid ? 'Paid Online' : '₱' . number_format($poAmount, 2) . ' due' ?>
-                                    </span>
-                                </div>
-                                <span class="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider shrink-0">Combine Available</span>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Ticket Bottom: Financial Due & Action Buttons -->
-                        <div class="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3 flex-wrap">
-                            <div>
-                                <?php if ($matchingPo): ?>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-amber-500 text-[18px]">payments</span>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                            <?= $combinedCollect > 0 ? 'Collect at Counter:' : 'All Verified Paid Online' ?>
-                                        </span>
-                                        <span class="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400">
-                                            ₱<?= number_format($combinedCollect, 2) ?> Total
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">
-                                        (₱<?= number_format($prRemainingDue, 2) ?> print bal + <?= $isPoPaid ? 'Order Paid Online' : '₱' . number_format($poAmount, 2) . ' order' ?>)
-                                    </div>
-                                <?php elseif ($prIsFullyPaid): ?>
-                                    <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
-                                        <span class="material-symbols-outlined text-emerald-600 text-[18px]">check_circle</span>
-                                        <span class="text-xs font-bold">Fully Paid Online (₱<?= number_format($prTotalPrice, 2) ?>)</span>
-                                        <span class="text-xs font-medium text-slate-400">• Collect ₱0.00</span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 mt-0.5">Paid via verified online transfer • Ready for handover</div>
-                                <?php elseif ($prDownPayment > 0): ?>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-amber-500 text-[18px]">payments</span>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Balance Due:</span>
-                                        <span class="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400">
-                                            ₱<?= number_format($prRemainingDue, 2) ?>
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">₱<?= number_format($prDownPayment, 2) ?> DP Paid Online of ₱<?= number_format($prTotalPrice, 2) ?> total</div>
-                                <?php else: ?>
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-amber-500 text-[18px]">payments</span>
-                                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Collect at Counter:</span>
-                                        <span class="font-mono text-base sm:text-lg font-black text-amber-600 dark:text-amber-400">
-                                            ₱<?= number_format($prTotalPrice, 2) ?>
-                                        </span>
-                                    </div>
-                                    <div class="text-[10px] text-slate-400 mt-0.5">Unpaid printing request • Cash or GCash on pickup</div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <?php if ($matchingPo): ?>
-                                    <a href="<?= base_url('tenant/pos?printing_id=' . $pr['id']) ?>" 
-                                       class="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center transition-all">
-                                        Print Only
-                                    </a>
-                                    <a href="<?= base_url('tenant/pos?order_id=' . $matchingPo['id'] . '&printing_id=' . $pr['id']) ?>" 
-                                       class="h-10 px-4 bg-[#4A7C59] hover:bg-[#3D664A] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
-                                        <span class="material-symbols-outlined text-[17px]">bolt</span>
-                                        <span>Fulfill Both Together (₱<?= number_format($combinedCollect, 2) ?>)</span>
-                                    </a>
-                                <?php else: ?>
-                                    <a href="<?= base_url('tenant/pos?printing_id=' . $pr['id']) ?>" 
-                                       class="h-10 px-4 bg-[#4A7C59] hover:bg-[#3D664A] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
-                                        <span>Handover Print Job</span>
-                                        <span class="material-symbols-outlined text-[17px]">arrow_forward</span>
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="py-14 text-center text-slate-400 text-xs flex flex-col items-center gap-2.5">
-                    <span class="material-symbols-outlined text-5xl text-slate-300">print_disabled</span>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">No Printing Requests in Queue</span>
-                    <span class="text-xs text-slate-400">All customer printing requests have been fulfilled or are in production.</span>
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <!-- Ticket Queue Footer -->
-        <div class="flex items-center justify-between border-t border-[#E8E1D5] dark:border-slate-800 pt-3 shrink-0 text-xs text-slate-500">
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span id="posPrintingFooterCount">Showing <?= $prTotalCount ?> active printing tickets • Production Hub 01</span>
-            </div>
-            <button type="button" onclick="closePrintingSelectorModal()" class="px-4 py-1.5 rounded-xl border border-[#E8E1D5] dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors">
-                Close [ESC]
+            <button type="button" id="posConfirmSubmitBtn" onclick="submitHandoverConfirm()" class="min-h-[44px] px-5 py-2.5 bg-terra-green hover:bg-terra-green-dark active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                <span class="material-symbols-outlined text-[17px]">done_all</span>
+                <span id="posConfirmSubmitBtnText">Confirm Handover</span>
             </button>
         </div>
     </div>
 </div>
-
 <!-- Receipt / Success Modal -->
 <div id="posSuccessModal" class="hidden fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="w-full max-w-[420px] my-auto space-y-3">
@@ -2390,29 +1965,21 @@ foreach ($printingPickupRequests as $pr_item) {
         });
     }
 
-    // Modal functions for Store Pick-up selector
-    // Modal functions for Store Pick-up selector
+    // ==========================================
+    // Unified Pick-up Queue & Handover Controller
+    // ==========================================
     let currentPickupTab = '';
-    window.setPickupTabFilter = function(status, btn) {
-        currentPickupTab = status;
-        document.querySelectorAll('.pos-po-tab').forEach(b => {
-            b.className = 'pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700';
-        });
-        if (btn) {
-            btn.className = 'pos-po-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-[#4A7C59] text-white shadow-xs';
-        }
-        const searchInput = document.getElementById('posPickupFilterInput');
-        filterPickupOrders(searchInput ? searchInput.value : '');
-    };
+    let currentPrintingTab = '';
+    let activeHandoverPayload = null;
+    let isSubmittingHandover = false;
 
+    // Open/Close Queue Modals
     window.openPickupSelectorModal = function() {
         const modal = document.getElementById('posPickupSelectorModal');
         if (modal) {
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                const input = document.getElementById('posPickupFilterInput');
-                if (input) input.focus();
-            }, 60);
+            const input = document.getElementById('posPickupFilterInput');
+            if (input) setTimeout(() => input.focus(), 50);
         }
     };
 
@@ -2421,50 +1988,12 @@ foreach ($printingPickupRequests as $pr_item) {
         if (modal) modal.classList.add('hidden');
     };
 
-    window.filterPickupOrders = function(query) {
-        const q = (query || '').toLowerCase().trim();
-        let visibleCount = 0;
-        document.querySelectorAll('.pos-pickup-row').forEach(row => {
-            const searchData = row.dataset.search || '';
-            const statusData = row.dataset.status || '';
-            const matchesQuery = (q === '' || searchData.includes(q));
-            const matchesTab = (currentPickupTab === '' || statusData.includes(currentPickupTab));
-
-            if (matchesQuery && matchesTab) {
-                row.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                row.classList.add('hidden');
-            }
-        });
-        const countSpan = document.getElementById('posPickupFooterCount');
-        if (countSpan) {
-            countSpan.textContent = `Showing ${visibleCount} active pick-up tickets • Register Terminal 01`;
-        }
-    };
-
-    // Modal functions for Printing Pick-up selector
-    let currentPrintingTab = '';
-    window.setPrintingTabFilter = function(status, btn) {
-        currentPrintingTab = status;
-        document.querySelectorAll('.pos-pr-tab').forEach(b => {
-            b.className = 'pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700';
-        });
-        if (btn) {
-            btn.className = 'pos-pr-tab px-3.5 py-1.5 rounded-full font-bold transition-all shrink-0 bg-[#4A7C59] text-white shadow-xs';
-        }
-        const searchInput = document.getElementById('posPrintingFilterInput');
-        filterPrintingRequests(searchInput ? searchInput.value : '');
-    };
-
     window.openPrintingSelectorModal = function() {
         const modal = document.getElementById('posPrintingSelectorModal');
         if (modal) {
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                const input = document.getElementById('posPrintingFilterInput');
-                if (input) input.focus();
-            }, 60);
+            const input = document.getElementById('posPrintingFilterInput');
+            if (input) setTimeout(() => input.focus(), 50);
         }
     };
 
@@ -2473,44 +2002,355 @@ foreach ($printingPickupRequests as $pr_item) {
         if (modal) modal.classList.add('hidden');
     };
 
-    window.filterPrintingRequests = function(query) {
+    window.closePickupQueueModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Chip Filter: All | Unpaid/Balance Due | Linked
+    window.setQueueChipFilter = function(modalId, filterStatus, btn) {
+        if (modalId === 'posPickupSelectorModal') {
+            currentPickupTab = filterStatus;
+        } else {
+            currentPrintingTab = filterStatus;
+        }
+
+        // Update button visual styles
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.querySelectorAll('.pos-queue-chip').forEach(b => {
+                b.className = 'pos-queue-chip px-3 py-1.5 rounded-full font-medium transition-all shrink-0 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-pointer flex items-center gap-1.5';
+            });
+            btn.className = 'pos-queue-chip px-3 py-1.5 rounded-full font-bold transition-all shrink-0 bg-terra-green text-white shadow-xs border border-terra-green cursor-pointer flex items-center gap-1.5';
+        }
+
+        const input = modal?.querySelector('input[type="text"]');
+        filterQueueModal(modalId, input ? input.value : '');
+    };
+
+    // Filter cards by search query & active chip
+    window.filterQueueModal = function(modalId, query) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
         const q = (query || '').toLowerCase().trim();
+        const activeTab = (modalId === 'posPickupSelectorModal') ? currentPickupTab : currentPrintingTab;
+        const cards = modal.querySelectorAll('.pos-pickup-card');
+        const clearBtn = modal.querySelector('.pos-search-clear-btn');
+        const noResultsMsg = modal.querySelector('.pos-no-results-msg');
+        const listContainer = modal.querySelector('.pos-queue-cards-list');
+
+        if (clearBtn) {
+            if (q.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+        }
+
         let visibleCount = 0;
-        document.querySelectorAll('.pos-printing-row').forEach(row => {
-            const searchData = row.dataset.search || '';
-            const statusData = row.dataset.status || '';
+        cards.forEach(card => {
+            const searchData = card.dataset.search || '';
+            const statusData = card.dataset.status || '';
             const matchesQuery = (q === '' || searchData.includes(q));
-            const matchesTab = (currentPrintingTab === '' || statusData.includes(currentPrintingTab));
+            let matchesTab = true;
+            if (activeTab === 'unpaid') {
+                matchesTab = statusData.includes('unpaid');
+            } else if (activeTab === 'linked') {
+                matchesTab = statusData.includes('linked');
+            }
 
             if (matchesQuery && matchesTab) {
-                row.classList.remove('hidden');
+                card.classList.remove('hidden');
                 visibleCount++;
             } else {
-                row.classList.add('hidden');
+                card.classList.add('hidden');
             }
         });
-        const countSpan = document.getElementById('posPrintingFooterCount');
+
+        // Update footer counter
+        const countSpan = modal.querySelector('.pos-footer-counter');
         if (countSpan) {
-            countSpan.textContent = `Showing ${visibleCount} active printing tickets • Production Hub 01`;
+            countSpan.textContent = `Showing ${visibleCount} of ${cards.length} ready`;
+        }
+
+        // Toggle No-Results State
+        if (noResultsMsg && listContainer) {
+            if (visibleCount === 0 && cards.length > 0) {
+                noResultsMsg.classList.remove('hidden');
+                listContainer.classList.add('hidden');
+            } else {
+                noResultsMsg.classList.add('hidden');
+                listContainer.classList.remove('hidden');
+            }
         }
     };
 
-    // Global Keyboard Shortcuts (Escape to dismiss, Ctrl+K to search active modal)
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
+    // Clear Search Input
+    window.clearQueueSearch = function(modalId, inputId) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = '';
+            filterQueueModal(modalId, '');
+            input.focus();
+        }
+    };
+
+    // Copy Ref Text with visual feedback
+    window.copyRefText = function(text, btn) {
+        if (!text) return;
+        const clean = text.replace(/^#+/, '');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText('#' + clean).then(() => {
+                showCopyFeedback(btn);
+            }).catch(() => {
+                fallbackCopy('#' + clean, btn);
+            });
+        } else {
+            fallbackCopy('#' + clean, btn);
+        }
+    };
+
+    function fallbackCopy(text, btn) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showCopyFeedback(btn);
+        } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
+    function showCopyFeedback(btn) {
+        const origHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[14px] text-emerald-600">check</span><span class="text-emerald-600">Copied!</span>';
+        setTimeout(() => { btn.innerHTML = origHtml; }, 1500);
+    }
+
+    // ==========================================
+    // Confirmation Dialog & Handover Execution
+    // ==========================================
+    window.openHandoverConfirm = function(payload) {
+        activeHandoverPayload = payload;
+        const modal = document.getElementById('posHandoverConfirmModal');
+        if (!modal) return;
+
+        // Customer Subtitle
+        const subEl = document.getElementById('posConfirmCustomerSub');
+        if (subEl) {
+            subEl.textContent = `Customer: ${payload.customer_name || 'Online Customer'}`;
+        }
+
+        // Items List
+        const listEl = document.getElementById('posConfirmItemsList');
+        if (listEl) {
+            listEl.innerHTML = '';
+            (payload.items || []).forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-xs';
+                const icon = item.type === 'product' ? 'shopping_bag' : 'print';
+                const iconColor = item.type === 'product' ? 'text-terra-green' : 'text-blue-500';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="material-symbols-outlined text-[17px] ${iconColor} shrink-0">${icon}</span>
+                        <div class="min-w-0">
+                            <span class="font-bold text-slate-800 dark:text-slate-200 block truncate">${item.summary || 'Item'}</span>
+                            <span class="font-mono text-[10px] text-slate-400">#${item.ref || ''}</span>
+                        </div>
+                    </div>
+                    <span class="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">₱${Number(item.price || 0).toFixed(2)}</span>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        // Payment vs Paid Handling
+        const paySec = document.getElementById('posConfirmPaymentSection');
+        const paidNot = document.getElementById('posConfirmPaidNotice');
+        const collectEl = document.getElementById('posConfirmCollectAmount');
+        const btnText = document.getElementById('posConfirmSubmitBtnText');
+        const errEl = document.getElementById('posConfirmError');
+
+        if (errEl) {
+            errEl.classList.add('hidden');
+            errEl.textContent = '';
+        }
+
+        const totalCollect = Number(payload.total_collect || 0);
+        if (totalCollect > 0) {
+            if (paySec) paySec.classList.remove('hidden');
+            if (paidNot) paidNot.classList.add('hidden');
+            if (collectEl) collectEl.textContent = `₱${totalCollect.toFixed(2)}`;
+            if (btnText) btnText.textContent = `Confirm Handover & Collect ₱${totalCollect.toFixed(2)}`;
+            
+            // Default select cash
+            const cashRadio = modal.querySelector('input[name="confirm_payment_method"][value="cash"]');
+            if (cashRadio) cashRadio.checked = true;
+        } else {
+            if (paySec) paySec.classList.add('hidden');
+            if (paidNot) paidNot.classList.remove('hidden');
+            if (btnText) btnText.textContent = 'Confirm Handover';
+        }
+
+        modal.classList.remove('hidden');
+    };
+
+    window.closeHandoverConfirm = function() {
+        const modal = document.getElementById('posHandoverConfirmModal');
+        if (modal) modal.classList.add('hidden');
+        activeHandoverPayload = null;
+    };
+
+    window.submitHandoverConfirm = async function() {
+        if (!activeHandoverPayload || isSubmittingHandover) return;
+
+        const btn = document.getElementById('posConfirmSubmitBtn');
+        const btnText = document.getElementById('posConfirmSubmitBtnText');
+        const errEl = document.getElementById('posConfirmError');
+
+        isSubmittingHandover = true;
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin inline-block mr-1">progress_activity</span>Processing...';
+        if (errEl) errEl.classList.add('hidden');
+
+        const totalCollect = Number(activeHandoverPayload.total_collect || 0);
+        let selectedMethod = 'none';
+        if (totalCollect > 0) {
+            const checkedRadio = document.querySelector('input[name="confirm_payment_method"]:checked');
+            selectedMethod = checkedRadio ? checkedRadio.value : 'cash';
+        }
+
+        const fd = new FormData();
+        fd.append(CSRF_TOKEN_NAME, CSRF_HASH_VAL);
+        if (activeHandoverPayload.order_id) {
+            fd.append('order_id', activeHandoverPayload.order_id);
+        }
+        if (activeHandoverPayload.printing_id) {
+            fd.append('printing_id', activeHandoverPayload.printing_id);
+        }
+        fd.append('counter_payment_method', selectedMethod);
+        fd.append('items', JSON.stringify([]));
+
+        try {
+            const response = await fetch(`${BASE_URL}/tenant/pos/complete-pickup`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            });
+
+            const data = await response.json();
+
+            // Refresh CSRF Token
+            if (data.csrf_hash) {
+                CSRF_HASH_VAL = data.csrf_hash;
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                if (meta) meta.setAttribute('content', data.csrf_hash);
+            }
+
+            if (!data.success) {
+                if (errEl) {
+                    errEl.textContent = data.error || 'Failed to complete handover. Please try again.';
+                    errEl.classList.remove('hidden');
+                }
+                isSubmittingHandover = false;
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = totalCollect > 0 ? `Confirm Handover & Collect ₱${totalCollect.toFixed(2)}` : 'Confirm Handover';
+                return;
+            }
+
+            // Success Handover
+            const handledOrderId = activeHandoverPayload.order_id;
+            const handledPrintingId = activeHandoverPayload.printing_id;
+
+            closeHandoverConfirm();
             closePickupSelectorModal();
             closePrintingSelectorModal();
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-            const poModal = document.getElementById('posPickupSelectorModal');
-            const prModal = document.getElementById('posPrintingSelectorModal');
-            if (poModal && !poModal.classList.contains('hidden')) {
-                e.preventDefault();
-                const input = document.getElementById('posPickupFilterInput');
-                if (input) input.focus();
-            } else if (prModal && !prModal.classList.contains('hidden')) {
-                e.preventDefault();
-                const input = document.getElementById('posPrintingFilterInput');
-                if (input) input.focus();
+
+            // Remove handled cards from DOM across both modals
+            if (handledOrderId) {
+                document.querySelectorAll(`.pos-pickup-card[data-type="product"][data-id="${handledOrderId}"]`).forEach(el => el.remove());
+            }
+            if (handledPrintingId) {
+                document.querySelectorAll(`.pos-pickup-card[data-type="print"][data-id="${handledPrintingId}"]`).forEach(el => el.remove());
+            }
+
+            // Refresh Queue counts and update UI
+            refreshQueueCounters('posPickupSelectorModal');
+            refreshQueueCounters('posPrintingSelectorModal');
+
+            // Trigger POS Success Receipt
+            showSuccessReceipt(data, selectedMethod, totalCollect);
+
+        } catch (err) {
+            if (errEl) {
+                errEl.textContent = 'Network or server error while completing handover. Please try again.';
+                errEl.classList.remove('hidden');
+            }
+        } finally {
+            isSubmittingHandover = false;
+            if (btn) btn.disabled = false;
+            if (btnText) btnText.textContent = 'Confirm Handover';
+        }
+    };
+
+    function refreshQueueCounters(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        const allCards = modal.querySelectorAll('.pos-pickup-card');
+        const unpaidCards = modal.querySelectorAll('.pos-pickup-card[data-status*="unpaid"]');
+        const linkedCards = modal.querySelectorAll('.pos-pickup-card[data-status*="linked"]');
+
+        const totalCount = allCards.length;
+        const unpaidCount = unpaidCards.length;
+        const linkedCount = linkedCards.length;
+
+        // Header telemetry count
+        const headerBadge = modal.querySelector('.pos-queue-total-count');
+        if (headerBadge) headerBadge.textContent = `${totalCount} in Queue`;
+
+        // Chip counts
+        const chipAll = modal.querySelector('.pos-chip-count-all');
+        if (chipAll) chipAll.textContent = totalCount;
+        const chipUnpaid = modal.querySelector('.pos-chip-count-unpaid');
+        if (chipUnpaid) chipUnpaid.textContent = unpaidCount;
+        const chipLinked = modal.querySelector('.pos-chip-count-linked');
+        if (chipLinked) chipLinked.textContent = linkedCount;
+
+        // Footer counter
+        const footerCounter = modal.querySelector('.pos-footer-counter');
+        if (footerCounter) footerCounter.textContent = `Showing ${totalCount} of ${totalCount} ready`;
+
+        // Empty state toggle
+        const emptyState = modal.querySelector('.pos-queue-empty-state');
+        const cardsList = modal.querySelector('.pos-queue-cards-list');
+        if (totalCount === 0) {
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (cardsList) cardsList.classList.add('hidden');
+        } else {
+            if (emptyState) emptyState.classList.add('hidden');
+            if (cardsList) cardsList.classList.remove('hidden');
+        }
+    }
+
+    // Keyboard support: Esc closes modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const confirmModal = document.getElementById('posHandoverConfirmModal');
+            if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                closeHandoverConfirm();
+                return;
+            }
+            const pickupModal = document.getElementById('posPickupSelectorModal');
+            if (pickupModal && !pickupModal.classList.contains('hidden')) {
+                closePickupSelectorModal();
+                return;
+            }
+            const printingModal = document.getElementById('posPrintingSelectorModal');
+            if (printingModal && !printingModal.classList.contains('hidden')) {
+                closePrintingSelectorModal();
+                return;
             }
         }
     });

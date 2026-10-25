@@ -6065,7 +6065,7 @@ class Tenant extends BaseController
             ->where('orders.shop_id', $shopId)
             ->where('orders.fulfillment_method', 'pickup')
             ->where('orders.status', 'ready_for_pickup')
-            ->orderBy('orders.placed_at', 'DESC')
+            ->orderBy('orders.placed_at', 'ASC')
             ->findAll(50);
 
         // High-performance batch resolution of items_summary (replaces 50 correlated subqueries with 1 indexed query)
@@ -6108,7 +6108,7 @@ class Tenant extends BaseController
                     ->where('printing_requests.status', 'ready_for_pickup')
                     ->orWhere('printing_requests.status', 'ready')
                 ->groupEnd()
-                ->orderBy('printing_requests.created_at', 'DESC')
+                ->orderBy('printing_requests.created_at', 'ASC')
                 ->findAll(50);
         } catch (\Throwable $e) {
             log_message('error', 'POS printing pickup requests query failed: ' . $e->getMessage());
