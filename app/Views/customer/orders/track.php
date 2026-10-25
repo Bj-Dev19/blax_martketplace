@@ -794,7 +794,8 @@
     function startPositionPolling() {
         if (['delivered', 'completed', 'cancelled'].includes(ORDER_STATUS)) return;
 
-        pollInterval = setInterval(() => {
+        function fetchRiderPosition() {
+            if (document.visibilityState === 'hidden') return;
             fetch('<?= !empty($pollPositionUrl) ? esc($pollPositionUrl) : base_url('customer/orders/track/' . ($order['order_number'] ?? $order['id']) . '/position') ?>', {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -823,7 +824,7 @@
                     }
 
                     if (data.status === 'delivered' || data.status === 'completed' || data.status === 'cancelled') {
-                        clearInterval(pollInterval);
+                        if (pollInterval) clearInterval(pollInterval);
                         setTimeout(() => location.reload(), 1500);
                     }
                 }
@@ -831,7 +832,15 @@
             .catch(err => {
                 console.debug('Position poll skipped:', err);
             });
-        }, 6000);
+        }
+
+        pollInterval = setInterval(fetchRiderPosition, 12000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                fetchRiderPosition();
+            }
+        });
     }
 
     function centerOnCourier() {

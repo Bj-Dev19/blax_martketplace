@@ -540,11 +540,18 @@
             syncLabel.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        // Start 6-second auto-refresh polling
-        setInterval(refreshFleetPins, 6000);
+        // Start 15-second auto-refresh polling (pauses when tab is hidden)
+        setInterval(refreshFleetPins, 15000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                refreshFleetPins();
+            }
+        });
     };
 
     function refreshFleetPins() {
+        if (document.visibilityState === 'hidden') return;
         fetch('<?= base_url('admin/tracking/pins') ?>', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'

@@ -507,13 +507,53 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(() => {});
     }
 
-    customerPollTimer = setInterval(pollCustomerRealtime, 6000);
+    let pollIntervalMs = 25000;
+    let lastActivityTime = Date.now();
 
-    // Instant sync when tab becomes visible again
+    ['mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+        window.addEventListener(evt, () => {
+            lastActivityTime = Date.now();
+            pollIntervalMs = 25000;
+        }, { passive: true });
+    });
+
+    function scheduleNextCustomerPoll() {
+        if (customerPollTimer) clearTimeout(customerPollTimer);
+        if (document.visibilityState === 'hidden') return;
+
+        const idleSeconds = (Date.now() - lastActivityTime) / 1000;
+        if (idleSeconds > 300) {
+            pollIntervalMs = 60000;
+        } else if (idleSeconds > 120) {
+            pollIntervalMs = 45000;
+        }
+
+        customerPollTimer = setTimeout(() => {
+            pollCustomerRealtime();
+            scheduleNextCustomerPoll();
+        }, pollIntervalMs);
+    }
+
+    // Schedule initial background poll after page is fully loaded and settled
+    customerPollTimer = setTimeout(() => {
+        pollCustomerRealtime();
+        scheduleNextCustomerPoll();
+    }, 12000);
+
+    // Instant sync when tab becomes visible again, pause completely when hidden
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
+            lastActivityTime = Date.now();
+            pollIntervalMs = 25000;
             pollCustomerRealtime();
+            scheduleNextCustomerPoll();
+        } else {
+            if (customerPollTimer) clearTimeout(customerPollTimer);
         }
+    });
+
+    window.addEventListener('pagehide', () => {
+        if (customerPollTimer) clearTimeout(customerPollTimer);
     });
     <?php endif; ?>
 })();

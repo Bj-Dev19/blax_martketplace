@@ -346,45 +346,64 @@
                 </span>
             </div>
 
-            <?php if ($session = session()->get('isLoggedIn')): ?>
-                <div class="bento-card bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
-                    <h3 class="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3">
-                        <?= $userReview ? 'Update Your Review' : 'Write a Review' ?>
-                    </h3>
+            <?php if (session()->get('isLoggedIn')): ?>
+                <?php if (!empty($userReview) || !empty($canReview)): ?>
+                    <div class="bento-card bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+                        <h3 class="font-display text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-3">
+                            <?= $userReview ? 'Update Your Review' : 'Write a Review' ?>
+                        </h3>
 
-                    <form action="<?= base_url('reviews/product/save') ?>" method="POST" class="space-y-4" id="product-review-form">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="product_id" value="<?= esc($product['id']) ?>">
-                        <input type="hidden" name="shop_id" value="<?= esc($product['shop_id'] ?? '') ?>">
+                        <form action="<?= base_url('reviews/product/save') ?>" method="POST" class="space-y-4" id="product-review-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="product_id" value="<?= esc($product['id']) ?>">
+                            <input type="hidden" name="shop_id" value="<?= esc($product['shop_id'] ?? '') ?>">
 
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Your Rating</label>
-                            <div class="star-rating flex items-center gap-1" role="radiogroup" aria-label="Select rating">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <input type="radio" name="rating" value="<?= $i ?>" id="star-<?= $i ?>" class="sr-only" <?= ($userReview && (int) $userReview['rating'] === $i) ? 'checked' : '' ?> required>
-                                    <label for="star-<?= $i ?>" class="cursor-pointer text-2xl text-slate-300 dark:text-slate-600 hover:text-terra-amber transition-colors <?= ($userReview && (int) $userReview['rating'] >= $i) ? 'text-terra-amber fill-icon' : '' ?>" data-star="<?= $i ?>">
-                                        <span class="material-symbols-outlined">star</span>
-                                    </label>
-                                <?php endfor; ?>
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Your Rating</label>
+                                <div class="star-rating flex items-center gap-1" role="radiogroup" aria-label="Select rating">
+                                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                                        <input type="radio" name="rating" value="<?= $i ?>" id="star-<?= $i ?>" class="sr-only" <?= ($userReview && (int) $userReview['rating'] === $i) ? 'checked' : '' ?> required>
+                                        <label for="star-<?= $i ?>" class="cursor-pointer text-2xl text-slate-300 dark:text-slate-600 hover:text-terra-amber transition-colors <?= ($userReview && (int) $userReview['rating'] >= $i) ? 'text-terra-amber fill-icon' : '' ?>" data-star="<?= $i ?>">
+                                            <span class="material-symbols-outlined">star</span>
+                                        </label>
+                                    <?php endfor; ?>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="review-comment">Your Review (optional)</label>
-                            <textarea name="comment" id="review-comment" rows="3" class="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-terra-green/30 focus:border-terra-green transition-all" placeholder="Share your experience with this product... (optional)" maxlength="2000"><?= esc($userReview['comment'] ?? '') ?></textarea>
-                        </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5" for="review-comment">Your Review (optional)</label>
+                                <textarea name="comment" id="review-comment" rows="3" class="w-full p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-terra-green/30 focus:border-terra-green transition-all" placeholder="Share your experience with this product... (optional)" maxlength="2000"><?= esc($userReview['comment'] ?? '') ?></textarea>
+                            </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] text-slate-400 font-mono">Max 2000 characters</span>
-                            <button type="submit" class="bg-terra-green hover:bg-terra-green-dark text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xs transition-all cursor-pointer">
-                                <?= $userReview ? 'Update Review' : 'Submit Review' ?>
-                            </button>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400 font-mono">Max 2000 characters</span>
+                                <button type="submit" class="bg-terra-green hover:bg-terra-green-dark text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xs transition-all cursor-pointer">
+                                    <?= $userReview ? 'Update Review' : 'Submit Review' ?>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                <?php elseif (!empty($hasPendingOrder)): ?>
+                    <div class="bento-card bg-amber-500/10 dark:bg-amber-500/15 p-5 sm:p-6 rounded-3xl border border-amber-500/30 flex items-start gap-3.5">
+                        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl mt-0.5 shrink-0">local_shipping</span>
+                        <div class="space-y-1">
+                            <h3 class="font-display text-sm font-bold text-amber-900 dark:text-amber-200">Order in Progress</h3>
+                            <p class="text-xs text-amber-800/90 dark:text-amber-300 leading-relaxed font-sans">
+                                You have ordered this item. You can write a review once your order has been <strong>delivered</strong>.
+                            </p>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                <?php else: ?>
+                    <div class="bento-card bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 text-left">
+                        <span class="material-symbols-outlined text-slate-400 text-xl shrink-0">verified</span>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
+                            Only verified buyers who have received this product can write a review.
+                        </p>
+                    </div>
+                <?php endif; ?>
             <?php else: ?>
                 <div class="bento-card bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
-                    <p class="text-xs text-slate-600 dark:text-slate-400">Please <a href="<?= base_url('login') ?>" class="text-terra-green font-bold hover:underline">sign in</a> to write a review.</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 font-sans">Please <a href="<?= base_url('login') ?>" class="text-terra-green font-bold hover:underline">sign in</a> to write a review.</p>
                 </div>
             <?php endif; ?>
 

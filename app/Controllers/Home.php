@@ -26,6 +26,26 @@ class Home extends BaseController
         $page     = max(1, (int) $this->request->getGet('page'));
         $perPage  = 20;
 
+        $isDefaultLanding = ($search === '' && $categoryId === null && $sort === null && $page === 1);
+        if ($isDefaultLanding) {
+            try {
+                $cachedPayload = cache('blax_home_default_payload');
+                if (is_array($cachedPayload) && !empty($cachedPayload['products'])) {
+                    return view('customer/home', array_merge($cachedPayload, [
+                        'search'         => '',
+                        'searchQuery'    => '',
+                        'categoryId'     => null,
+                        'sort'           => null,
+                        'rotationInfo'   => $rotationInfo,
+                        'semantic'       => false,
+                        'semanticNotice' => null,
+                        'shopResults'    => [],
+                        'pager'          => null,
+                    ]));
+                }
+            } catch (\Throwable $e) {}
+        }
+
         // ---- AI semantic relevance (optional, never required) ----
         // Cohere only supplies relevance-ordered product ids. All deterministic
         // marketplace rules stay in the existing product query below.
@@ -74,6 +94,21 @@ class Home extends BaseController
             $scm = new SiteContentModel();
             $siteContents = $scm->getHomeContentMap();
         } catch (\Throwable $e) { $siteContents = []; }
+
+        if ($isDefaultLanding) {
+            try {
+                cache()->save('blax_home_default_payload', [
+                    'products'      => $result['products'],
+                    'totalPages'    => $totalPages,
+                    'currentPage'   => 1,
+                    'perPage'       => $perPage,
+                    'totalProducts' => $total,
+                    'shops'         => $shops,
+                    'categories'    => $categories,
+                    'siteContents'  => $siteContents,
+                ], 60);
+            } catch (\Throwable $e) {}
+        }
 
         return view('customer/home', [
             'products'       => $result['products'],

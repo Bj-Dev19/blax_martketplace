@@ -349,7 +349,9 @@ window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
 })();
 </script>
 
-<!-- Preconnect for Google Fonts to accelerate typography paint -->
+<!-- Preconnect & DNS-Prefetch for Google Fonts to accelerate typography paint -->
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://fonts.gstatic.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <?php
@@ -403,18 +405,40 @@ window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
             z-index: 9999 !important;
             white-space: nowrap !important;
         }
-        #notif-panel,
-        #admin-notif-panel,
-        #notif-dropdown {
-            position: absolute !important;
-            top: calc(100% + 0.5rem) !important;
-            right: 0 !important;
-            left: auto !important;
-            width: 20rem !important;
-            max-width: calc(100vw - 1.5rem) !important;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
-            transform-origin: top right !important;
-            z-index: 9999 !important;
+        /* Mobile: fix notification panels within screen bounds so they never clip horizontally */
+        @media (max-width: 639.98px) {
+            #notif-panel,
+            #admin-notif-panel,
+            #notif-dropdown {
+                position: fixed !important;
+                top: 4.25rem !important;
+                left: 0.75rem !important;
+                right: 0.75rem !important;
+                width: auto !important;
+                max-width: 24rem !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2) !important;
+                transform-origin: top center !important;
+                z-index: 9999 !important;
+            }
+        }
+
+        /* Desktop / Tablet: position relative to notification bell button */
+        @media (min-width: 640px) {
+            #notif-panel,
+            #admin-notif-panel,
+            #notif-dropdown {
+                position: absolute !important;
+                top: calc(100% + 0.5rem) !important;
+                right: 0 !important;
+                left: auto !important;
+                width: 20rem !important;
+                max-width: calc(100vw - 1.5rem) !important;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+                transform-origin: top right !important;
+                z-index: 9999 !important;
+            }
         }
         #profile-dropdown a,
         #profile-dropdown button,

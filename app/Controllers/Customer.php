@@ -285,10 +285,28 @@ class Customer extends BaseController
         $reviewCount = $reviewModel->countProductReviews($id);
 
         $userReview = null;
+        $canReview = false;
+        $hasPendingOrder = false;
         $session = session();
         if ($session->get('isLoggedIn')) {
-            $userId = $session->get('user_id');
+            $userId = (int) $session->get('user_id');
             $userReview = $reviewModel->getUserReview($userId, $id);
+
+            $orderModel = new \App\Models\OrderModel();
+            $canReview = $orderModel->isVerifiedBuyer($userId, (int) $product['id'], (int) ($product['shop_id'] ?? 0));
+
+            // If user already reviewed, allow updating
+            if ($userReview) {
+                $canReview = true;
+            } elseif (!$canReview) {
+                // Check if they have an active order containing this product that is in transit / not yet delivered
+                $hasPendingOrder = (bool) $orderModel->db->table('orders o')
+                    ->join('order_items oi', 'oi.order_id = o.id', 'inner')
+                    ->where('o.customer_id', $userId)
+                    ->where('oi.product_id', (int) $product['id'])
+                    ->whereNotIn('o.status', ['delivered', 'completed', 'cancelled', 'rejected'])
+                    ->countAllResults() > 0;
+            }
         }
 
         $shopOperationalStatus = (new \App\Models\ShopCalendarScheduleModel())->getShopOperationalStatus((int) ($product['shop_id'] ?? 0));
@@ -301,6 +319,8 @@ class Customer extends BaseController
             'reviews'               => $reviews,
             'reviewCount'           => $reviewCount,
             'userReview'            => $userReview,
+            'canReview'             => $canReview,
+            'hasPendingOrder'       => $hasPendingOrder,
             'shopOperationalStatus' => $shopOperationalStatus,
         ]);
     }
@@ -1105,6 +1125,20 @@ class Customer extends BaseController
 
         $reviewModel = new ReviewModel();
         $existing = $reviewModel->where('user_id', $userId)->where('product_id', $productId)->first();
+
+        if (!$existing) {
+            $productModel = new ProductModel();
+            $product = $productModel->find($productId);
+            $shopId = (int) ($product['shop_id'] ?? 0);
+            $orderModel = new \App\Models\OrderModel();
+            if (!$orderModel->isVerifiedBuyer($userId, $productId, $shopId)) {
+                $err = 'You can only review products that have been delivered to you.';
+                if ($this->request->isAJAX() || $this->request->getHeaderLine('Accept') === 'application/json') {
+                    return $this->response->setStatusCode(403)->setJSON(['success' => false, 'error' => $err]);
+                }
+                return redirect()->back()->with('error', $err);
+            }
+        }
 
         if ($existing) {
             $reviewModel->update($existing['id'], [

@@ -238,7 +238,7 @@
                                         ?>
                                         <div class="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
                                             <!-- Thumbnail -->
-                                            <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200/70 dark:border-slate-700 flex items-center justify-center shrink-0">
+                                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200/70 dark:border-slate-700 flex items-center justify-center shrink-0 aspect-square">
                                                 <?php if (!empty($itemImg)): ?>
                                                     <img class="w-full h-full object-cover" src="<?= esc($itemImg) ?>" alt="<?= esc($pName) ?>" loading="lazy">
                                                 <?php else: ?>

@@ -97,7 +97,7 @@
                         <?php endif; ?>
                     </button>
 
-                    <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50">
+                    <div id="notif-dropdown" class="hidden fixed left-3 right-3 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 max-w-sm sm:max-w-none mx-auto sm:mx-0 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 origin-top">
                         <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                             <div class="flex items-center gap-1.5">
                                 <span class="font-bold text-xs text-slate-900 dark:text-white">Notifications</span>

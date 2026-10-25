@@ -791,62 +791,69 @@
 
             </div>
 
-            <!-- Right-Side Sticky Quick-Jump Navigation Bar (Desktop) -->
+            <!-- Right-Side Sticky Quick-Jump Navigation Bar (Laravel Documentation 'On this page' Style) -->
             <aside class="hours-side-nav-wrapper space-y-4">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-5 space-y-4">
+                <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs p-4 sm:p-5 space-y-4">
                     
                     <!-- Header -->
-                    <div class="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800/80">
-                        <span class="material-symbols-outlined text-[18px] text-terra-green">format_list_bulleted</span>
-                        <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">On This Page</span>
+                    <div class="flex items-center gap-2 pb-2 text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">
+                        <span class="material-symbols-outlined text-[16px] text-slate-400">menu</span>
+                        <span class="font-sans">On this page</span>
                     </div>
 
-                    <!-- Navigation Items List -->
-                    <nav class="space-y-1.5" aria-label="Operating Hours Page Sections">
+                    <!-- Navigation Items List (Indented Tree Structure) -->
+                    <nav class="relative border-l border-slate-200 dark:border-slate-800 space-y-2 font-sans text-xs" aria-label="On this page">
                         <!-- Option 1: Visibility Strategy -->
-                        <button type="button" onclick="scrollToHoursSection('hoursSectionVisibility')" id="navLinkVisibility" class="hours-nav-item w-full text-left px-3 py-2.5 rounded-xl border-l-2 border-terra-green bg-emerald-50/50 dark:bg-emerald-950/20 text-terra-green hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all flex items-start gap-2.5 group cursor-pointer active:scale-98">
-                            <span class="material-symbols-outlined text-[18px] text-terra-green transition-colors mt-0.5">visibility</span>
-                            <div class="min-w-0">
-                                <span class="block text-xs font-bold text-slate-900 dark:text-white group-hover:text-terra-green transition-colors leading-tight">Customer Visibility</span>
-                                <span class="block text-[10px] text-slate-400 mt-0.5 truncate">Closure mode &amp; lock</span>
-                            </div>
-                        </button>
-
-                        <!-- Option 2: Monthly Calendar -->
-                        <button type="button" onclick="scrollToHoursSection('hoursSectionCalendar')" id="navLinkCalendar" class="hours-nav-item w-full text-left px-3 py-2.5 rounded-xl border-l-2 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all flex items-start gap-2.5 group cursor-pointer active:scale-98">
-                            <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-terra-green transition-colors mt-0.5">calendar_month</span>
-                            <div class="min-w-0">
-                                <span class="block text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-terra-green transition-colors leading-tight">Closure Calendar</span>
-                                <span class="block text-[10px] text-slate-400 mt-0.5 truncate">Schedule notes &amp; holidays</span>
-                            </div>
-                        </button>
-
-                        <!-- Option 3: Weekly Recurring Hours -->
-                        <button type="button" onclick="scrollToHoursSection('hoursSectionWeekly')" id="navLinkWeekly" class="hours-nav-item w-full text-left px-3 py-2.5 rounded-xl border-l-2 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all flex items-start gap-2.5 group cursor-pointer active:scale-98">
-                            <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-terra-green transition-colors mt-0.5">schedule</span>
-                            <div class="min-w-0">
-                                <span class="block text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-terra-green transition-colors leading-tight">Weekly Hours</span>
-                                <span class="block text-[10px] text-slate-400 mt-0.5 truncate">7-day regular schedule</span>
-                            </div>
-                        </button>
-                    </nav>
-
-                    <!-- Quick Action / Status Snippet -->
-                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5">
-                        <div class="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
-                            <div class="flex items-center justify-between text-[11px] mb-1">
-                                <span class="text-slate-400 font-sans font-medium">Store Status</span>
-                                <span class="font-bold font-mono text-[10px] uppercase <?= !empty($operationalStatus['is_closed_today']) ? 'text-rose-600' : 'text-emerald-600' ?>">
-                                    <?= esc($operationalStatus['status_label'] ?? 'Open') ?>
-                                </span>
-                            </div>
-                            <div class="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                                <?= $totalWeeklyOpenHours ?> hrs active this week
-                            </div>
+                        <div class="space-y-0.5">
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionVisibility')" id="navLinkVisibility" 
+                                    class="hours-nav-item -ml-px w-full text-left pl-3.5 pr-2 py-1 border-l-2 border-terra-green text-terra-green font-semibold transition-all block group cursor-pointer">
+                                Customer Visibility
+                            </button>
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionVisibility')" 
+                                    class="w-full text-left pl-6 pr-2 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors block cursor-pointer">
+                                Closure mode &amp; lock
+                            </button>
                         </div>
 
-                        <button type="button" onclick="calOpenNewScheduleModal()" class="w-full py-2.5 px-3 rounded-xl bg-terra-green hover:bg-terra-green/90 text-white text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
-                            <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                        <!-- Option 2: Monthly Calendar -->
+                        <div class="space-y-0.5">
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionCalendar')" id="navLinkCalendar" 
+                                    class="hours-nav-item -ml-px w-full text-left pl-3.5 pr-2 py-1 border-l-2 border-transparent text-slate-600 dark:text-slate-400 font-medium transition-all hover:text-slate-900 dark:hover:text-slate-200 block group cursor-pointer">
+                                Closure Calendar
+                            </button>
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionCalendar')" 
+                                    class="w-full text-left pl-6 pr-2 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors block cursor-pointer">
+                                Schedule notes &amp; holidays
+                            </button>
+                        </div>
+
+                        <!-- Option 3: Weekly Recurring Hours -->
+                        <div class="space-y-0.5">
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionWeekly')" id="navLinkWeekly" 
+                                    class="hours-nav-item -ml-px w-full text-left pl-3.5 pr-2 py-1 border-l-2 border-transparent text-slate-600 dark:text-slate-400 font-medium transition-all hover:text-slate-900 dark:hover:text-slate-200 block group cursor-pointer">
+                                Weekly Hours
+                            </button>
+                            <button type="button" onclick="scrollToHoursSection('hoursSectionWeekly')" 
+                                    class="w-full text-left pl-6 pr-2 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors block cursor-pointer">
+                                7-day regular schedule
+                            </button>
+                        </div>
+                    </nav>
+
+                    <!-- Quick Status & Schedule Action -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                        <div class="flex items-center justify-between text-[11px] px-0.5">
+                            <span class="text-slate-500 dark:text-slate-400">Store Status</span>
+                            <span class="font-bold font-mono text-[10px] uppercase <?= !empty($operationalStatus['is_closed_today']) ? 'text-rose-600' : 'text-emerald-600' ?>">
+                                <?= esc($operationalStatus['status_label'] ?? 'Open') ?>
+                            </span>
+                        </div>
+                        <div class="text-[10px] font-mono text-slate-400 px-0.5">
+                            <?= $totalWeeklyOpenHours ?> hrs active this week
+                        </div>
+
+                        <button type="button" onclick="calOpenNewScheduleModal()" class="w-full py-2 px-3 rounded-xl bg-terra-green hover:bg-terra-green/90 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer mt-1">
+                            <span class="material-symbols-outlined text-[15px]">add_circle</span>
                             <span>Schedule Date</span>
                         </button>
                     </div>
@@ -1539,18 +1546,12 @@
         for (var sec in mapping) {
             var btn = document.getElementById(mapping[sec]);
             if (btn) {
-                var icon = btn.querySelector('.material-symbols-outlined');
-                var title = btn.querySelector('.font-bold');
                 if (sec === activeId) {
-                    btn.classList.add('border-terra-green', 'bg-emerald-50/50', 'dark:bg-emerald-950/20', 'text-terra-green');
-                    btn.classList.remove('border-transparent');
-                    if (icon) icon.className = 'material-symbols-outlined text-[18px] text-terra-green transition-colors mt-0.5';
-                    if (title) title.className = 'block text-xs font-bold text-terra-green transition-colors leading-tight';
+                    btn.classList.add('border-terra-green', 'text-terra-green', 'font-semibold');
+                    btn.classList.remove('border-transparent', 'text-slate-600', 'dark:text-slate-400', 'font-medium');
                 } else {
-                    btn.classList.remove('border-terra-green', 'bg-emerald-50/50', 'dark:bg-emerald-950/20', 'text-terra-green');
-                    btn.classList.add('border-transparent');
-                    if (icon) icon.className = 'material-symbols-outlined text-[18px] text-slate-400 group-hover:text-terra-green transition-colors mt-0.5';
-                    if (title) title.className = 'block text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-terra-green transition-colors leading-tight';
+                    btn.classList.remove('border-terra-green', 'text-terra-green', 'font-semibold');
+                    btn.classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400', 'font-medium');
                 }
             }
         }

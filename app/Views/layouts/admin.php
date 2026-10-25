@@ -325,7 +325,7 @@
                             <?php endif; ?>
                         </button>
 
-                        <div id="admin-notif-panel" class="hidden absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 z-50 overflow-hidden">
+                        <div id="admin-notif-panel" class="hidden fixed left-3 right-3 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 max-w-sm sm:max-w-none mx-auto sm:mx-0 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 z-50 overflow-hidden">
                             <div class="px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-slate-900 dark:text-white font-display">Platform Alerts</span>
@@ -721,8 +721,36 @@
             });
         });
 
-        checkAdminRealtime();
-        setInterval(checkAdminRealtime, 5000);
+        let adminPollTimer = null;
+        let adminPollInterval = 25000;
+
+        function scheduleNextAdminPoll() {
+            if (adminPollTimer) clearTimeout(adminPollTimer);
+            if (document.visibilityState === 'hidden') return;
+            adminPollTimer = setTimeout(() => {
+                checkAdminRealtime();
+                scheduleNextAdminPoll();
+            }, adminPollInterval);
+        }
+
+        // Initial check after page renders, then schedule adaptive polling
+        setTimeout(() => {
+            checkAdminRealtime();
+            scheduleNextAdminPoll();
+        }, 2000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkAdminRealtime();
+                scheduleNextAdminPoll();
+            } else {
+                if (adminPollTimer) clearTimeout(adminPollTimer);
+            }
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (adminPollTimer) clearTimeout(adminPollTimer);
+        });
 
         // Universal showToast helper for admin pages
         window.showToast = function(opts) {
