@@ -9,14 +9,14 @@
 ?>
 
 <header class="sticky top-0 z-40 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 transition-colors shadow-2xs">
-    <div class="flex justify-between items-center w-full min-h-[58px] sm:min-h-[66px] py-2 px-3 sm:px-6 md:px-8 lg:px-10 max-w-full">
+    <div class="flex justify-between items-center w-full min-h-[58px] sm:min-h-[66px] py-2 px-2.5 sm:px-6 md:px-8 lg:px-10 max-w-full">
 
         <!-- Left: Brand & Search -->
-        <div class="flex items-center gap-3 sm:gap-5 lg:gap-6 shrink-0">
+        <div class="flex items-center gap-2 sm:gap-5 lg:gap-6 shrink-0">
 
             <!-- Brand Logo -->
-            <a href="<?= base_url('/') ?>" class="flex items-center gap-2 group transition-transform">
-                <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="36" height="36" class="w-9 h-9 rounded-xl shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <a href="<?= base_url('/') ?>" class="flex items-center gap-2 group transition-transform shrink-0">
+                <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="36" height="36" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                 <div class="flex flex-col">
                     <span class="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
                         Blax<span class="text-terra-green">.</span>
@@ -60,7 +60,7 @@
         </div>
 
         <!-- Center / Right: Desktop Navigation Links & Action Controls -->
-        <div class="flex items-center gap-1.5 sm:gap-3">
+        <div class="flex items-center gap-1 sm:gap-3 shrink-0">
 
             <!-- Desktop Nav Pills -->
             <nav class="hidden lg:flex items-center gap-1.5 mr-2" role="navigation">
@@ -79,16 +79,17 @@
                 </a>
             </nav>
 
-            <div class="flex items-center gap-1 sm:gap-1.5">
+            <div class="flex items-center gap-0.5 sm:gap-1.5">
 
                 <!-- Theme Toggle Button -->
-                <button type="button" class="theme-toggle-btn p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" title="Toggle dark / light theme" aria-label="Toggle theme">
+                <button type="button" class="theme-toggle-btn p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" title="Toggle dark / light theme" aria-label="Toggle theme">
                     <span class="material-symbols-outlined theme-toggle-icon text-[20px]">dark_mode</span>
                 </button>
 
+                <?php if ($isLogged): ?>
                 <!-- Notification Bell Dropdown Toggle -->
                 <div class="relative block">
-                    <button id="notif-dropdown-toggle" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                    <button id="notif-dropdown-toggle" type="button" class="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
                         <span class="material-symbols-outlined text-[20px] sm:text-[22px]">notifications</span>
                         <?php if (!empty($unreadCount) && $unreadCount > 0): ?>
                             <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-terra-amber rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
@@ -162,9 +163,10 @@
                     });
                 })();
                 </script>
+                <?php endif; ?>
 
                 <!-- Shopping Cart Pill Trigger -->
-                <a href="<?= base_url('cart') ?>" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" title="Shopping Cart" aria-label="Shopping Cart">
+                <a href="<?= base_url('cart') ?>" class="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all relative flex items-center justify-center" title="Shopping Cart" aria-label="Shopping Cart">
                     <span class="material-symbols-outlined text-[20px] sm:text-[22px]">shopping_cart</span>
                     <span id="cart-count-badge" class="absolute top-1 right-1 bg-terra-green text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold font-mono shadow-2xs <?= ($cartCount > 0) ? '' : 'hidden' ?>"><?= $cartCount ?></span>
                 </a>
@@ -182,12 +184,12 @@
             </div>
 
             <!-- Mobile Drawer Toggle -->
-            <button id="mobile-menu-toggle" type="button" class="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors" aria-label="Open menu">
-                <span class="material-symbols-outlined text-[22px]">menu</span>
+            <button id="mobile-menu-toggle" type="button" class="lg:hidden p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center justify-center transition-colors shrink-0" aria-label="Open menu">
+                <span class="material-symbols-outlined text-[21px] sm:text-[22px]">menu</span>
             </button>
 
             <!-- Profile / Sign In Area -->
-            <div class="flex items-center pl-1 sm:pl-2 border-l border-slate-200 dark:border-slate-800 relative">
+            <div class="flex items-center pl-1 sm:pl-2 border-l border-slate-200 dark:border-slate-800 relative shrink-0">
 
                 <?php if ($isLogged): ?>
 
@@ -250,7 +252,7 @@
 
                 <?php else: ?>
 
-                    <a href="<?= base_url('login') ?>" class="bg-terra-green hover:bg-terra-green-dark text-white font-bold text-xs sm:text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all shadow-xs hover:shadow hover:-translate-y-0.5 whitespace-nowrap">
+                    <a href="<?= base_url('login') ?>" class="bg-terra-green hover:bg-terra-green-dark text-white font-bold text-[11px] sm:text-xs uppercase tracking-wider px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl transition-all shadow-xs hover:shadow hover:-translate-y-0.5 whitespace-nowrap shrink-0">
                         Sign In
                     </a>
 

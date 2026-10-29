@@ -89,7 +89,7 @@ class Tenant extends BaseController
         // read zero - which left the panel claiming "No new notifications" while the
         // bell showed unread items, and cost two extra round trips otherwise.
         $recentNotifications = [];
-        if ($realtimeBootstrap['unread_count'] > 0 && $userId > 0) {
+        if ($realtimeBootstrap['max_notif_id'] > 0 && $userId > 0) {
             try {
                 $recentNotifications = (new \App\Models\NotificationModel())->getRecent($userId, 8);
             } catch (\Throwable $e) {
@@ -215,9 +215,6 @@ class Tenant extends BaseController
             'low_stock_count'    => $lowStockCount,
             'recent_orders'      => $recentOrders,
             'recent_requests'    => $recentRequests,
-            // Header notifications (rendered by layout / realtime telemetry)
-            'notifications'      => [],
-            'unread_count'       => $kpis['unread_count'] ?? 0,
         ]);
     }
 
@@ -672,6 +669,7 @@ class Tenant extends BaseController
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
         $rawLastNotifId = $this->request->getGet('last_notif_id');
         $rawLastDeliverySig = $this->request->getGet('last_delivery_sig');
+        $needNotifs = (int) $this->request->getGet('need_notifs') === 1;
 
         // Consolidated snapshot in 1 single round-trip query
         $db = \Config\Database::connect();
@@ -702,23 +700,27 @@ class Tenant extends BaseController
             $lastNotifId = $rawLastNotifId !== null && $rawLastNotifId !== '' ? (int) $rawLastNotifId : null;
 
             if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId) && $deliveryUnchanged) {
+                $fastPayload = [
+                    'success'          => true,
+                    'changed'          => false,
+                    'max_order_id'     => $currentMaxOrderId,
+                    'max_printing_id'  => $currentMaxPrintId,
+                    'max_notif_id'     => $currentMaxNotifId,
+                    'unread_count'     => $unreadCount,
+                    'delivery_sig'     => $deliverySig,
+                    'max_delivery_id'  => $maxDeliveryId,
+                ];
+                if ($needNotifs && $userId > 0 && $currentMaxNotifId > 0) {
+                    $fastPayload['notifications'] = (new \App\Models\NotificationModel())->getRecent($userId, 8);
+                }
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
-                    ->setJSON([
-                        'success'          => true,
-                        'changed'          => false,
-                        'max_order_id'     => $currentMaxOrderId,
-                        'max_printing_id'  => $currentMaxPrintId,
-                        'max_notif_id'     => $currentMaxNotifId,
-                        'unread_count'     => $unreadCount,
-                        'delivery_sig'     => $deliverySig,
-                        'max_delivery_id'  => $maxDeliveryId,
-                    ]);
+                    ->setJSON($fastPayload);
             }
         }
 
         $notifModel = new \App\Models\NotificationModel();
-        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 6) : [];
+        $recentNotifs = $userId > 0 ? $notifModel->getRecent($userId, 8) : [];
         $orderModel = new OrderModel();
         $printingModel = new PrintingRequestModel();
 
@@ -1492,23 +1494,29 @@ class Tenant extends BaseController
 
         $isInZone = DeliveryModel::isPolomolokCoordinate($lat, $lng);
 
-        // Optimization: if coordinates moved < 5m and status is already in_transit, skip redundant remote DB write
+        // Filter out stationary sub-2m GPS jitter while still refreshing heartbeat timestamp when needed
         $currLat = (float) ($delivery['current_lat'] ?? 0);
         $currLng = (float) ($delivery['current_lng'] ?? 0);
         $movedDelta = hypot($lat - $currLat, $lng - $currLng);
-        if ($movedDelta < 0.00005 && $delivery['status'] === 'in_transit') {
+        $now = date('Y-m-d H:i:s');
+        if ($movedDelta < 0.000015 && $delivery['status'] === 'in_transit' && $currLat != 0.0 && $currLng != 0.0) {
+            $lastUpdatedTs = !empty($delivery['location_updated_at']) ? strtotime((string) $delivery['location_updated_at']) : 0;
+            $updatedAtStr = $delivery['location_updated_at'] ?? $now;
+            if ($lastUpdatedTs <= 0 || (time() - $lastUpdatedTs) >= 45) {
+                $deliveryModel->update($deliveryId, ['location_updated_at' => $now]);
+                $updatedAtStr = $now;
+            }
             return $this->response->setJSON([
                 'success'    => true,
-                'lat'        => $lat,
-                'lng'        => $lng,
+                'lat'        => $currLat,
+                'lng'        => $currLng,
                 'in_zone'    => $isInZone,
                 'status'     => 'in_transit',
-                'updated_at' => $delivery['location_updated_at'] ?? date('Y-m-d H:i:s'),
+                'updated_at' => $updatedAtStr,
                 'csrf_hash'  => csrf_hash(),
             ]);
         }
 
-        $now = date('Y-m-d H:i:s');
         $updateData = [
             'current_lat'         => $lat,
             'current_lng'         => $lng,

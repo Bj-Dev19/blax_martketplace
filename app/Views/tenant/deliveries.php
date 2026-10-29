@@ -654,55 +654,61 @@
         }
     }
 
-    function startDeliveryCamera() {
+    async function startDeliveryCamera() {
         if (typeof Html5Qrcode === 'undefined') return;
+        const statusEl = document.getElementById('scannerStatus');
 
         if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const statusEl = document.getElementById('scannerStatus');
             if (statusEl) statusEl.textContent = 'Camera requires HTTPS or localhost. Please upload a photo or enter code manually.';
             return;
         }
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            const statusEl = document.getElementById('scannerStatus');
             if (statusEl) statusEl.textContent = 'Camera is not supported on this browser context. Please upload a photo or enter code manually.';
             return;
         }
 
-        if (!deliveryHtml5QrCode) {
-            deliveryHtml5QrCode = new Html5Qrcode("qr-reader");
+        if (statusEl) statusEl.textContent = 'Starting camera...';
+
+        if (deliveryHtml5QrCode) {
+            try {
+                if (deliveryHtml5QrCode.isScanning) {
+                    await deliveryHtml5QrCode.stop();
+                }
+                deliveryHtml5QrCode.clear();
+            } catch (e) {}
+            deliveryHtml5QrCode = null;
         }
-        
+
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (currentDeliveryScanMode !== 'camera') return;
+
+        deliveryHtml5QrCode = new Html5Qrcode("qr-reader");
         const config = { fps: 12 };
-        deliveryHtml5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-                handleScannedCode(decodedText);
-            },
-            () => {}
-        ).catch(err => {
-            if (Html5Qrcode.getCameras) {
-                Html5Qrcode.getCameras().then(cameras => {
+        const onScanSuccess = (decodedText) => handleScannedCode(decodedText);
+
+        try {
+            await deliveryHtml5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+            if (statusEl) statusEl.textContent = 'Point camera directly at QR code or phone screen';
+            return;
+        } catch (firstErr) {
+            try {
+                if (Html5Qrcode.getCameras) {
+                    const cameras = await Html5Qrcode.getCameras();
                     if (cameras && cameras.length > 0) {
-                        deliveryHtml5QrCode.start(
-                            cameras[0].id,
-                            config,
-                            (decodedText) => handleScannedCode(decodedText),
-                            () => {}
-                        ).catch(() => {
-                            document.getElementById('scannerStatus').textContent = 'Camera unavailable. Please upload a photo or enter code manually.';
-                        });
-                    } else {
-                        document.getElementById('scannerStatus').textContent = 'No camera found. Please upload a photo or enter code manually.';
+                        const rearCam = cameras.find(c => /back|rear|environment/i.test(c.label || ''));
+                        const targetCamId = (rearCam || cameras[cameras.length - 1] || cameras[0]).id;
+                        await deliveryHtml5QrCode.start(targetCamId, config, onScanSuccess, () => {});
+                        if (statusEl) statusEl.textContent = 'Point camera directly at QR code or phone screen';
+                        return;
                     }
-                }).catch(() => {
-                    document.getElementById('scannerStatus').textContent = 'Camera permission denied or unavailable.';
-                });
-            } else {
-                document.getElementById('scannerStatus').textContent = 'Camera unavailable. Please upload a photo or enter code manually.';
+                }
+                await deliveryHtml5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+                if (statusEl) statusEl.textContent = 'Point camera directly at QR code or phone screen';
+            } catch (fallbackErr) {
+                if (statusEl) statusEl.textContent = 'Camera permission denied or unavailable. Please allow camera access or upload a photo.';
             }
-        });
+        }
     }
 
     function stopDeliveryCamera() {

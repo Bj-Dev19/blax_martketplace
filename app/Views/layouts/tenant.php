@@ -1024,6 +1024,10 @@
                         url += `&last_delivery_sig=${encodeURIComponent(lastDeliverySig)}`;
                     }
                     url += `&last_max_delivery_id=${encodeURIComponent(lastMaxDeliveryId || 0)}`;
+                    const notifContainer = document.getElementById('notif-items-container');
+                    if (notifContainer && !notifContainer.querySelector('a')) {
+                        url += '&need_notifs=1';
+                    }
                 }
 
                 const res = await fetch(url, {
@@ -1069,7 +1073,7 @@
 
                 if (data.changed === false) {
                     if (typeof data.unread_count !== 'undefined') {
-                        updateNotificationsUI(data.unread_count);
+                        updateNotificationsUI(data.unread_count, data.notifications);
                     }
                     return;
                 }

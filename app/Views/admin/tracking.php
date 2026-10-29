@@ -332,12 +332,35 @@
         return div;
     }
 
-    function animateMarkerTo(entry, targetLat, targetLng) {
-        const startLat = parseFloat(entry.pinData.current_lat);
-        const startLng = parseFloat(entry.pinData.current_lng);
-        const hasMoved = (Math.abs(startLat - targetLat) > 0.00001 || Math.abs(startLng - targetLng) > 0.00001);
+    function distanceMeters(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const p1 = lat1 * Math.PI / 180;
+        const p2 = lat2 * Math.PI / 180;
+        const dp = (lat2 - lat1) * Math.PI / 180;
+        const dl = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dp / 2) * Math.sin(dp / 2) +
+                  Math.cos(p1) * Math.cos(p2) *
+                  Math.sin(dl / 2) * Math.sin(dl / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
 
-        if (hasMoved && entry.markerElement) {
+    function animateMarkerTo(entry, targetLat, targetLng) {
+        if (entry.animFrameId) {
+            cancelAnimationFrame(entry.animFrameId);
+            entry.animFrameId = null;
+        }
+
+        const startLat = typeof entry.renderedLat === 'number' ? entry.renderedLat : parseFloat(entry.pinData.current_lat);
+        const startLng = typeof entry.renderedLng === 'number' ? entry.renderedLng : parseFloat(entry.pinData.current_lng);
+        const distMeters = distanceMeters(startLat, startLng, targetLat, targetLng);
+        const hasMoved = distMeters >= 2.0;
+
+        if (!hasMoved) {
+            return;
+        }
+
+        if (entry.markerElement) {
             const bearing = calculateBearing(startLat, startLng, targetLat, targetLng);
             const iconDiv = entry.markerElement.querySelector('.motorcycle-icon-inner');
             if (iconDiv) {
@@ -345,26 +368,19 @@
             }
         }
 
-        if (!hasMoved) {
-            if (entry.marker.position && typeof entry.marker.position.lat === 'function') {
-                entry.marker.setPosition(new google.maps.LatLng(targetLat, targetLng));
-            } else {
-                entry.marker.position = { lat: targetLat, lng: targetLng };
-            }
-            return;
-        }
-
-        const duration = 1200; // ms
+        const duration = 1000; // ms
         const startTime = performance.now();
 
         function step(currentTime) {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            // Ease out quad
+            // Smooth ease-out interpolation
             const ease = 1 - (1 - progress) * (1 - progress);
 
             const curLat = startLat + (targetLat - startLat) * ease;
             const curLng = startLng + (targetLng - startLng) * ease;
+            entry.renderedLat = curLat;
+            entry.renderedLng = curLng;
             const curPos = { lat: curLat, lng: curLng };
 
             if (entry.marker.position && typeof entry.marker.position.lat === 'function') {
@@ -374,11 +390,15 @@
             }
 
             if (progress < 1) {
-                requestAnimationFrame(step);
+                entry.animFrameId = requestAnimationFrame(step);
+            } else {
+                entry.animFrameId = null;
+                entry.renderedLat = targetLat;
+                entry.renderedLng = targetLng;
             }
         }
 
-        requestAnimationFrame(step);
+        entry.animFrameId = requestAnimationFrame(step);
     }
 
     function createInfoWindowContent(p) {
@@ -462,13 +482,25 @@
                     infoWindow.open(mapInstance, marker);
                 });
 
-                activeMarkers.set(pinId, { marker, markerElement: pinElem, infoWindow, pinData: p });
+                activeMarkers.set(pinId, {
+                    marker,
+                    markerElement: pinElem,
+                    infoWindow,
+                    pinData: p,
+                    renderedLat: lat,
+                    renderedLng: lng,
+                    animFrameId: null
+                });
             }
         });
 
         // Remove markers that are no longer active
         for (const [id, entry] of activeMarkers.entries()) {
             if (!currentIds.has(id)) {
+                if (entry.animFrameId) {
+                    cancelAnimationFrame(entry.animFrameId);
+                    entry.animFrameId = null;
+                }
                 if (entry.marker) {
                     if (typeof entry.marker.setMap === 'function') {
                         entry.marker.setMap(null);
@@ -540,7 +572,7 @@
             syncLabel.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        // Start 15-second auto-refresh polling with self-scheduling timer (pauses when tab is hidden)
+        // Start 2.5-second real-time auto-refresh polling with self-scheduling timer (pauses when tab is hidden)
         let fleetPollTimer = null;
 
         function scheduleNextFleetPoll() {
@@ -550,7 +582,7 @@
                 refreshFleetPins().finally(() => {
                     scheduleNextFleetPoll();
                 });
-            }, 15000);
+            }, 2500);
         }
 
         scheduleNextFleetPoll();
@@ -570,12 +602,16 @@
         });
     };
 
+    let isRefreshingFleet = false;
+
     function refreshFleetPins() {
-        if (document.visibilityState === 'hidden') return Promise.resolve();
+        if (document.visibilityState === 'hidden' || isRefreshingFleet) return Promise.resolve();
+        isRefreshingFleet = true;
         return fetch('<?= base_url('admin/tracking/pins') ?>', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
-            }
+            },
+            cache: 'no-store'
         })
         .then(res => res.json())
         .then(data => {
@@ -609,6 +645,9 @@
         })
         .catch(err => {
             console.debug('Fleet auto-refresh skipped:', err);
+        })
+        .finally(() => {
+            isRefreshingFleet = false;
         });
     }
     window.refreshFleetPins = refreshFleetPins;

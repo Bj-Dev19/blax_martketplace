@@ -1076,6 +1076,17 @@
     }
 
     let hasAcquiredFirstFix = false;
+    let trailingSendTimer = null;
+    let queuedLocationPayload = null;
+    let lastKnownBearing = 0;
+
+    function scheduleTrailingLocationSend(lat, lng, accuracy, delayMs) {
+        if (trailingSendTimer) clearTimeout(trailingSendTimer);
+        trailingSendTimer = setTimeout(() => {
+            trailingSendTimer = null;
+            sendLocationUpdate(lat, lng, accuracy);
+        }, Math.max(200, delayMs));
+    }
 
     function processGpsPosition(pos) {
         if (!pos || !pos.coords) return;
@@ -1084,40 +1095,38 @@
         const accuracy = Math.round(pos.coords.accuracy || 10);
         const now = Date.now();
 
-        let bearing = 0;
-        let speedMps = (typeof pos.coords.speed === 'number' && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) ? pos.coords.speed : 0;
+        // Ignore coarse cell/IP fallback samples once we already have a real fix
+        if (hasAcquiredFirstFix && lastSentCoords && accuracy > 120) {
+            return;
+        }
 
-        if (lastSentCoords) {
-            bearing = calculateBearing(lastSentCoords.lat, lastSentCoords.lng, lat, lng);
-            const iconRotate = document.getElementById('tenantRiderIconRotate');
-            if (iconRotate && Math.hypot(lat - lastSentCoords.lat, lng - lastSentCoords.lng) > 0.00002) {
-                iconRotate.style.transform = `rotate(${Math.round(bearing)}deg)`;
-            }
+        let rawSpeed = (typeof pos.coords.speed === 'number' && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) ? pos.coords.speed : null;
+        const distMoved = lastSentCoords ? distanceMeters(lat, lng, lastSentCoords.lat, lastSentCoords.lng) : 999;
+        const minMoveMeters = Math.max(2.5, Math.min(accuracy * 0.25, 6.0));
 
-            if (!pos.coords.speed && lastPositionTimestamp > 0) {
-                const dist = distanceMeters(lastSentCoords.lat, lastSentCoords.lng, lat, lng);
-                const timeSec = (now - lastPositionTimestamp) / 1000;
-                if (timeSec > 0 && dist > 1) {
-                    speedMps = dist / timeSec;
-                }
+        let speedMps = rawSpeed !== null ? rawSpeed : 0;
+        if (rawSpeed === null && lastSentCoords && lastPositionTimestamp > 0) {
+            const timeSec = (now - lastPositionTimestamp) / 1000;
+            if (timeSec > 0 && distMoved >= minMoveMeters) {
+                speedMps = distMoved / timeSec;
             }
         }
 
-        lastPositionTimestamp = now;
-        currentRiderLatLng = { lat, lng };
-
-        updateTelemetryHUD(lat, lng, accuracy, speedMps, bearing);
-
-        if (riderMarker) {
-            if (typeof riderMarker.setPosition === 'function') {
-                riderMarker.setPosition(new google.maps.LatLng(lat, lng));
-            } else {
-                riderMarker.position = { lat: lat, lng: lng };
-            }
-        }
+        const isDriverMoving = !hasAcquiredFirstFix || distMoved >= minMoveMeters || (rawSpeed !== null && rawSpeed >= 0.6 && distMoved >= 1.8);
 
         if (!hasAcquiredFirstFix) {
             hasAcquiredFirstFix = true;
+            lastPositionTimestamp = now;
+            currentRiderLatLng = { lat, lng };
+            updateTelemetryHUD(lat, lng, accuracy, speedMps, lastKnownBearing);
+
+            if (riderMarker) {
+                if (typeof riderMarker.setPosition === 'function') {
+                    riderMarker.setPosition(new google.maps.LatLng(lat, lng));
+                } else {
+                    riderMarker.position = { lat: lat, lng: lng };
+                }
+            }
             if (mapInstance) {
                 mapInstance.panTo(currentRiderLatLng);
                 mapInstance.setZoom(16);
@@ -1127,24 +1136,58 @@
             return;
         }
 
+        if (!isDriverMoving) {
+            // Driver is stationary: lock position to lastSentCoords so GPS jitter never moves the icon
+            const lockedLat = lastSentCoords ? lastSentCoords.lat : lat;
+            const lockedLng = lastSentCoords ? lastSentCoords.lng : lng;
+            updateTelemetryHUD(lockedLat, lockedLng, accuracy, 0, lastKnownBearing);
+
+            // Send stationary keep-alive every 60s with locked coordinates so active status does not expire
+            if (lastSentCoords && (now - lastSentTime >= 60000)) {
+                sendLocationUpdate(lockedLat, lockedLng, accuracy);
+            }
+            return;
+        }
+
+        // Driver is actively moving
+        if (lastSentCoords) {
+            lastKnownBearing = calculateBearing(lastSentCoords.lat, lastSentCoords.lng, lat, lng);
+            const iconRotate = document.getElementById('tenantRiderIconRotate');
+            if (iconRotate) {
+                iconRotate.style.transform = `rotate(${Math.round(lastKnownBearing)}deg)`;
+            }
+        }
+
+        lastPositionTimestamp = now;
+        currentRiderLatLng = { lat, lng };
+
+        updateTelemetryHUD(lat, lng, accuracy, speedMps, lastKnownBearing);
+
+        if (riderMarker) {
+            if (typeof riderMarker.setPosition === 'function') {
+                riderMarker.setPosition(new google.maps.LatLng(lat, lng));
+            } else {
+                riderMarker.position = { lat: lat, lng: lng };
+            }
+        }
+
         if (isTenantAutoFollow && mapInstance) {
             mapInstance.panTo(currentRiderLatLng);
         }
 
-        let shouldSend = false;
-        const distMoved = lastSentCoords ? distanceMeters(lat, lng, lastSentCoords.lat, lastSentCoords.lng) : 999;
-        if (now - lastSentTime >= 15000) {
-            shouldSend = true;
-        } else if (distMoved >= 10 && (now - lastSentTime >= 4000)) {
-            shouldSend = true;
+        const elapsedSinceLastSend = now - lastSentTime;
+        if (elapsedSinceLastSend >= 1500) {
+            if (trailingSendTimer) {
+                clearTimeout(trailingSendTimer);
+                trailingSendTimer = null;
+            }
+            sendLocationUpdate(lat, lng, accuracy);
+        } else {
+            scheduleTrailingLocationSend(lat, lng, accuracy, 1500 - elapsedSinceLastSend);
         }
 
-        if (shouldSend) {
-            sendLocationUpdate(lat, lng, accuracy);
-
-            if (!lastTenantRouteOrigin || Math.hypot(lat - lastTenantRouteOrigin.lat, lng - lastTenantRouteOrigin.lng) > 0.00035) {
-                fetchDeliveryRoute({ lat, lng }, destLatLng);
-            }
+        if (!lastTenantRouteOrigin || Math.hypot(lat - lastTenantRouteOrigin.lat, lng - lastTenantRouteOrigin.lng) > 0.00035) {
+            fetchDeliveryRoute({ lat, lng }, destLatLng);
         }
     }
 
@@ -1208,8 +1251,8 @@
             },
             {
                 enableHighAccuracy: true,
-                maximumAge: 3000,
-                timeout: 12000
+                maximumAge: 0,
+                timeout: 10000
             }
         );
     }
@@ -1222,10 +1265,14 @@
     let isSendingLocation = false;
 
     function sendLocationUpdate(lat, lng, accuracy) {
-        if (isSendingLocation) return;
-        isSendingLocation = true;
-        lastSentTime = Date.now();
         lastSentCoords = { lat, lng };
+        if (isSendingLocation) {
+            queuedLocationPayload = { lat, lng, accuracy };
+            return;
+        }
+        isSendingLocation = true;
+        queuedLocationPayload = null;
+        lastSentTime = Date.now();
 
         const formData = new FormData();
         formData.append('delivery_id', DELIVERY_ID);
@@ -1275,6 +1322,11 @@
         })
         .finally(() => {
             isSendingLocation = false;
+            if (queuedLocationPayload && !isExitBroadcastStopped) {
+                const next = queuedLocationPayload;
+                queuedLocationPayload = null;
+                sendLocationUpdate(next.lat, next.lng, next.accuracy);
+            }
         });
     }
 
@@ -1283,6 +1335,11 @@
     function stopBroadcastingOnExit() {
         if (isExitBroadcastStopped || !DELIVERY_ID) return;
         isExitBroadcastStopped = true;
+        queuedLocationPayload = null;
+        if (trailingSendTimer) {
+            clearTimeout(trailingSendTimer);
+            trailingSendTimer = null;
+        }
 
         if (watchId !== null) {
             try { navigator.geolocation.clearWatch(watchId); } catch(e) {}
@@ -1388,57 +1445,61 @@
         }
     }
 
-    function startDeliveryCamera() {
+    async function startDeliveryCamera() {
         if (typeof Html5Qrcode === 'undefined') return;
+        const statusEl = document.getElementById('scannerStatus');
 
         if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const statusEl = document.getElementById('scannerStatus');
             if (statusEl) statusEl.textContent = 'Camera requires HTTPS or localhost. Please upload a photo or enter code manually.';
             return;
         }
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            const statusEl = document.getElementById('scannerStatus');
             if (statusEl) statusEl.textContent = 'Camera is not supported on this browser context. Please upload a photo or enter code manually.';
             return;
         }
 
-        if (!deliveryDetailQrCode) {
-            deliveryDetailQrCode = new Html5Qrcode("delivery-detail-qr-reader");
+        if (statusEl) statusEl.textContent = 'Starting camera...';
+
+        if (deliveryDetailQrCode) {
+            try {
+                if (deliveryDetailQrCode.isScanning) {
+                    await deliveryDetailQrCode.stop();
+                }
+                deliveryDetailQrCode.clear();
+            } catch (e) {}
+            deliveryDetailQrCode = null;
         }
 
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (currentDeliveryScanMode !== 'camera') return;
+
+        deliveryDetailQrCode = new Html5Qrcode("delivery-detail-qr-reader");
         const config = { fps: 12 };
-        deliveryDetailQrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => handleScannedCode(decodedText),
-            () => {}
-        ).catch(err => {
-            if (Html5Qrcode.getCameras) {
-                Html5Qrcode.getCameras().then(cameras => {
+        const onScanSuccess = (decodedText) => handleScannedCode(decodedText);
+
+        try {
+            await deliveryDetailQrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+            if (statusEl) statusEl.textContent = "Point camera directly at customer's pickup pass, doorstep QR, or printed receipt";
+            return;
+        } catch (firstErr) {
+            try {
+                if (Html5Qrcode.getCameras) {
+                    const cameras = await Html5Qrcode.getCameras();
                     if (cameras && cameras.length > 0) {
-                        deliveryDetailQrCode.start(
-                            cameras[0].id,
-                            config,
-                            (decodedText) => handleScannedCode(decodedText),
-                            () => {}
-                        ).catch(() => {
-                            const statusEl = document.getElementById('scannerStatus');
-                            if (statusEl) statusEl.textContent = 'Camera unavailable. Please upload a photo or enter code manually.';
-                        });
-                    } else {
-                        const statusEl = document.getElementById('scannerStatus');
-                        if (statusEl) statusEl.textContent = 'No camera found. Please upload a photo or enter code manually.';
+                        const rearCam = cameras.find(c => /back|rear|environment/i.test(c.label || ''));
+                        const targetCamId = (rearCam || cameras[cameras.length - 1] || cameras[0]).id;
+                        await deliveryDetailQrCode.start(targetCamId, config, onScanSuccess, () => {});
+                        if (statusEl) statusEl.textContent = "Point camera directly at customer's pickup pass, doorstep QR, or printed receipt";
+                        return;
                     }
-                }).catch(() => {
-                    const statusEl = document.getElementById('scannerStatus');
-                    if (statusEl) statusEl.textContent = 'Camera permission denied or unavailable.';
-                });
-            } else {
-                const statusEl = document.getElementById('scannerStatus');
-                if (statusEl) statusEl.textContent = 'Camera unavailable. Please upload a photo or enter code manually.';
+                }
+                await deliveryDetailQrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+                if (statusEl) statusEl.textContent = "Point camera directly at customer's pickup pass, doorstep QR, or printed receipt";
+            } catch (fallbackErr) {
+                if (statusEl) statusEl.textContent = 'Camera permission denied or unavailable. Please allow camera access or upload a photo.';
             }
-        });
+        }
     }
 
     function stopDeliveryCamera() {

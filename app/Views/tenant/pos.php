@@ -2141,11 +2141,8 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
         }
     };
 
-    function startPosCamera() {
+    async function startPosCamera() {
         if (!window.Html5Qrcode) return;
-        if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("posQrReader");
-        }
 
         const placeholder = document.getElementById('posQrCameraPlaceholder');
         if (placeholder) {
@@ -2157,23 +2154,19 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
             `;
         }
 
-        const showCameraError = () => {
+        const showCameraError = (customSub) => {
             if (placeholder) {
                 placeholder.classList.remove('hidden');
                 placeholder.innerHTML = `
                     <span class="material-symbols-outlined text-3xl mb-1 text-amber-400">videocam_off</span>
                     <span class="text-xs font-semibold">Camera unavailable or blocked</span>
-                    <span class="text-[10px] opacity-70 mt-1">Upload a photo or enter code manually below</span>
+                    <span class="text-[10px] opacity-70 mt-1">${customSub || 'Allow camera access in browser settings, or upload a photo below'}</span>
                 `;
             }
         };
 
         if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            showCameraError();
-            if (placeholder) {
-                const sub = placeholder.querySelector('span:last-child');
-                if (sub) sub.textContent = 'Camera requires HTTPS or localhost. Upload photo or enter code manually.';
-            }
+            showCameraError('Camera requires HTTPS or localhost. Upload photo or enter code manually.');
             return;
         }
 
@@ -2182,40 +2175,48 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
             return;
         }
 
+        if (html5QrCode) {
+            try {
+                if (html5QrCode.isScanning) {
+                    await html5QrCode.stop();
+                }
+                html5QrCode.clear();
+            } catch (e) {}
+            html5QrCode = null;
+        }
+
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        if (currentPosScanMode !== 'camera') return;
+
+        html5QrCode = new Html5Qrcode("posQrReader");
         const config = { fps: 12 };
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-                stopQrScanner();
-                sendVerifyQrRequest(decodedText);
-            },
-            () => {}
-        ).then(() => {
+        const onScanSuccess = (decodedText) => {
+            stopQrScanner();
+            sendVerifyQrRequest(decodedText);
+        };
+
+        try {
+            await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
             if (placeholder) placeholder.classList.add('hidden');
-        }).catch(() => {
-            if (Html5Qrcode.getCameras) {
-                Html5Qrcode.getCameras().then(cameras => {
-                    if (cameras && cameras.length) {
-                        html5QrCode.start(
-                            { deviceId: { exact: cameras[0].id } },
-                            config,
-                            (decodedText) => {
-                                stopQrScanner();
-                                sendVerifyQrRequest(decodedText);
-                            },
-                            () => {}
-                        ).then(() => {
-                            if (placeholder) placeholder.classList.add('hidden');
-                        }).catch(() => showCameraError());
-                    } else {
-                        showCameraError();
+            return;
+        } catch (firstErr) {
+            try {
+                if (Html5Qrcode.getCameras) {
+                    const cameras = await Html5Qrcode.getCameras();
+                    if (cameras && cameras.length > 0) {
+                        const rearCam = cameras.find(c => /back|rear|environment/i.test(c.label || ''));
+                        const targetCamId = (rearCam || cameras[cameras.length - 1] || cameras[0]).id;
+                        await html5QrCode.start(targetCamId, config, onScanSuccess, () => {});
+                        if (placeholder) placeholder.classList.add('hidden');
+                        return;
                     }
-                }).catch(() => showCameraError());
-            } else {
+                }
+                await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+                if (placeholder) placeholder.classList.add('hidden');
+            } catch (fallbackErr) {
                 showCameraError();
             }
-        });
+        }
     }
 
     window.openQrScannerModal = function() {
