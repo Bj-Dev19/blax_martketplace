@@ -18,14 +18,17 @@ class PaymongoService
 
         $this->publicKey = $publicKey
             ?? (string) (getenv('PAYMONGO_PUBLIC_KEY') ?: ($_ENV['PAYMONGO_PUBLIC_KEY'] ?? ''));
-
-        $this->assertConfiguredSecret();
     }
 
     /**
      * Fail fast in production when the secret key is absent or obviously wrong.
      * A silently-unconfigured key turns every payment/transfer call into a
-     * confusing upstream 401, so surface the misconfiguration at construction.
+     * confusing upstream 401, so surface the misconfiguration before the call.
+     *
+     * Deliberately NOT called from the constructor: a controller that merely
+     * builds this service (to read a wallet balance, or because a page lists
+     * payment state) must not 500 the whole page just because payments are not
+     * configured. The guard belongs at the first outbound request().
      *
      * @throws \RuntimeException
      */
@@ -356,6 +359,8 @@ class PaymongoService
      */
     private function request(string $method, string $endpoint, ?array $body = null, array $extraHeaders = []): array
     {
+        $this->assertConfiguredSecret();
+
         if (str_starts_with($endpoint, 'https://')) {
             $url = $endpoint;
         } elseif (str_starts_with($endpoint, '/v2/')) {

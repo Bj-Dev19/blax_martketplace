@@ -92,6 +92,7 @@ Under your Web Service -> **Environment**, configure the following variables (re
 | `PAYMONGO_PUBLIC_KEY` | `pk_live_...` or `pk_test_...` | PayMongo Developers tab |
 | `PAYMONGO_SECRET_KEY` | `sk_live_...` or `sk_test_...` | PayMongo Developers tab |
 | `PAYMONGO_WEBHOOK_SECRET`| `whsec_...` | PayMongo Webhook setup |
+| `REQUIRE_PAYMONGO_WEBHOOK` | `false` | Boot policy. `false` (default) logs a warning and serves when the webhook secret is missing or a placeholder; webhooks then fail closed with HTTP 400 and paid orders stay unconfirmed until you set the real secret. `true` makes the container refuse to boot instead - only for a deploy where accepting payments is mandatory |
 | `BREVO_API_KEY` | `xkeysib-...` | Brevo SMTP & API page |
 | `BREVO_SENDER_EMAIL` | `noreply@yourdomain.com` | Brevo Verified Sender |
 | `BREVO_SENDER_NAME` | `Blax General Merchandise` | Sender Name |

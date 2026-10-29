@@ -68,6 +68,13 @@ services:
         sync: false
       - key: PAYMONGO_WEBHOOK_SECRET
         sync: false
+      # Boot policy for a missing/placeholder PAYMONGO_WEBHOOK_SECRET.
+      # "false" (default) warns and serves with webhooks failing closed, so a
+      # config gap cannot take the whole marketplace down. Set "true" only on a
+      # deploy where accepting payments is mandatory and you want the boot to
+      # fail instead.
+      - key: REQUIRE_PAYMONGO_WEBHOOK
+        value: "false"
       - key: GOOGLE_MAPS_API_KEY
         sync: false
       - key: TEXTBEE_API_KEY

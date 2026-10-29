@@ -173,19 +173,42 @@ if [ "${CACHE_HANDLER:-}" = "database" ]; then
     fi
 fi
 
-# Fail fast in production if the payment webhook secret is unset or still the
-# documented placeholder: with either value every PayMongo webhook fails HMAC
-# verification and paid orders silently never confirm. Reference the variable
-# only for emptiness/comparison so its value is never echoed into logs.
+# Payment webhook secret: warn loudly, do NOT stop the container.
+#
+# A missing/placeholder secret only disables one endpoint - PayMongo's webhook
+# can no longer be verified, so paid orders are not auto-confirmed. The app
+# already fails safely there (app/Controllers/Cart.php::paymongoWebhook logs and
+# refuses the event), and every other route is unaffected. Exiting here turned
+# that single degraded feature into a site-wide outage: Render restart-looped
+# the container, so customers, tenants and admins all got 502s instead of a
+# marketplace with manual payment confirmation.
+#
+# Reference the variable only for emptiness/pattern comparison so its value is
+# never echoed into the logs. Operators who require live card capture can opt
+# back into the hard failure with REQUIRE_PAYMONGO_WEBHOOK=1.
 if [ "${CI_ENVIRONMENT}" = "production" ]; then
+    PAYMONGO_SECRET_STATE="present"
+    # Mirrors Cart::isPlaceholderWebhookSecret() plus the exact template shipped
+    # in .env.render.example. The whsec_ prefix forms can never be a real key -
+    # PayMongo signs with whsec_ followed by random characters - so matching
+    # them here cannot hide a correctly configured deployment.
     case "${PAYMONGO_WEBHOOK_SECRET:-}" in
-        ""|"whsec_placeholder_secret")
-            echo "ERROR: PAYMONGO_WEBHOOK_SECRET is unset or still the placeholder value. Refusing to boot." >&2
-            echo "Set the real whsec_... signing secret from the PayMongo dashboard in your host environment." >&2
-            exit 1
+        ""|whsec_placeholder*|whsec_your*|whsec_changeme*|placeholder_*|your_*|changeme*)
+            PAYMONGO_SECRET_STATE="missing_or_placeholder"
             ;;
     esac
-    echo "PAYMONGO_WEBHOOK_SECRET present."
+
+    if [ "${PAYMONGO_SECRET_STATE}" = "missing_or_placeholder" ]; then
+        if [ "${REQUIRE_PAYMONGO_WEBHOOK:-0}" = "1" ]; then
+            echo "ERROR: PAYMONGO_WEBHOOK_SECRET is unset or still a placeholder and REQUIRE_PAYMONGO_WEBHOOK=1. Refusing to boot." >&2
+            exit 1
+        fi
+        echo "WARNING: PAYMONGO_WEBHOOK_SECRET is unset or still a placeholder value." >&2
+        echo "WARNING: The site will serve, but PayMongo webhooks cannot be verified - paid orders stay unconfirmed until a real whsec_... signing secret from the PayMongo dashboard is set in the host environment." >&2
+        echo "WARNING: Set REQUIRE_PAYMONGO_WEBHOOK=1 if this deployment must fail instead of booting without webhook verification." >&2
+    else
+        echo "PAYMONGO_WEBHOOK_SECRET present."
+    fi
 fi
 
 # Start PHP-FPM in the background
