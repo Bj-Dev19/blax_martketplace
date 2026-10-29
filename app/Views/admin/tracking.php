@@ -354,7 +354,7 @@
         const startLat = typeof entry.renderedLat === 'number' ? entry.renderedLat : parseFloat(entry.pinData.current_lat);
         const startLng = typeof entry.renderedLng === 'number' ? entry.renderedLng : parseFloat(entry.pinData.current_lng);
         const distMeters = distanceMeters(startLat, startLng, targetLat, targetLng);
-        const hasMoved = distMeters >= 2.0;
+        const hasMoved = distMeters >= 0.8;
 
         if (!hasMoved) {
             return;
@@ -381,12 +381,11 @@
             const curLng = startLng + (targetLng - startLng) * ease;
             entry.renderedLat = curLat;
             entry.renderedLng = curLng;
-            const curPos = { lat: curLat, lng: curLng };
 
-            if (entry.marker.position && typeof entry.marker.position.lat === 'function') {
+            if (typeof entry.marker.setPosition === 'function') {
                 entry.marker.setPosition(new google.maps.LatLng(curLat, curLng));
             } else {
-                entry.marker.position = curPos;
+                entry.marker.position = { lat: curLat, lng: curLng };
             }
 
             if (progress < 1) {
@@ -395,6 +394,11 @@
                 entry.animFrameId = null;
                 entry.renderedLat = targetLat;
                 entry.renderedLng = targetLng;
+                if (typeof entry.marker.setPosition === 'function') {
+                    entry.marker.setPosition(new google.maps.LatLng(targetLat, targetLng));
+                } else {
+                    entry.marker.position = { lat: targetLat, lng: targetLng };
+                }
             }
         }
 

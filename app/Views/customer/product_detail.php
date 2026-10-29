@@ -259,8 +259,16 @@
                     <!-- Integrated Compact Merchant Storefront Card -->
                     <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-terra-green shrink-0 shadow-2xs">
-                                <span class="material-symbols-outlined text-[20px]">storefront</span>
+                            <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-terra-green shrink-0 shadow-2xs overflow-hidden">
+                                <?php 
+                                    $sLogoRaw = $product['shop_logo'] ?? $product['logo_url'] ?? '';
+                                    $sLogoUrl = !empty($sLogoRaw) ? logo_url($sLogoRaw) : '';
+                                ?>
+                                <?php if (!empty($sLogoUrl)): ?>
+                                    <img src="<?= esc($sLogoUrl) ?>" alt="<?= esc($product['shop_name'] ?? 'Merchant') ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
+                                <?php else: ?>
+                                    <span class="material-symbols-outlined text-[20px]">storefront</span>
+                                <?php endif; ?>
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-1">

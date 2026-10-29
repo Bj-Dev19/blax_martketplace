@@ -89,10 +89,11 @@ class DeliveryModel extends Model
                 'completed'          => 'delivered',
                 'cancelled'          => 'cancelled',
             ],
-            $this->db->table('printing_requests')
-                ->select('id, request_number AS ref_number, status, created_at')
-                ->where('shop_id', $shopId)
-                ->where('fulfillment_method', 'delivery')
+            $this->db->table('printing_requests pr')
+                ->select('pr.id, pr.request_number AS ref_number, pr.status, pr.created_at, pr.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
+                ->join('shipping_addresses sa', 'sa.id = pr.shipping_address_id', 'left')
+                ->where('pr.shop_id', $shopId)
+                ->where('pr.fulfillment_method', 'delivery')
                 ->get()->getResultArray()
         );
 
@@ -109,10 +110,11 @@ class DeliveryModel extends Model
             ],
             // orders has no created_at column (it stores placed_at); leaving it out of
             // the select keeps the original "stamp it with now" fallback intact.
-            $this->db->table('orders')
-                ->select('id, order_number AS ref_number, status')
-                ->where('shop_id', $shopId)
-                ->where('fulfillment_method', 'delivery')
+            $this->db->table('orders o')
+                ->select('o.id, o.order_number AS ref_number, o.status, o.customer_id, o.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
+                ->join('shipping_addresses sa', 'sa.id = o.shipping_address_id', 'left')
+                ->where('o.shop_id', $shopId)
+                ->where('o.fulfillment_method', 'delivery')
                 ->get()->getResultArray()
         );
     }
@@ -151,7 +153,7 @@ class DeliveryModel extends Model
         // so a row created for another shop's ORD-nnnn must still be found here or the
         // insert below would collide with the unique index.
         $existing = $this->db->table('deliveries')
-            ->select('id, deliverable_id, tracking_id, status')
+            ->select('id, deliverable_id, tracking_id, status, destination_address, destination_latitude, destination_longitude')
             ->where('deliverable_type', $type)
             ->groupStart()
                 ->whereIn('deliverable_id', $ids)
@@ -173,22 +175,55 @@ class DeliveryModel extends Model
             $delStatus = $statusMap[(string) $row['status']] ?? 'shipped';
             $current   = $byDeliverable[$id] ?? $byTracking[$trackingId] ?? null;
 
+            $destAddress = $defaultDestination;
+            $destLat = null;
+            $destLng = null;
+
+            if (!empty($row['address_line1'])) {
+                $addrParts = array_filter([
+                    $row['address_line1'] ?? '',
+                    $row['address_line2'] ?? '',
+                    $row['city'] ?? 'Polomolok',
+                    $row['province'] ?? 'South Cotabato',
+                ]);
+                if (!empty($addrParts)) {
+                    $destAddress = implode(', ', $addrParts);
+                }
+            }
+            if (!empty($row['latitude']) && !empty($row['longitude']) && self::isPolomolokCoordinate((float) $row['latitude'], (float) $row['longitude'])) {
+                $destLat = (float) $row['latitude'];
+                $destLng = (float) $row['longitude'];
+            }
+
             if ($current !== null) {
+                $updateFields = [];
                 if ((string) $current['status'] !== $delStatus) {
-                    $this->update((int) $current['id'], ['status' => $delStatus]);
+                    $updateFields['status'] = $delStatus;
+                }
+                if ($destAddress !== $defaultDestination && (empty($current['destination_address']) || $current['destination_address'] === $defaultDestination)) {
+                    $updateFields['destination_address'] = $destAddress;
+                }
+                if ($destLat !== null && (empty($current['destination_latitude']) || !self::isPolomolokCoordinate((float) $current['destination_latitude'], (float) $current['destination_longitude']))) {
+                    $updateFields['destination_latitude']  = $destLat;
+                    $updateFields['destination_longitude'] = $destLng;
+                }
+                if (!empty($updateFields)) {
+                    $this->update((int) $current['id'], $updateFields);
                 }
 
                 continue;
             }
 
             $this->insert([
-                'deliverable_type'    => $type,
-                'deliverable_id'      => $id,
-                'tracking_id'         => $trackingId,
-                'courier_name'        => 'Store Courier',
-                'destination_address' => $defaultDestination,
-                'status'              => $delStatus,
-                'created_at'          => $row['created_at'] ?? date('Y-m-d H:i:s'),
+                'deliverable_type'      => $type,
+                'deliverable_id'        => $id,
+                'tracking_id'           => $trackingId,
+                'courier_name'          => 'Store Courier',
+                'destination_address'   => $destAddress,
+                'destination_latitude'  => $destLat,
+                'destination_longitude' => $destLng,
+                'status'                => $delStatus,
+                'created_at'            => $row['created_at'] ?? date('Y-m-d H:i:s'),
             ]);
         }
     }

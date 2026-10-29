@@ -2499,10 +2499,49 @@ class Tenant extends BaseController
                 ->where('deliverable_id', $orderId)
                 ->first();
 
-            if (!$existing) {
-                $customer = (new UserModel())->find($order['customer_id']);
-                $address  = !empty($customer['address']) ? $customer['address'] : 'Customer Shipping Address';
+            // Resolve real shipping address from order or customer's default shipping address
+            $shippingAddr = null;
+            if (!empty($order['shipping_address_id'])) {
+                $shippingAddr = (new \App\Models\ShippingAddressModel())->find((int) $order['shipping_address_id']);
+            }
+            if (!$shippingAddr && !empty($order['customer_id'])) {
+                $shippingAddr = (new \App\Models\ShippingAddressModel())
+                    ->where('user_id', (int) $order['customer_id'])
+                    ->orderBy('is_default', 'DESC')
+                    ->orderBy('id', 'DESC')
+                    ->first();
+            }
 
+            $resolvedAddress = 'Customer Shipping Address';
+            $destLat = null;
+            $destLng = null;
+
+            if ($shippingAddr) {
+                $addrParts = array_filter([
+                    $shippingAddr['address_line1'] ?? '',
+                    $shippingAddr['address_line2'] ?? '',
+                    $shippingAddr['city'] ?? 'Polomolok',
+                    $shippingAddr['province'] ?? 'South Cotabato',
+                ]);
+                if (!empty($addrParts)) {
+                    $resolvedAddress = implode(', ', $addrParts);
+                }
+                if (DeliveryModel::isPolomolokCoordinate((float) ($shippingAddr['latitude'] ?? 0), (float) ($shippingAddr['longitude'] ?? 0))) {
+                    $destLat = (float) $shippingAddr['latitude'];
+                    $destLng = (float) $shippingAddr['longitude'];
+                }
+            }
+
+            if ($destLat === null && $resolvedAddress !== 'Customer Shipping Address') {
+                $mapsService = new \App\Services\GoogleMapsService();
+                $geo = $mapsService->geocodeAddress($resolvedAddress);
+                if ($geo && DeliveryModel::isPolomolokCoordinate((float) ($geo['lat'] ?? 0), (float) ($geo['lng'] ?? 0))) {
+                    $destLat = (float) $geo['lat'];
+                    $destLng = (float) $geo['lng'];
+                }
+            }
+
+            if (!$existing) {
                 // Determine real starting coordinates from the shop
                 $startLat = isset($shop['latitude']) && $shop['latitude'] !== null ? (float) $shop['latitude'] : null;
                 $startLng = isset($shop['longitude']) && $shop['longitude'] !== null ? (float) $shop['longitude'] : null;
@@ -2538,24 +2577,34 @@ class Tenant extends BaseController
                 }
 
                 $delId = $deliveryModel->insert([
-                    'deliverable_type'    => 'order',
-                    'deliverable_id'      => $orderId,
-                    'tracking_id'         => 'TRK-' . strtoupper(substr(md5($orderId . time()), 0, 8)),
-                    'courier_name'        => 'Standard Courier',
-                    'destination_address' => $address,
-                    'current_lat'         => $startLat,
-                    'current_lng'         => $startLng,
-                    'location_updated_at' => date('Y-m-d H:i:s'),
-                    'status'              => 'shipped',
-                    'shipped_at'          => date('Y-m-d H:i:s'),
-                    'created_at'          => date('Y-m-d H:i:s'),
+                    'deliverable_type'      => 'order',
+                    'deliverable_id'        => $orderId,
+                    'tracking_id'           => 'TRK-' . strtoupper(substr(md5($orderId . time()), 0, 8)),
+                    'courier_name'          => 'Standard Courier',
+                    'destination_address'   => $resolvedAddress,
+                    'destination_latitude'  => $destLat,
+                    'destination_longitude' => $destLng,
+                    'current_lat'           => $startLat,
+                    'current_lng'           => $startLng,
+                    'location_updated_at'   => date('Y-m-d H:i:s'),
+                    'status'                => 'shipped',
+                    'shipped_at'            => date('Y-m-d H:i:s'),
+                    'created_at'            => date('Y-m-d H:i:s'),
                 ]);
                 $deliveryRecord = $deliveryModel->find($delId);
             } else {
-                $deliveryModel->update($existing['id'], [
+                $existingUpdate = [
                     'status'     => 'shipped',
                     'shipped_at' => date('Y-m-d H:i:s'),
-                ]);
+                ];
+                if ((empty($existing['destination_address']) || $existing['destination_address'] === 'Customer Shipping Address') && $resolvedAddress !== 'Customer Shipping Address') {
+                    $existingUpdate['destination_address'] = $resolvedAddress;
+                }
+                if ($destLat !== null && (!DeliveryModel::isPolomolokCoordinate((float) ($existing['destination_latitude'] ?? 0), (float) ($existing['destination_longitude'] ?? 0)) || empty($existing['destination_latitude']))) {
+                    $existingUpdate['destination_latitude']  = $destLat;
+                    $existingUpdate['destination_longitude'] = $destLng;
+                }
+                $deliveryModel->update($existing['id'], $existingUpdate);
                 $deliveryRecord = $deliveryModel->find($existing['id']);
             }
         }
@@ -6545,37 +6594,51 @@ class Tenant extends BaseController
         $destLng = (float) ($delivery['destination_longitude'] ?? 0);
         $destApproximate = false;
 
-        if (!DeliveryModel::isPolomolokCoordinate($destLat, $destLng)) {
+        $isGenericDestAddress = empty($delivery['destination_address'])
+            || $delivery['destination_address'] === 'Customer Shipping Address'
+            || $delivery['destination_address'] === 'Doorstep Delivery';
+
+        $isCenterCoord = (abs($destLat - DeliveryModel::POLOMOLOK_CENTER_LAT) < 0.0005 && abs($destLng - DeliveryModel::POLOMOLOK_CENTER_LNG) < 0.0005);
+        $customerId = (int) ($order['customer_id'] ?? $printingRequest['customer_id'] ?? $printingRequest['user_id'] ?? 0);
+
+        // If placeholder address OR invalid coords OR previously stuck on generic center:
+        // Resolve customer's actual shipping address from DB
+        if ($isGenericDestAddress || $isCenterCoord || !DeliveryModel::isPolomolokCoordinate($destLat, $destLng)) {
             $shippingAddr = null;
             if ($order && !empty($order['shipping_address_id'])) {
-                $shippingAddr = (new \App\Models\ShippingAddressModel())->find($order['shipping_address_id']);
+                $shippingAddr = (new \App\Models\ShippingAddressModel())->find((int) $order['shipping_address_id']);
             } elseif ($printingRequest && !empty($printingRequest['shipping_address_id'])) {
-                $shippingAddr = (new \App\Models\ShippingAddressModel())->find($printingRequest['shipping_address_id']);
+                $shippingAddr = (new \App\Models\ShippingAddressModel())->find((int) $printingRequest['shipping_address_id']);
             }
-            if ($shippingAddr && DeliveryModel::isPolomolokCoordinate((float) ($shippingAddr['latitude'] ?? 0), (float) ($shippingAddr['longitude'] ?? 0))) {
-                $destLat = (float) $shippingAddr['latitude'];
-                $destLng = (float) $shippingAddr['longitude'];
-                // Cache on the delivery row so future loads skip the address lookup
-                try {
-                    $deliveryModel->update($deliveryId, [
-                        'destination_latitude'  => $destLat,
-                        'destination_longitude' => $destLng,
-                    ]);
-                } catch (\Throwable $e) {}
-            }
-        }
 
-        if (!DeliveryModel::isPolomolokCoordinate($destLat, $destLng) && !empty($delivery['destination_address'])) {
-            $mapsService = new \App\Services\GoogleMapsService();
-            $geo = $mapsService->geocodeAddress($delivery['destination_address']);
-            if ($geo && DeliveryModel::isPolomolokCoordinate((float) $geo['lat'], (float) $geo['lng'])) {
-                $destLat = $geo['lat'];
-                $destLng = $geo['lng'];
-                // Google-resolved results carry a place_id; offline centroid fallbacks
-                // never do, so results without one are treated as approximate.
-                $destApproximate = empty($geo['place_id']);
-                if (!$destApproximate) {
-                    // Persist geocoded coordinates to prevent redundant remote API lookups on future loads
+            if (!$shippingAddr && $customerId > 0) {
+                $shippingAddr = (new \App\Models\ShippingAddressModel())
+                    ->where('user_id', $customerId)
+                    ->orderBy('is_default', 'DESC')
+                    ->orderBy('id', 'DESC')
+                    ->first();
+            }
+
+            if ($shippingAddr) {
+                $addrParts = array_filter([
+                    $shippingAddr['address_line1'] ?? '',
+                    $shippingAddr['address_line2'] ?? '',
+                    $shippingAddr['city'] ?? 'Polomolok',
+                    $shippingAddr['province'] ?? 'South Cotabato',
+                ]);
+                $realAddr = !empty($addrParts) ? implode(', ', $addrParts) : '';
+                if ($realAddr !== '' && ($isGenericDestAddress || empty($delivery['destination_address']))) {
+                    $delivery['destination_address'] = $realAddr;
+                    try {
+                        $deliveryModel->update($deliveryId, ['destination_address' => $realAddr]);
+                    } catch (\Throwable $e) {}
+                }
+
+                $sLat = (float) ($shippingAddr['latitude'] ?? 0);
+                $sLng = (float) ($shippingAddr['longitude'] ?? 0);
+                if (DeliveryModel::isPolomolokCoordinate($sLat, $sLng)) {
+                    $destLat = $sLat;
+                    $destLng = $sLng;
                     try {
                         $deliveryModel->update($deliveryId, [
                             'destination_latitude'  => $destLat,
@@ -6583,6 +6646,22 @@ class Tenant extends BaseController
                         ]);
                     } catch (\Throwable $e) {}
                 }
+            }
+        }
+
+        if ((!DeliveryModel::isPolomolokCoordinate($destLat, $destLng) || $isCenterCoord) && !empty($delivery['destination_address']) && !$isGenericDestAddress) {
+            $mapsService = new \App\Services\GoogleMapsService();
+            $geo = $mapsService->geocodeAddress($delivery['destination_address']);
+            if ($geo && DeliveryModel::isPolomolokCoordinate((float) $geo['lat'], (float) $geo['lng'])) {
+                $destLat = (float) $geo['lat'];
+                $destLng = (float) $geo['lng'];
+                $destApproximate = empty($geo['place_id']);
+                try {
+                    $deliveryModel->update($deliveryId, [
+                        'destination_latitude'  => $destLat,
+                        'destination_longitude' => $destLng,
+                    ]);
+                } catch (\Throwable $e) {}
             }
         }
 
