@@ -50,6 +50,19 @@ class View extends BaseView
     public $plugins = [];
 
     /**
+     * When true, Parser conditionals may only contain variables, literals,
+     * arithmetic, comparison and logical operators, and parentheses.
+     *
+     * Declared during the CodeIgniter 4.6 -> 4.7.5 upgrade because
+     * system/View/Parser.php reads `$this->config->restrictParserConditionals`
+     * without a null-coalesce fallback, so a config file that predates 4.7 would
+     * raise "Undefined property" on the first Parser render. The app renders with
+     * the default View class today, so this is a latent-breakage guard; value is
+     * the framework default.
+     */
+    public bool $restrictParserConditionals = false;
+
+    /**
      * View Decorators are class methods that will be run in sequence to
      * have a chance to alter the generated output just prior to caching
      * the results.

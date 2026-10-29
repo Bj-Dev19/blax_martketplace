@@ -137,4 +137,19 @@ class Routing extends BaseRouting
      * Default: false
      */
     public bool $translateUriToCamelCase = true;
+
+    /**
+     * For Defined Routes.
+     * Whether Router reads Before/After filter attributes on controllers.
+     *
+     * Pinned explicitly during the CodeIgniter 4.6 -> 4.7.5 upgrade. 4.7 added
+     * this knob with a `true` default, so attribute filters would start running
+     * with no entry in Routes.php. The app's whole authorization policy lives in
+     * app/Config/Filters.php and the per-route `roleAccess:*` entries in
+     * app/Config/Routes.php, and no controller currently declares a filter
+     * attribute (verified by grep for `#[Before`/`#[After`). Keeping this false
+     * means a route cannot acquire or lose a filter outside those two files.
+     * Flip it to true only if attribute filters are deliberately adopted.
+     */
+    public bool $useControllerAttributes = false;
 }

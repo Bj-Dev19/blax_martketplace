@@ -61,4 +61,18 @@ class Format extends BaseConfig
         'application/xml'  => 0,
         'text/xml'         => 0,
     ];
+
+    /**
+     * --------------------------------------------------------------------------
+     * JSON Encode Depth
+     * --------------------------------------------------------------------------
+     *
+     * Maximum depth the JSON encoder will traverse when nesting structures.
+     *
+     * Added to the app config in CodeIgniter 4.7 and read unconditionally by
+     * system/Format/JSONFormatter.php, so a config file that predates 4.7 makes
+     * every JSON response throw "Undefined property: Config\Format::$jsonEncodeDepth".
+     * Value is the framework default.
+     */
+    public int $jsonEncodeDepth = 512;
 }
