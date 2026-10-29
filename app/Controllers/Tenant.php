@@ -2576,23 +2576,28 @@ class Tenant extends BaseController
                     $startLng = $gConfig->defaultLng ?? DeliveryModel::POLOMOLOK_CENTER_LNG;
                 }
 
-                $delId = $deliveryModel->insert([
+                $hasDestCoords = $deliveryModel->db->fieldExists('destination_latitude', 'deliveries');
+                $insertData = [
                     'deliverable_type'      => 'order',
                     'deliverable_id'        => $orderId,
                     'tracking_id'           => 'TRK-' . strtoupper(substr(md5($orderId . time()), 0, 8)),
                     'courier_name'          => 'Standard Courier',
                     'destination_address'   => $resolvedAddress,
-                    'destination_latitude'  => $destLat,
-                    'destination_longitude' => $destLng,
                     'current_lat'           => $startLat,
                     'current_lng'           => $startLng,
                     'location_updated_at'   => date('Y-m-d H:i:s'),
                     'status'                => 'shipped',
                     'shipped_at'            => date('Y-m-d H:i:s'),
                     'created_at'            => date('Y-m-d H:i:s'),
-                ]);
+                ];
+                if ($hasDestCoords && $destLat !== null && $destLng !== null) {
+                    $insertData['destination_latitude']  = $destLat;
+                    $insertData['destination_longitude'] = $destLng;
+                }
+                $delId = $deliveryModel->insert($insertData);
                 $deliveryRecord = $deliveryModel->find($delId);
             } else {
+                $hasDestCoords = $deliveryModel->db->fieldExists('destination_latitude', 'deliveries');
                 $existingUpdate = [
                     'status'     => 'shipped',
                     'shipped_at' => date('Y-m-d H:i:s'),
@@ -2600,7 +2605,7 @@ class Tenant extends BaseController
                 if ((empty($existing['destination_address']) || $existing['destination_address'] === 'Customer Shipping Address') && $resolvedAddress !== 'Customer Shipping Address') {
                     $existingUpdate['destination_address'] = $resolvedAddress;
                 }
-                if ($destLat !== null && (!DeliveryModel::isPolomolokCoordinate((float) ($existing['destination_latitude'] ?? 0), (float) ($existing['destination_longitude'] ?? 0)) || empty($existing['destination_latitude']))) {
+                if ($hasDestCoords && $destLat !== null && (!DeliveryModel::isPolomolokCoordinate((float) ($existing['destination_latitude'] ?? 0), (float) ($existing['destination_longitude'] ?? 0)) || empty($existing['destination_latitude']))) {
                     $existingUpdate['destination_latitude']  = $destLat;
                     $existingUpdate['destination_longitude'] = $destLng;
                 }

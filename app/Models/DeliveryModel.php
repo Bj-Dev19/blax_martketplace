@@ -78,6 +78,18 @@ class DeliveryModel extends Model
         // page view - which against a remote database is seconds of pure round trips.
         // The source rows and the delivery rows already attached to them are now read
         // in bulk and reconciled in memory, and only real changes are written.
+        $prBuilder = $this->db->table('printing_requests pr');
+        if ($this->db->fieldExists('shipping_address_id', 'printing_requests')) {
+            $prBuilder->select('pr.id, pr.request_number AS ref_number, pr.status, pr.created_at, pr.customer_id, pr.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
+                ->join('shipping_addresses sa', 'sa.id = pr.shipping_address_id', 'left');
+        } else {
+            $prBuilder->select('pr.id, pr.request_number AS ref_number, pr.status, pr.created_at, pr.customer_id');
+        }
+        $prQuery = $prBuilder->where('pr.shop_id', $shopId)
+            ->where('pr.fulfillment_method', 'delivery')
+            ->get();
+        $prRows = ($prQuery !== false) ? $prQuery->getResultArray() : [];
+
         $this->syncDeliveryRows(
             'printing_request',
             'PR-',
@@ -89,13 +101,20 @@ class DeliveryModel extends Model
                 'completed'          => 'delivered',
                 'cancelled'          => 'cancelled',
             ],
-            $this->db->table('printing_requests pr')
-                ->select('pr.id, pr.request_number AS ref_number, pr.status, pr.created_at, pr.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
-                ->join('shipping_addresses sa', 'sa.id = pr.shipping_address_id', 'left')
-                ->where('pr.shop_id', $shopId)
-                ->where('pr.fulfillment_method', 'delivery')
-                ->get()->getResultArray()
+            $prRows
         );
+
+        $ordBuilder = $this->db->table('orders o');
+        if ($this->db->fieldExists('shipping_address_id', 'orders')) {
+            $ordBuilder->select('o.id, o.order_number AS ref_number, o.status, o.customer_id, o.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
+                ->join('shipping_addresses sa', 'sa.id = o.shipping_address_id', 'left');
+        } else {
+            $ordBuilder->select('o.id, o.order_number AS ref_number, o.status, o.customer_id');
+        }
+        $ordQuery = $ordBuilder->where('o.shop_id', $shopId)
+            ->where('o.fulfillment_method', 'delivery')
+            ->get();
+        $ordRows = ($ordQuery !== false) ? $ordQuery->getResultArray() : [];
 
         $this->syncDeliveryRows(
             'order',
@@ -108,14 +127,7 @@ class DeliveryModel extends Model
                 'returned'   => 'returned',
                 'cancelled'  => 'cancelled',
             ],
-            // orders has no created_at column (it stores placed_at); leaving it out of
-            // the select keeps the original "stamp it with now" fallback intact.
-            $this->db->table('orders o')
-                ->select('o.id, o.order_number AS ref_number, o.status, o.customer_id, o.shipping_address_id, sa.address_line1, sa.address_line2, sa.city, sa.province, sa.latitude, sa.longitude')
-                ->join('shipping_addresses sa', 'sa.id = o.shipping_address_id', 'left')
-                ->where('o.shop_id', $shopId)
-                ->where('o.fulfillment_method', 'delivery')
-                ->get()->getResultArray()
+            $ordRows
         );
     }
 
@@ -148,18 +160,23 @@ class DeliveryModel extends Model
             $trackingIds[$id] = $trackingId;
         }
 
-        // One bulk read covering both link styles the reconciliation recognises. The
-        // tracking-id arm has to stay global: order numbers are only unique per shop,
-        // so a row created for another shop's ORD-nnnn must still be found here or the
-        // insert below would collide with the unique index.
-        $existing = $this->db->table('deliveries')
-            ->select('id, deliverable_id, tracking_id, status, destination_address, destination_latitude, destination_longitude')
+        $hasDestCoords = $this->db->fieldExists('destination_latitude', 'deliveries');
+        $delSelect = 'id, deliverable_id, tracking_id, status, destination_address';
+        if ($hasDestCoords) {
+            $delSelect .= ', destination_latitude, destination_longitude';
+        }
+
+        // One bulk read covering both link styles the reconciliation recognises.
+        $existingQuery = $this->db->table('deliveries')
+            ->select($delSelect)
             ->where('deliverable_type', $type)
             ->groupStart()
                 ->whereIn('deliverable_id', $ids)
                 ->orWhereIn('tracking_id', $trackingIds)
             ->groupEnd()
-            ->get()->getResultArray();
+            ->get();
+
+        $existing = ($existingQuery !== false) ? $existingQuery->getResultArray() : [];
 
         $byDeliverable = [];
         $byTracking    = [];
@@ -195,6 +212,31 @@ class DeliveryModel extends Model
                 $destLng = (float) $row['longitude'];
             }
 
+            // If destination address is still default and customer_id is present, resolve customer's default shipping address
+            if ($destAddress === $defaultDestination && !empty($row['customer_id'])) {
+                $custAddrQ = $this->db->table('shipping_addresses')
+                    ->where('user_id', (int) $row['customer_id'])
+                    ->orderBy('is_default', 'DESC')
+                    ->orderBy('id', 'DESC')
+                    ->limit(1)
+                    ->get();
+                if ($custAddrQ !== false && ($ca = $custAddrQ->getRowArray())) {
+                    $addrParts = array_filter([
+                        $ca['address_line1'] ?? '',
+                        $ca['address_line2'] ?? '',
+                        $ca['city'] ?? 'Polomolok',
+                        $ca['province'] ?? 'South Cotabato',
+                    ]);
+                    if (!empty($addrParts)) {
+                        $destAddress = implode(', ', $addrParts);
+                    }
+                    if (!empty($ca['latitude']) && !empty($ca['longitude']) && self::isPolomolokCoordinate((float) $ca['latitude'], (float) $ca['longitude'])) {
+                        $destLat = (float) $ca['latitude'];
+                        $destLng = (float) $ca['longitude'];
+                    }
+                }
+            }
+
             if ($current !== null) {
                 $updateFields = [];
                 if ((string) $current['status'] !== $delStatus) {
@@ -203,7 +245,7 @@ class DeliveryModel extends Model
                 if ($destAddress !== $defaultDestination && (empty($current['destination_address']) || $current['destination_address'] === $defaultDestination)) {
                     $updateFields['destination_address'] = $destAddress;
                 }
-                if ($destLat !== null && (empty($current['destination_latitude']) || !self::isPolomolokCoordinate((float) $current['destination_latitude'], (float) $current['destination_longitude']))) {
+                if ($hasDestCoords && $destLat !== null && (empty($current['destination_latitude']) || !self::isPolomolokCoordinate((float) $current['destination_latitude'], (float) $current['destination_longitude']))) {
                     $updateFields['destination_latitude']  = $destLat;
                     $updateFields['destination_longitude'] = $destLng;
                 }
@@ -214,17 +256,21 @@ class DeliveryModel extends Model
                 continue;
             }
 
-            $this->insert([
+            $insertPayload = [
                 'deliverable_type'      => $type,
                 'deliverable_id'        => $id,
                 'tracking_id'           => $trackingId,
                 'courier_name'          => 'Store Courier',
                 'destination_address'   => $destAddress,
-                'destination_latitude'  => $destLat,
-                'destination_longitude' => $destLng,
                 'status'                => $delStatus,
                 'created_at'            => $row['created_at'] ?? date('Y-m-d H:i:s'),
-            ]);
+            ];
+            if ($hasDestCoords && $destLat !== null && $destLng !== null) {
+                $insertPayload['destination_latitude']  = $destLat;
+                $insertPayload['destination_longitude'] = $destLng;
+            }
+
+            $this->insert($insertPayload);
         }
     }
 
