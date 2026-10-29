@@ -119,20 +119,12 @@ class ShopModel extends Model
      */
     protected function applyDirectoryVisibilityClause(?string $dateStr = null): void
     {
+        // No tableExists() probe here on purpose: it is a full information_schema
+        // round trip on every directory listing, and against a remote database that
+        // costs ~150ms per page. ensureSchema() already settles the question - it
+        // creates the table on SQLite and trusts the migrations everywhere else -
+        // so probing afterwards could only ever re-derive the same answer.
         $calModel = new ShopCalendarScheduleModel();
-
-        // The clause below is raw SQL, so it fails at query time (not here) on environments
-        // where the create-table migration has not run yet. Degrade to "show everything".
-        try {
-            if (!$this->db->tableExists('shop_calendar_schedules')) {
-                return;
-            }
-        } catch (\Throwable $e) {
-            log_message('error', '[ShopModel::applyDirectoryVisibilityClause] schema probe: ' . $e->getMessage());
-
-            return;
-        }
-
         $calModel->ensureSchema();
 
         $dateStr   = $dateStr ?: date('Y-m-d');

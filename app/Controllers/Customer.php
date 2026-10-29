@@ -1405,13 +1405,14 @@ class Customer extends BaseController
         }
         $savedAddressesCount = $addressModel->where('user_id', $userId)->countAllResults();
 
-        // Favorite shops count
+        // Favorite shops count.
+        // shop_favorites is a migrated table, so reading through it directly drops an
+        // information_schema round trip; a missing table lands in the same catch that
+        // used to be reached only when the probe returned false.
         $favoriteCount = 0;
         try {
             $db = \Config\Database::connect();
-            if ($db->tableExists('shop_favorites')) {
-                $favoriteCount = $db->table('shop_favorites')->where('user_id', $userId)->countAllResults();
-            }
+            $favoriteCount = (int) $db->table('shop_favorites')->where('user_id', $userId)->countAllResults();
         } catch (\Throwable $e) {
             $favoriteCount = 0;
         }

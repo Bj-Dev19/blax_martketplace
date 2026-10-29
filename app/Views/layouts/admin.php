@@ -29,9 +29,11 @@
     $adminUnreadCount = 0;
     $adminNotifications = [];
     if ($adminUserId > 0) {
-        $notifModel = new \App\Models\NotificationModel();
-        $adminUnreadCount = $notifModel->getUnreadCount($adminUserId);
-        $adminNotifications = $notifModel->getRecent($adminUserId, 6);
+        // Badge and dropdown come from one statement. Querying them separately made
+        // every admin page pay two full round trips before rendering anything.
+        $adminNotifSnapshot = (new \App\Models\NotificationModel())->getHeaderSnapshot($adminUserId, 6);
+        $adminUnreadCount   = $adminNotifSnapshot['unread_count'];
+        $adminNotifications = $adminNotifSnapshot['notifications'];
     }
 ?>
 

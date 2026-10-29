@@ -24,18 +24,23 @@
     $fullscreenLayout = $isPos || (!empty($fullscreenLayout) && $fullscreenLayout === true);
 
     $tenantUserId = (int) session()->get('user_id');
-    if (!isset($unread_count)) {
+    // Remember whether the controller supplied the badge data before defaulting it.
+    // The old test was `empty($notifications) && $unread_count === 0`, which treated a
+    // genuine "nothing unread" answer as "never asked" and re-ran two extra queries on
+    // every tenant page render to rediscover it.
+    $unreadSupplied = isset($unread_count);
+    if (! $unreadSupplied) {
         $unread_count = 0;
     }
     if (!isset($notifications) || !is_array($notifications)) {
         $notifications = [];
     }
-    // Only query notifications as fallback if not already supplied by controller
-    if ($tenantUserId > 0 && empty($notifications) && $unread_count === 0) {
+    // Only query notifications as a fallback for pages that never supplied the data.
+    if (! $unreadSupplied && $tenantUserId > 0) {
         try {
-            $notifModel = new \App\Models\NotificationModel();
-            $unread_count = $notifModel->getUnreadCount($tenantUserId);
-            $notifications = $notifModel->getRecent($tenantUserId, 8);
+            $notifSnapshot = (new \App\Models\NotificationModel())->getHeaderSnapshot($tenantUserId, 8);
+            $unread_count  = $notifSnapshot['unread_count'];
+            $notifications = $notifSnapshot['notifications'];
         } catch (\Throwable $e) {}
     }
 

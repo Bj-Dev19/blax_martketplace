@@ -359,17 +359,25 @@ class ShopCalendarScheduleModel extends Model
             $calByShop[(int) $cr['shop_id']] = $cr;
         }
 
-        // 3. Fetch today's weekly business hours
+        // 3. Fetch today's weekly business hours.
+        // Read straight through instead of probing with tableExists() first: the
+        // probe is a second information_schema round trip on every directory page,
+        // and a failed read degrades to the same 09:00-18:00 default window that a
+        // negative probe produced, because only the weekly rows are skipped.
         $weeklyByShop = [];
-        if ($db->tableExists('shop_business_hours')) {
-            $wRows = $db->table('shop_business_hours')
+        try {
+            $weeklyResult = $db->table('shop_business_hours')
                 ->whereIn('shop_id', $cleanIds)
                 ->where('day_of_week', $dayOfWeek)
-                ->get()
-                ->getResultArray();
-            foreach ($wRows as $wr) {
-                $weeklyByShop[(int) $wr['shop_id']] = $wr;
+                ->get();
+
+            if ($weeklyResult !== false) {
+                foreach ($weeklyResult->getResultArray() as $wr) {
+                    $weeklyByShop[(int) $wr['shop_id']] = $wr;
+                }
             }
+        } catch (\Throwable $e) {
+            // Installations that predate the business-hours table keep the defaults.
         }
 
         $result = [];

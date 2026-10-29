@@ -752,8 +752,12 @@ class Admin extends BaseController
         // Platform GMV (Orders total + Custom Printing jobs)
         $orderGmv = (float) ($db->table('orders')->selectSum('total_amount')->get()->getRow()->total_amount ?? 0);
         $printGmv = 0.0;
-        if ($db->tableExists('printing_requests')) {
+        try {
+            // printing_requests ships with the migrations; the old probe could only
+            // ever be true, and the catch below already covers a missing table.
             $printGmv = (float) ($db->table('printing_requests')->selectSum('total_price')->get()->getRow()->total_price ?? 0);
+        } catch (\Throwable $e) {
+            $printGmv = 0.0;
         }
         $platformGmv = $orderGmv + $printGmv;
 
@@ -798,17 +802,15 @@ class Admin extends BaseController
             ->limit(6)
             ->get()->getResultArray();
 
-        // Polomolok delivery area distribution
-        $areaCounts = [];
-        if ($db->tableExists('shipping_addresses')) {
-            $addrRows = $db->table('shipping_addresses sa')
-                ->select("COALESCE(NULLIF(sa.city, ''), 'Poblacion') as area, COUNT(sa.id) as count")
-                ->groupBy('area')
-                ->orderBy('count', 'DESC')
-                ->limit(5)
-                ->get()->getResultArray();
-            $areaCounts = $addrRows;
-        }
+        // Polomolok delivery area distribution.
+        // shipping_addresses is a core migrated table, so there is nothing for a
+        // tableExists() probe to discover - it only added a round trip to the page.
+        $areaCounts = $db->table('shipping_addresses sa')
+            ->select("COALESCE(NULLIF(sa.city, ''), 'Poblacion') as area, COUNT(sa.id) as count")
+            ->groupBy('area')
+            ->orderBy('count', 'DESC')
+            ->limit(5)
+            ->get()->getResultArray();
 
         // Active deliveries
         $deliveryModel = new DeliveryModel();
@@ -1956,19 +1958,17 @@ class Admin extends BaseController
         $model    = new SiteContentModel();
         $settings = $model->getShippingFeeSettings();
 
-        // Active shops with coordinates count for operational readiness insight
-        $totalActiveShops = 0;
-        $pinnedShopsCount = 0;
-        if ($db->tableExists('shops')) {
-            $totalActiveShops = $db->table('shops')->where('status', 'active')->countAllResults();
-            $pinnedShopsCount = $db->table('shops')
-                ->where('status', 'active')
-                ->where('latitude IS NOT NULL')
-                ->where('longitude IS NOT NULL')
-                ->where('latitude !=', 0)
-                ->where('longitude !=', 0)
-                ->countAllResults();
-        }
+        // Active shops with coordinates count for operational readiness insight.
+        // `shops` is the platform's primary table, so the old tableExists() guard
+        // was a guaranteed-true probe costing an extra round trip on every render.
+        $totalActiveShops = $db->table('shops')->where('status', 'active')->countAllResults();
+        $pinnedShopsCount = $db->table('shops')
+            ->where('status', 'active')
+            ->where('latitude IS NOT NULL')
+            ->where('longitude IS NOT NULL')
+            ->where('latitude !=', 0)
+            ->where('longitude !=', 0)
+            ->countAllResults();
 
         $mapsConfig = config('GoogleMaps');
         $hasMapsKey = !empty($mapsConfig->apiKey);

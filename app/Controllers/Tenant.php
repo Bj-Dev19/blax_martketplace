@@ -84,10 +84,23 @@ class Tenant extends BaseController
             'unread_count'    => (int) ($snapRow['unread_count'] ?? 0),
         ];
 
+        // Supply the dropdown rows here only when there is something to show. The
+        // layout used to fall back to fetching them itself, but only when the badge
+        // read zero - which left the panel claiming "No new notifications" while the
+        // bell showed unread items, and cost two extra round trips otherwise.
+        $recentNotifications = [];
+        if ($realtimeBootstrap['unread_count'] > 0 && $userId > 0) {
+            try {
+                $recentNotifications = (new \App\Models\NotificationModel())->getRecent($userId, 8);
+            } catch (\Throwable $e) {
+                $recentNotifications = [];
+            }
+        }
+
         service('renderer')->setData([
             'shop'              => $shop,
             'unread_count'      => $realtimeBootstrap['unread_count'],
-            'notifications'     => [],
+            'notifications'     => $recentNotifications,
             'realtimeBootstrap' => $realtimeBootstrap,
         ]);
 
@@ -1958,16 +1971,31 @@ class Tenant extends BaseController
         $shop   = $res['shop'];
 
         $orderModel = new OrderModel();
+        $db = \Config\Database::connect();
 
         $range = (string) $this->request->getGet('range');
         $range = in_array($range, ['7', '30', 'year'], true) ? $range : '30';
 
         // ---- Summary ----
         $totalRevenue = $orderModel->getRevenueForShop($shopId);
-        $validCount   = $orderModel->getOrderCountForShop($shopId, ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered', 'completed']);
-        $aov          = $validCount > 0 ? $totalRevenue / $validCount : 0.0;
 
-        $db = \Config\Database::connect();
+        // Both counters come from one statement: the AOV denominator only counts
+        // actionable statuses while the headline figure counts every order, so two
+        // separate COUNT queries used to cost two full round trips per page view.
+        $aovStatuses = ['pending', 'processing', 'shipped', 'ready_for_pickup', 'delivered', 'completed'];
+        $aovInList   = implode(',', array_map(static fn (string $s): string => $db->escape($s), $aovStatuses));
+        $countRow    = $db->table('orders')
+            ->select(
+                'COUNT(*) AS total_orders,'
+                . " SUM(CASE WHEN status IN ({$aovInList}) THEN 1 ELSE 0 END) AS valid_orders",
+                false
+            )
+            ->where('shop_id', $shopId)
+            ->get()->getRowArray() ?? [];
+
+        $validCount  = (int) ($countRow['valid_orders'] ?? 0);
+        $totalOrders = (int) ($countRow['total_orders'] ?? 0);
+        $aov         = $validCount > 0 ? $totalRevenue / $validCount : 0.0;
 
         // ---- Sales by category ----
         $categorySales = $orderModel->getCategorySales($shopId);
@@ -2135,7 +2163,7 @@ class Tenant extends BaseController
             'range'               => $range,
             'seasonal_data'       => $seasonalData,
             'total_revenue'       => $totalRevenue,
-            'total_orders'        => $orderModel->getOrderCountForShop($shopId),
+            'total_orders'        => $totalOrders,
             'avg_order_value'     => $aov,
             'avg_order_base'      => $validCount,
             'top_category'        => $topCategory,

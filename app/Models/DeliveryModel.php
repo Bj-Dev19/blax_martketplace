@@ -73,99 +73,123 @@ class DeliveryModel extends Model
 
     public function syncMissingDeliveries(int $shopId): void
     {
-        // 1. Sync all printing requests for this shop that are for DELIVERY only (exclude store pick-ups)
-        $prs = $this->db->table('printing_requests')
-            ->where('shop_id', $shopId)
-            ->where('fulfillment_method', 'delivery')
-            ->get()->getResultArray();
+        // Reconciliation used to issue 1-2 SELECTs plus an unconditional UPDATE for
+        // every deliverable, so a shop with 18 shipments ran 40+ statements on each
+        // page view - which against a remote database is seconds of pure round trips.
+        // The source rows and the delivery rows already attached to them are now read
+        // in bulk and reconciled in memory, and only real changes are written.
+        $this->syncDeliveryRows(
+            'printing_request',
+            'PR-',
+            'Doorstep Delivery',
+            [
+                'ready_for_delivery' => 'shipped',
+                'shipped'            => 'shipped',
+                'in_transit'         => 'in_transit',
+                'completed'          => 'delivered',
+                'cancelled'          => 'cancelled',
+            ],
+            $this->db->table('printing_requests')
+                ->select('id, request_number AS ref_number, status, created_at')
+                ->where('shop_id', $shopId)
+                ->where('fulfillment_method', 'delivery')
+                ->get()->getResultArray()
+        );
 
-        foreach ($prs as $pr) {
-            $trackingId = (string) ($pr['request_number'] ?? '');
-            if ($trackingId === '') {
-                $trackingId = 'PR-' . strtoupper(substr(md5((string) $pr['id']), 0, 8));
-            }
-            $existing = $this->db->table('deliveries')
-                ->where('deliverable_type', 'printing_request')
-                ->where('deliverable_id', (int) $pr['id'])
-                ->get()->getRowArray();
+        $this->syncDeliveryRows(
+            'order',
+            'TRK-',
+            'Customer Shipping Address',
+            [
+                'shipped'    => 'shipped',
+                'in_transit' => 'in_transit',
+                'delivered'  => 'delivered',
+                'returned'   => 'returned',
+                'cancelled'  => 'cancelled',
+            ],
+            // orders has no created_at column (it stores placed_at); leaving it out of
+            // the select keeps the original "stamp it with now" fallback intact.
+            $this->db->table('orders')
+                ->select('id, order_number AS ref_number, status')
+                ->where('shop_id', $shopId)
+                ->where('fulfillment_method', 'delivery')
+                ->get()->getResultArray()
+        );
+    }
 
-            if (!$existing) {
-                $existing = $this->db->table('deliveries')
-                    ->where('tracking_id', $trackingId)
-                    ->get()->getRowArray();
-            }
-
-            $delStatus = match ($pr['status']) {
-                'ready_for_delivery', 'shipped' => 'shipped',
-                'in_transit'                    => 'in_transit',
-                'completed'                     => 'delivered',
-                'cancelled'                     => 'cancelled',
-                default                         => 'shipped',
-            };
-
-            if ($existing) {
-                $this->update($existing['id'], [
-                    'status' => $delStatus,
-                ]);
-            } else {
-                $this->insert([
-                    'deliverable_type'    => 'printing_request',
-                    'deliverable_id'      => (int) $pr['id'],
-                    'tracking_id'         => $trackingId,
-                    'courier_name'        => 'Store Courier',
-                    'destination_address' => 'Doorstep Delivery',
-                    'status'              => $delStatus,
-                    'created_at'          => $pr['created_at'] ?? date('Y-m-d H:i:s'),
-                ]);
-            }
+    /**
+     * Mirror one deliverable source (orders or printing requests) into `deliveries`.
+     *
+     * Rows already linked by deliverable_id win over rows matched by tracking_id, and
+     * an unchanged status is left alone so a read-only page view cannot churn
+     * updated_at on every shipment it lists.
+     *
+     * @param array<string, string>            $statusMap source status => delivery status
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function syncDeliveryRows(string $type, string $prefix, string $defaultDestination, array $statusMap, array $rows): void
+    {
+        if ($rows === []) {
+            return;
         }
 
-        // 2. Sync all orders for this shop that are for DELIVERY only (exclude store pick-ups)
-        $orders = $this->db->table('orders')
-            ->where('shop_id', $shopId)
-            ->where('fulfillment_method', 'delivery')
+        $ids         = [];
+        $trackingIds = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            $ids[$id] = $id;
+
+            $trackingId = (string) ($row['ref_number'] ?? '');
+            if ($trackingId === '') {
+                $trackingId = $prefix . strtoupper(substr(md5((string) $id), 0, 8));
+            }
+            $trackingIds[$id] = $trackingId;
+        }
+
+        // One bulk read covering both link styles the reconciliation recognises. The
+        // tracking-id arm has to stay global: order numbers are only unique per shop,
+        // so a row created for another shop's ORD-nnnn must still be found here or the
+        // insert below would collide with the unique index.
+        $existing = $this->db->table('deliveries')
+            ->select('id, deliverable_id, tracking_id, status')
+            ->where('deliverable_type', $type)
+            ->groupStart()
+                ->whereIn('deliverable_id', $ids)
+                ->orWhereIn('tracking_id', $trackingIds)
+            ->groupEnd()
             ->get()->getResultArray();
 
-        foreach ($orders as $ord) {
-            $trackingId = (string) ($ord['order_number'] ?? '');
-            if ($trackingId === '') {
-                $trackingId = 'TRK-' . strtoupper(substr(md5((string) $ord['id']), 0, 8));
-            }
-            $existing = $this->db->table('deliveries')
-                ->where('deliverable_type', 'order')
-                ->where('deliverable_id', (int) $ord['id'])
-                ->get()->getRowArray();
+        $byDeliverable = [];
+        $byTracking    = [];
+        foreach ($existing as $row) {
+            $byDeliverable[(int) $row['deliverable_id']] = $row;
+            $byTracking[(string) $row['tracking_id']]    = $row;
+        }
 
-            if (!$existing) {
-                $existing = $this->db->table('deliveries')
-                    ->where('tracking_id', $trackingId)
-                    ->get()->getRowArray();
+        foreach ($rows as $row) {
+            $id         = (int) $row['id'];
+            $trackingId = $trackingIds[$id];
+
+            $delStatus = $statusMap[(string) $row['status']] ?? 'shipped';
+            $current   = $byDeliverable[$id] ?? $byTracking[$trackingId] ?? null;
+
+            if ($current !== null) {
+                if ((string) $current['status'] !== $delStatus) {
+                    $this->update((int) $current['id'], ['status' => $delStatus]);
+                }
+
+                continue;
             }
 
-            $delStatus = match ($ord['status']) {
-                'shipped'           => 'shipped',
-                'in_transit'        => 'in_transit',
-                'delivered'         => 'delivered',
-                'returned'          => 'returned',
-                'cancelled'         => 'cancelled',
-                default             => 'shipped',
-            };
-
-            if ($existing) {
-                $this->update($existing['id'], [
-                    'status' => $delStatus,
-                ]);
-            } else {
-                $this->insert([
-                    'deliverable_type'    => 'order',
-                    'deliverable_id'      => (int) $ord['id'],
-                    'tracking_id'         => $trackingId,
-                    'courier_name'        => 'Store Courier',
-                    'destination_address' => 'Customer Shipping Address',
-                    'status'              => $delStatus,
-                    'created_at'          => $ord['created_at'] ?? date('Y-m-d H:i:s'),
-                ]);
-            }
+            $this->insert([
+                'deliverable_type'    => $type,
+                'deliverable_id'      => $id,
+                'tracking_id'         => $trackingId,
+                'courier_name'        => 'Store Courier',
+                'destination_address' => $defaultDestination,
+                'status'              => $delStatus,
+                'created_at'          => $row['created_at'] ?? date('Y-m-d H:i:s'),
+            ]);
         }
     }
 
