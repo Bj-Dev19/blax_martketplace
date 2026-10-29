@@ -14,10 +14,10 @@ $healthHandler = static function () {
         ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
         ->setBody('ok');
 };
-$routes->get('healthz', $healthHandler);
-$routes->get('health', $healthHandler);
-$routes->get('ping', $healthHandler);
-$routes->get('/', 'Home::index');
+$routes->match(['get', 'head'], 'healthz', $healthHandler);
+$routes->match(['get', 'head'], 'health', $healthHandler);
+$routes->match(['get', 'head'], 'ping', $healthHandler);
+$routes->match(['get', 'head'], '/', 'Home::index');
 // ai/query fans out to the Cohere API, so every unthrottled hit burns
 // third-party quota on an unauthenticated route.
 $routes->post('ai/query', 'Home::aiQuery', ['filter' => 'actionThrottle']);

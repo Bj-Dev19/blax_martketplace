@@ -2935,6 +2935,7 @@ class Tenant extends BaseController
                 return $this->response
                     ->setContentType($mime)
                     ->setHeader('Content-Disposition', 'inline; filename="' . str_replace('"', '', $name) . '"')
+                    ->setHeader('X-Frame-Options', 'SAMEORIGIN')
                     ->setHeader('Content-Length', (string) strlen($content))
                     ->setBody($content);
             }
@@ -2959,6 +2960,7 @@ class Tenant extends BaseController
         return $this->response
             ->setContentType($mime)
             ->setHeader('Content-Disposition', 'inline; filename="' . str_replace('"', '', $name) . '"')
+            ->setHeader('X-Frame-Options', 'SAMEORIGIN')
             ->setHeader('Content-Length', (string) filesize($real))
             ->setBody((string) file_get_contents($real));
     }

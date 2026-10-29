@@ -246,45 +246,74 @@ trait CheckoutProcessorTrait
         $orderItemModel  = new OrderItemModel();
         $createdOrderIds = [];
 
+        // Safe normalization of fulfillment and payment methods for MySQL schema
+        $dbFulfillmentMethod = (strtolower(trim((string)$fulfillmentMethod)) === 'pickup') ? 'pickup' : 'delivery';
+        $dbPaymentMethod     = match (strtolower(trim((string)$paymentMethod))) {
+            'gcash' => 'gcash',
+            'card'  => 'card',
+            default => 'cod', // Maps 'cod', 'pickup', 'counter', 'cash' safely to 'cod' allowed by enum('gcash','card','cod')
+        };
+
+        // Shipping address must be NULL for store pick-up or if empty/invalid
+        $dbShippingAddressId = ($dbFulfillmentMethod === 'pickup' || empty($addressId)) ? null : (int) $addressId;
+        if ($dbShippingAddressId !== null) {
+            $addrExists = $db->table('shipping_addresses')->where('id', $dbShippingAddressId)->countAllResults();
+            if ($addrExists === 0) {
+                $dbShippingAddressId = null;
+            }
+        }
+
+        $hasPaymentStatus = $db->fieldExists('payment_status', 'orders');
+        $hasVariantId     = $db->fieldExists('variant_id', 'order_items');
+        $hasVariantLabel  = $db->fieldExists('variant_label', 'order_items');
+
         foreach ($itemsByShop as $shopId => $items) {
             $subtotal = 0;
             foreach ($items as $item) {
                 $subtotal += $item['unit_price'] * $item['quantity'];
             }
-            $shippingFee = ($fulfillmentMethod === 'delivery')
+            $shippingFee = ($dbFulfillmentMethod === 'delivery')
                 ? (float) ($shopQuotes[(int) $shopId]['shipping_fee'] ?? $shippingSettings['base_shipping_fee'] ?? 50.00)
                 : 0.00;
             $totalAmount = $subtotal + $shippingFee;
 
-            $orderId = $orderModel->insert([
+            $orderData = [
                 'order_number'        => 'ORD-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)),
                 'customer_id'         => $userId,
                 'shop_id'             => $shopId,
-                'shipping_address_id' => $addressId,
-                'fulfillment_method'  => $fulfillmentMethod,
-                'payment_method'      => $paymentMethod,
+                'shipping_address_id' => $dbShippingAddressId,
+                'fulfillment_method'  => $dbFulfillmentMethod,
+                'payment_method'      => $dbPaymentMethod,
                 'subtotal'            => $subtotal,
                 'shipping_fee'        => $shippingFee,
                 'tax_amount'          => 0,
                 'total_amount'        => $totalAmount,
                 'status'              => 'pending',
-                'payment_status'      => 'unpaid',
                 'placed_at'           => date('Y-m-d H:i:s'),
-            ]);
+            ];
+            if ($hasPaymentStatus) {
+                $orderData['payment_status'] = 'unpaid';
+            }
 
+            $orderId = $orderModel->insert($orderData);
             $createdOrderIds[] = $orderId;
 
             foreach ($items as $item) {
-                $orderItemModel->insert([
-                    'order_id'      => $orderId,
-                    'product_id'    => $item['product_id'],
-                    'variant_id'    => $item['variant_id'] ?? null,
-                    'variant_label' => $item['variant_label'] ?? null,
-                    'product_name'  => $item['product_name'],
-                    'quantity'      => $item['quantity'],
-                    'unit_price'    => $item['unit_price'],
-                    'line_total'    => $item['unit_price'] * $item['quantity'],
-                ]);
+                $itemData = [
+                    'order_id'     => $orderId,
+                    'product_id'   => $item['product_id'],
+                    'product_name' => $item['product_name'],
+                    'quantity'     => $item['quantity'],
+                    'unit_price'   => $item['unit_price'],
+                    'line_total'   => $item['unit_price'] * $item['quantity'],
+                ];
+                if ($hasVariantId && !empty($item['variant_id'])) {
+                    $itemData['variant_id'] = (int) $item['variant_id'];
+                }
+                if ($hasVariantLabel && !empty($item['variant_label'])) {
+                    $itemData['variant_label'] = (string) $item['variant_label'];
+                }
+                $orderItemModel->insert($itemData);
             }
         }
 
@@ -297,6 +326,8 @@ trait CheckoutProcessorTrait
         $db->transComplete();
 
         if ($db->transStatus() === false) {
+            $dbErr = $db->error();
+            log_message('error', 'Checkout order transaction failed: ' . json_encode($dbErr));
             return redirect()->to($failureRedirectUrl)->with('error', 'A database error occurred while finalizing your order.');
         }
 

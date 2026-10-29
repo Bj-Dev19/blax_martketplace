@@ -305,7 +305,7 @@
 
                         <!-- Option 2: Cash Payment (Dynamically adapts between Cash on Delivery and Pay at Store Counter) -->
                         <label id="card-pay-cash" class="flex items-start gap-3.5 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 hover:border-terra-green/60 transition-all cursor-pointer group">
-                            <input class="w-4 h-4 mt-1 text-terra-green border-slate-300 dark:border-slate-600 focus:ring-terra-green payment-radio shrink-0" name="payment_method" id="pay-radio-cash" type="radio" value="<?= $defaultFulfillment === 'pickup' ? 'pickup' : 'cod' ?>">
+                            <input class="w-4 h-4 mt-1 text-terra-green border-slate-300 dark:border-slate-600 focus:ring-terra-green payment-radio shrink-0" name="payment_method" id="pay-radio-cash" type="radio" value="cod">
                             <div id="cash-icon-box" class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                                 <span id="cash-icon-symbol" class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform"><?= $defaultFulfillment === 'pickup' ? 'storefront' : 'payments' ?></span>
                             </div>
@@ -575,7 +575,7 @@
 
         // 4. Adapt Step 2 Cash Payment option dynamically to match Step 1 Fulfillment
         if (payRadioCash) {
-            payRadioCash.value = isPickup ? 'pickup' : 'cod';
+            payRadioCash.value = 'cod';
         }
         if (cashIconSymbol) {
             cashIconSymbol.textContent = isPickup ? 'storefront' : 'payments';

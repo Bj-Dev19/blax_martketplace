@@ -357,15 +357,17 @@ class Cart extends BaseController
             return redirect()->to('/cart')->with('error', 'Your cart is empty.');
         }
 
-        // Task 10: Require at least one address before checkout
-        $addressCount = (new ShippingAddressModel())->where('user_id', $userId)->countAllResults();
-        if ($addressCount === 0) {
-            return redirect()->to(base_url('customer/addresses?open_add=1'))->with('error', 'Please add and set a shipping address before checking out.');
-        }
-
         $paymentMethod     = $this->request->getPost('payment_method') ?? 'gcash';
         $fulfillmentMethod = $this->request->getPost('fulfillment_method') ?? ($paymentMethod === 'pickup' ? 'pickup' : 'delivery');
         $addressId         = $this->request->getPost('shipping_address_id') ?? null;
+
+        // Task 10: Require at least one address before checkout ONLY for doorstep delivery
+        if ($fulfillmentMethod === 'delivery') {
+            $addressCount = (new ShippingAddressModel())->where('user_id', $userId)->countAllResults();
+            if ($addressCount === 0) {
+                return redirect()->to(base_url('customer/addresses?open_add=1'))->with('error', 'Please add and set a shipping address before checking out.');
+            }
+        }
 
         // Polomolok-only restriction & address ownership: delivery & printing limited to Polomolok
         if ($fulfillmentMethod === 'delivery' && $addressId) {

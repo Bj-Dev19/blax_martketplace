@@ -1711,6 +1711,8 @@
             if (label) label.textContent = 'Show';
             if (btn) btn.setAttribute('title', 'Show Queue');
         }
+    });
+
     // Real-time KPI & Summary Synchronization
     function syncOrderKpis(summary) {
         if (!summary) return;

@@ -306,7 +306,7 @@ class Database extends Config
         }
 
         try {
-            log_message('error', $message);
+            log_message('notice', $message);
         } catch (\Throwable $e) {
             // The Logger may not be resolvable this early; nothing to recover.
         }

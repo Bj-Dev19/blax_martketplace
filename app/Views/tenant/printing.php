@@ -302,10 +302,13 @@ $searchQuery = $filters['q'] ?? '';
                                     <span class="material-symbols-outlined text-[13px] text-terra-green">visibility</span>
                                     <span>Ticket</span>
                                 </button>
-                                <a href="<?= base_url('tenant/printing/download/' . (int) $q['id']) ?>" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
-                                    <span class="material-symbols-outlined text-[13px] text-terra-green">download</span>
-                                    <span>File</span>
-                                </a>
+                                <button type="button"
+                                        onclick="directPrintDocument(<?= (int) $q['id'] ?>, '<?= esc($qDocType) ?>')"
+                                        class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                        title="Direct Print Document">
+                                    <span class="material-symbols-outlined text-[13px] text-terra-green">print</span>
+                                    <span>Print</span>
+                                </button>
                                 <a href="<?= base_url('tenant/printing/receipt/' . (int) $q['id']) ?>" target="_blank" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
                                     <span class="material-symbols-outlined text-[13px] text-terra-green">receipt_long</span>
                                     <span>Receipt</span>
@@ -520,11 +523,17 @@ $searchQuery = $filters['q'] ?? '';
                                 <!-- File & Format -->
                                 <td class="px-4 py-3.5">
                                     <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-terra-green shrink-0 border border-slate-200 dark:border-slate-700">
-                                            <span class="material-symbols-outlined text-[18px]">description</span>
-                                        </div>
+                                        <a href="<?= base_url('tenant/printing/download/' . (int) $r['id']) ?>"
+                                           class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-terra-green/15 dark:bg-slate-800 dark:hover:bg-terra-green/20 flex items-center justify-center text-terra-green shrink-0 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs group/dl"
+                                           title="Download <?= esc($fileName) ?>">
+                                            <span class="material-symbols-outlined text-[18px]">download</span>
+                                        </a>
                                         <div class="min-w-0 max-w-[170px]">
-                                            <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate block" title="<?= esc($fileName) ?>"><?= esc($fileName) ?></span>
+                                            <a href="<?= base_url('tenant/printing/download/' . (int) $r['id']) ?>"
+                                               class="text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-terra-green dark:hover:text-terra-green truncate block transition-colors"
+                                               title="Download <?= esc($fileName) ?>">
+                                                <?= esc($fileName) ?>
+                                            </a>
                                             <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                                 <span class="px-1.5 py-0.2 rounded-md text-[9px] font-bold tracking-wider uppercase <?= ($docType === 'DOCX') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' ?>">
                                                     <?= esc($docType) ?>
@@ -652,6 +661,11 @@ $searchQuery = $filters['q'] ?? '';
                                                     <span>Complete</span>
                                                 </button>
                                             </form>
+                                        <?php elseif ($st === 'completed'): ?>
+                                            <a href="<?= base_url('tenant/printing/download/' . (int) $r['id']) ?>" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all inline-flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer" title="Download Document File">
+                                                <span class="material-symbols-outlined text-[15px] text-terra-green">download</span>
+                                                <span>Download File</span>
+                                            </a>
                                         <?php endif; ?>
 
                                         <!-- Contextual Actions Dropdown Toggle -->
@@ -673,6 +687,12 @@ $searchQuery = $filters['q'] ?? '';
                                                         class="w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-semibold cursor-pointer">
                                                     <span class="material-symbols-outlined text-[16px] text-terra-green">receipt_long</span>
                                                     <span>View Job Ticket</span>
+                                                </button>
+                                                <button type="button"
+                                                        onclick="directPrintDocument(<?= (int) $r['id'] ?>, '<?= esc($docType) ?>'); closeMenus();"
+                                                        class="w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-semibold cursor-pointer">
+                                                    <span class="material-symbols-outlined text-[16px] text-terra-green">print</span>
+                                                    <span>Print Document</span>
                                                 </button>
                                                 <a href="<?= base_url('tenant/printing/download/' . (int) $r['id']) ?>" class="w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 font-semibold">
                                                     <span class="material-symbols-outlined text-[16px] text-terra-green">download</span>
@@ -857,14 +877,18 @@ $searchQuery = $filters['q'] ?? '';
 
             <!-- Action Toolbar in Modal -->
             <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" id="rmDirectPrintBtn" class="py-2.5 px-3 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-slate-950 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">print</span>
+                        <span>Print File</span>
+                    </button>
                     <a id="rmDownloadFileBtn" href="#" class="py-2.5 px-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs">
                         <span class="material-symbols-outlined text-[16px] text-terra-green">download</span>
-                        <span>Download File</span>
+                        <span>Download</span>
                     </a>
                     <button type="button" id="rmPrintReceiptBtn" class="py-2.5 px-3 bg-terra-green text-white rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 text-xs shadow-xs cursor-pointer">
                         <span class="material-symbols-outlined text-[16px]">receipt_long</span>
-                        <span>Print Receipt</span>
+                        <span>Receipt</span>
                     </button>
                 </div>
             </div>
@@ -1027,6 +1051,65 @@ $searchQuery = $filters['q'] ?? '';
 </div>
 
 <script>
+    function directPrintDocument(id, docType) {
+        if (!id) return;
+        const type = (docType || '').toUpperCase();
+        const viewUrl = '<?= base_url('tenant/printing/view') ?>/' + id;
+        const downloadUrl = '<?= base_url('tenant/printing/download') ?>/' + id;
+
+        if (type === 'DOCX' || type === 'DOC') {
+            alert('Word documents (.docx/.doc) cannot be rendered directly in browser print preview.\n\nThe file will now download so you can open and print it in Microsoft Word.');
+            window.location.href = downloadUrl;
+            return;
+        }
+
+        // Remove any previous hidden print frame
+        const oldFrame = document.getElementById('printingDirectFrame');
+        if (oldFrame) oldFrame.remove();
+
+        const frame = document.createElement('iframe');
+        frame.id = 'printingDirectFrame';
+        frame.name = 'printingDirectFrame';
+        frame.style.position = 'fixed';
+        frame.style.top = '-9999px';
+        frame.style.left = '-9999px';
+        frame.style.width = '1px';
+        frame.style.height = '1px';
+        frame.style.opacity = '0.01';
+        frame.style.border = '0';
+        document.body.appendChild(frame);
+
+        let printDone = false;
+        function doPrint() {
+            if (printDone) return;
+            printDone = true;
+            try {
+                frame.contentWindow.focus();
+                frame.contentWindow.print();
+            } catch (err) {
+                console.warn('Iframe print failed or blocked, falling back to window.open:', err);
+                const win = window.open(viewUrl, '_blank');
+                if (win) {
+                    win.focus();
+                    win.onload = function() {
+                        try { win.print(); } catch (e) {}
+                    };
+                }
+            }
+        }
+
+        frame.onload = function() {
+            setTimeout(doPrint, 500);
+        };
+
+        // Fallback timer if onload doesn't fire
+        setTimeout(function() {
+            if (!printDone) doPrint();
+        }, 3000);
+
+        frame.src = viewUrl;
+    }
+
     function openPrintingSettingsModal() {
         document.getElementById('printingSettingsModal').classList.remove('hidden');
     }
@@ -1343,6 +1426,7 @@ $searchQuery = $filters['q'] ?? '';
         }
 
         const reqId = btn.dataset.id || '';
+        const reqDocType = btn.dataset.doctype || '';
         const rmDlBtn = document.getElementById('rmDownloadFileBtn');
         if (rmDlBtn) {
             rmDlBtn.href = reqId ? ('<?= base_url('tenant/printing/download') ?>/' + reqId) : '#';
@@ -1352,6 +1436,13 @@ $searchQuery = $filters['q'] ?? '';
         if (rmPrintBtn) {
             rmPrintBtn.onclick = function() {
                 window.open('<?= base_url('tenant/printing/receipt') ?>/' + encodeURIComponent(btn.dataset.request || ''), '_blank');
+            };
+        }
+
+        const rmDirectPrint = document.getElementById('rmDirectPrintBtn');
+        if (rmDirectPrint) {
+            rmDirectPrint.onclick = function() {
+                directPrintDocument(reqId, reqDocType);
             };
         }
 
@@ -1534,10 +1625,13 @@ $searchQuery = $filters['q'] ?? '';
                             <span class="material-symbols-outlined text-[13px] text-terra-green">visibility</span>
                             <span>Ticket</span>
                         </button>
-                        <a href="<?= base_url('tenant/printing/download') ?>/${id}" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
-                            <span class="material-symbols-outlined text-[13px] text-terra-green">download</span>
-                            <span>File</span>
-                        </a>
+                        <button type="button"
+                                onclick="directPrintDocument(${id}, '${docType}')"
+                                class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                title="Direct Print Document">
+                            <span class="material-symbols-outlined text-[13px] text-terra-green">print</span>
+                            <span>Print</span>
+                        </button>
                         <a href="<?= base_url('tenant/printing/receipt') ?>/${id}" target="_blank" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
                             <span class="material-symbols-outlined text-[13px] text-terra-green">receipt_long</span>
                             <span>Receipt</span>
@@ -1655,11 +1749,17 @@ $searchQuery = $filters['q'] ?? '';
                 </td>
                 <td class="px-4 py-3.5">
                     <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-terra-green shrink-0 border border-slate-200 dark:border-slate-700">
-                            <span class="material-symbols-outlined text-[18px]">description</span>
-                        </div>
+                        <a href="<?= base_url('tenant/printing/download') ?>/${pr.id}"
+                           class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-terra-green/15 dark:bg-slate-800 dark:hover:bg-terra-green/20 flex items-center justify-center text-terra-green shrink-0 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
+                           title="Download ${safeFile}">
+                            <span class="material-symbols-outlined text-[18px]">download</span>
+                        </a>
                         <div class="min-w-0 max-w-[170px]">
-                            <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate block" title="${safeFile}">${fileName}</span>
+                            <a href="<?= base_url('tenant/printing/download') ?>/${pr.id}"
+                               class="text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-terra-green dark:hover:text-terra-green truncate block transition-colors"
+                               title="Download ${safeFile}">
+                                ${fileName}
+                            </a>
                             <span class="px-1.5 py-0.2 rounded-md text-[9px] font-bold tracking-wider uppercase ${docType === 'DOCX' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}">
                                 ${docType}
                             </span>
