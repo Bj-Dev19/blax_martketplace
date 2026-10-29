@@ -6,6 +6,8 @@ $baseFee     = (float) old('base_shipping_fee', $settings['base_shipping_fee'] ?
 $includedKm  = (float) old('included_distance_km', $settings['included_distance_km'] ?? 2.00);
 $perKmFee    = (float) old('additional_fee_per_km', $settings['additional_fee_per_km'] ?? 10.00);
 $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_distance_km'] ?? 25.00);
+$simulateKm  = !empty($settings['simulate_distance_km']) && filter_var($settings['simulate_distance_km'], FILTER_VALIDATE_BOOLEAN);
+$overrideKm  = (float) old('override_distance_km', $settings['override_distance_km'] ?? 0);
 ?>
 
 <div class="space-y-6 pb-10">
@@ -222,6 +224,51 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
                     </div>
                 </div>
 
+                <!-- TEST-ONLY Simulated Distance Override -->
+                <div class="p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px] shrink-0 mt-0.5">science</span>
+                        <div class="flex-1 min-w-0">
+                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    id="inputSimulateKm"
+                                    name="simulate_distance_km"
+                                    value="1"
+                                    <?= $simulateKm ? 'checked' : '' ?>
+                                    class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-600 focus:ring-amber-500"
+                                >
+                                <span class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Test Only &mdash; Simulate Distance Override</span>
+                            </label>
+                            <p class="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-1.5 leading-relaxed">
+                                <strong>Disabled by default.</strong> Live checkout quotes always use real Google/OSRM route kilometers. Enable this only while testing to force every delivery quote to a fixed distance below &mdash; never leave it on in production.
+                            </p>
+                            <div id="simulatedKmField" class="mt-3 space-y-1.5 <?= $simulateKm ? '' : 'hidden' ?>">
+                                <label for="inputOverrideKm" class="block text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Simulated Distance (km)</label>
+                                <div class="relative w-40">
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0.1"
+                                        max="200"
+                                        id="inputOverrideKm"
+                                        name="override_distance_km"
+                                        value="<?= esc(number_format($overrideKm, 2, '.', '')) ?>"
+                                        class="w-full pl-3 pr-10 py-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-slate-900 text-sm font-bold font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                    >
+                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-500 font-mono">km</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if ($simulateKm): ?>
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-100/70 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px] font-bold">
+                            <span class="material-symbols-outlined text-[16px]">warning</span>
+                            SIMULATED DISTANCE IS CURRENTLY ACTIVE &mdash; all shipping quotes are using fake km, not real routes.
+                        </div>
+                    <?php endif; ?>
+                </div>
+
                 <!-- Client-side validation message -->
                 <div id="formValidationAlert" class="hidden p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
                     <span class="material-symbols-outlined text-[18px] shrink-0">warning</span>
@@ -423,6 +470,15 @@ $maxDistKm   = (float) old('max_delivery_distance_km', $settings['max_delivery_d
     [inputBase, inputIncluded, inputPerKm, inputMaxDist, simRange].forEach(el => {
         if (el) el.addEventListener('input', updateSimulator);
     });
+
+    // Test-only simulated distance toggle visibility
+    const simToggle = document.getElementById('inputSimulateKm');
+    const simKmField = document.getElementById('simulatedKmField');
+    if (simToggle && simKmField) {
+        simToggle.addEventListener('change', function() {
+            simKmField.classList.toggle('hidden', !this.checked);
+        });
+    }
 
     document.querySelectorAll('.sim-preset-btn').forEach(btn => {
         btn.addEventListener('click', function() {

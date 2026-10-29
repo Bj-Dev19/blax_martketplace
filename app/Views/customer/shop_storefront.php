@@ -570,6 +570,14 @@
 
                                 </div>
 
+                                <?php if ($shopOffersDelivery): ?>
+                                    <?php $shipRates = model(\App\Models\SiteContentModel::class)->getShippingFeeSettings(); ?>
+                                    <div class="mt-2.5 px-3 py-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-300 text-[11px] font-medium flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-[16px] shrink-0">route</span>
+                                        <span>Doorstep Delivery shipping is auto-calculated by road distance from this shop to your address: <strong class="font-mono">₱<?= number_format((float) ($shipRates['base_shipping_fee'] ?? 50), 2) ?></strong> up to <?= number_format((float) ($shipRates['included_distance_km'] ?? 2), 1) ?> km, then <strong class="font-mono">+₱<?= number_format((float) ($shipRates['additional_fee_per_km'] ?? 10), 2) ?></strong> per extra <?= number_format((float) ($shipRates['included_distance_km'] ?? 2), 1) ?> km. The exact fee is added when you submit.</span>
+                                    </div>
+                                <?php endif; ?>
+
                                 <?php if (!$shopOffersDelivery && $shopOffersPickup): ?>
                                     <div class="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
                                         <span class="material-symbols-outlined text-[16px] text-amber-600 shrink-0">info</span>
@@ -736,7 +744,7 @@
 
                         <a href="<?= base_url('product/' . $p['id']) ?>" class="block relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center p-3">
 
-                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc(product_image_url($p['image_url'] ?? null)) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                            <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc(product_image_url($p['image_url'] ?? null)) ?>" alt="<?= esc($p['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
 
                             <?php if (!empty($p['is_bestseller'])): ?>
                                 <span class="absolute top-2.5 right-2.5 bg-amber-500 text-white px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-xs z-10 uppercase tracking-wide">

@@ -446,7 +446,11 @@ class GoogleMapsService
 
     /**
      * Resolve reliable coordinates for a shop or customer shipping address.
-     * Uses stored latitude/longitude first, then Barangay centroid lookup, then Polomolok town center.
+     * Strict precedence contract (used by both live maps and shipping quotes):
+     *   1. The entity's own stored, in-bounds coordinate (never overwritten by a centroid)
+     *   2. Barangay centroid from explicit barangay field, then address parts
+     *   3. City center (Tupi) only when no barangay can be identified
+     *   4. Polomolok default center strictly as the last resort
      *
      * @return array{lat: float, lng: float, source: string}
      */
@@ -455,16 +459,20 @@ class GoogleMapsService
         $lat = (float) ($entity['latitude'] ?? $entity['lat'] ?? 0);
         $lng = (float) ($entity['longitude'] ?? $entity['lng'] ?? 0);
 
+        // 1. Stored precise coordinate wins outright
         if ($lat != 0.0 && $lng != 0.0 && \App\Models\DeliveryModel::isPolomolokCoordinate($lat, $lng)) {
             return ['lat' => $lat, 'lng' => $lng, 'source' => 'pinned'];
         }
 
         $city = trim((string) ($entity['city'] ?? ''));
 
-        // Try barangay / address_line2 / address_line1 / address_line lookup
+        // 2. Barangay / address_line2 / full address text / address_line / street lookup,
+        //    ordered from most to least likely to contain a clean barangay name
         $candidates = [
             $entity['barangay'] ?? '',
             $entity['address_line2'] ?? '',
+            $entity['destination_address'] ?? '',
+            $entity['full_address'] ?? '',
             $entity['address_line'] ?? '',
             $entity['address_line1'] ?? '',
         ];
@@ -491,6 +499,7 @@ class GoogleMapsService
             }
         }
 
+        // 3. City center only when the city itself is known and no barangay matched
         if (stripos($city, 'tupi') !== false) {
             return [
                 'lat'    => \App\Models\DeliveryModel::TUPI_CENTER_LAT,
@@ -499,6 +508,7 @@ class GoogleMapsService
             ];
         }
 
+        // 4. Strict last resort — flagged via source so callers can surface it as approximate
         $def = $this->getDefaultCoordinates();
         return ['lat' => (float) $def['lat'], 'lng' => (float) $def['lng'], 'source' => 'default_center'];
     }
@@ -553,7 +563,13 @@ class GoogleMapsService
         $origin = $this->resolveEntityCoordinates($shop);
         $dest   = $this->resolveEntityCoordinates($address);
 
-        if (isset($settings['override_distance_km']) && is_numeric($settings['override_distance_km'])) {
+        // TEST-ONLY distance override: disabled by default. Live quotes always use real
+        // route km unless an admin explicitly enables the simulated toggle in Shipping
+        // Settings; merely having a stored override value is never enough.
+        $simulateEnabled = !empty($settings['simulate_distance_km'])
+            && filter_var($settings['simulate_distance_km'], FILTER_VALIDATE_BOOLEAN);
+
+        if ($simulateEnabled && isset($settings['override_distance_km']) && is_numeric($settings['override_distance_km'])) {
             $distanceKm     = round(max(0.0, (float) $settings['override_distance_km']), 2);
             $distanceMeters = (int) round($distanceKm * 1000);
             $estMins        = max(5, (int) round($distanceKm * 2.5));
@@ -587,6 +603,27 @@ class GoogleMapsService
         $withinRadius = ($distanceKm <= $maxDistKm);
         $deliverable  = $isPolomolokAddress && $withinRadius;
 
+        // Distance credibility guard. A 0 km result is only trustworthy when the two points
+        // are genuinely distinct street-level locations. When shop and destination collapse onto
+        // the exact same resolved coordinate, one of them is almost certainly a barangay/city
+        // centroid masquerading as a pinned address (shop and customer records sharing the same
+        // municipal fallback point). The real distance is then UNKNOWN, not "zero blocks away",
+        // so we flag it instead of silently quoting a confident base fee.
+        $shopName = trim((string) ($shop['shop_name'] ?? 'the shop'));
+        $originExact = round((float) $origin['lat'], 6) . ',' . round((float) $origin['lng'], 6);
+        $destExact   = round((float) $dest['lat'], 6) . ',' . round((float) $dest['lng'], 6);
+
+        $distanceApproximate = ($originExact === $destExact && $distanceMeters < 50);
+        $accuracyNotice      = null;
+        if ($distanceApproximate) {
+            $distanceText   = '≈ same point';
+            $accuracyNotice = 'The shop and this delivery address resolve to the identical map '
+                . 'point, so the real distance to ' . $shopName . ' could not be measured (one of '
+                . 'the two records only has a barangay/municipality-level location). A base '
+                . 'shipping fee is applied; pin the exact location for an accurate '
+                . 'distance-based fee.';
+        }
+
         // KM-Limit Step Calculation:
         // Within $includedKm (e.g. <= 2.0 km), fee stays at $baseFee (does not increase).
         // When $distanceKm exceeds $includedKm, automatically add $perKmFee per exceeded $includedKm step bracket.
@@ -604,7 +641,6 @@ class GoogleMapsService
 
         $shippingFee = round($baseFee + $extraFee, 2);
 
-        $shopName = trim((string) ($shop['shop_name'] ?? 'the shop'));
         $error = null;
         if (!$isPolomolokAddress) {
             $error = 'Doorstep delivery and additional shipping fee calculation are available around Polomolok, South Cotabato only. Please select a Polomolok address or choose Store Pick-up.';
@@ -633,6 +669,8 @@ class GoogleMapsService
             'extra_distance_fee'       => $extraFee,
             'max_delivery_distance_km' => $maxDistKm,
             'route_source'             => $routeSource,
+            'distance_approximate'     => $distanceApproximate,
+            'accuracy_notice'          => $accuracyNotice,
             'origin_coords'            => $origin,
             'destination_coords'       => $dest,
             'error'                    => $error,

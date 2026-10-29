@@ -47,15 +47,14 @@ server {
     gzip_min_length 256;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml font/woff2;
 
-    # Security headers
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy "geolocation=(self), camera=(), microphone=()" always;
-    add_header Strict-Transport-Security $hsts_header always;
+    # Security headers (shared snippet - see docker/nginx-security-headers.conf).
+    # Any location below that declares its own add_header MUST include this too,
+    # because nginx does not inherit add_header into such locations.
+    include /etc/nginx/snippets/security-headers.conf;
 
-    # Lightweight health check (direct Nginx response, zero overhead)
+    # Lightweight health check answered directly by Nginx (zero overhead). Use this
+    # for external pre-warm/ping traffic. Render's healthCheckPath points at /health
+    # instead, which is served by PHP-FPM so a wedged FPM pool is actually detected.
     location = /healthz {
         access_log off;
         default_type text/plain;
@@ -106,9 +105,11 @@ server {
 
     # Cache media & fonts
     location ~* \.(jpg|jpeg|png|gif|ico|webp|svg|woff|woff2|ttf|eot)$ {
+        # Re-declared because add_header is not inherited into a location that
+        # sets its own header; without this the security headers would vanish here.
+        include /etc/nginx/snippets/security-headers.conf;
         expires 30d;
         add_header Cache-Control "public, no-transform, max-age=2592000";
-        add_header Access-Control-Allow-Origin "*";
         access_log off;
         log_not_found off;
         try_files $uri =404;
@@ -116,9 +117,9 @@ server {
 
     # Cache CSS & JS with must-revalidate
     location ~* \.(css|js)$ {
+        include /etc/nginx/snippets/security-headers.conf;
         expires 7d;
         add_header Cache-Control "public, max-age=604800, must-revalidate";
-        add_header Access-Control-Allow-Origin "*";
         access_log off;
         log_not_found off;
         try_files $uri =404;

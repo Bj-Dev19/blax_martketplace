@@ -31,7 +31,8 @@ class AuthThrottleTest extends CIUnitTestCase
     public function testAuthThrottleBlocksAfterExcessiveAttempts()
     {
         $throttler = service('throttler');
-        $ip = service('request')->getIPAddress() ?: '127.0.0.1';
+        // Must match the key derivation used by App\Filters\AuthRateLimiter.
+        $ip = client_ip(service('request')) ?: '127.0.0.1';
         $key = 'auth_throttle_' . md5($ip);
 
         // Exhaust the 10 tokens

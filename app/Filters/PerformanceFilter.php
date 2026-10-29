@@ -2,6 +2,7 @@
 
 namespace App\Filters;
 
+use CodeIgniter\Events\Events;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -12,12 +13,22 @@ use CodeIgniter\HTTP\ResponseInterface;
  * Activated exclusively when APP_PROFILE=1 is present in the environment.
  * Logs execution time, peak memory usage, and database query count to stderr.
  * When APP_PROFILE is unset or 0, this filter returns immediately with zero overhead.
+ *
+ * Query stats come from the framework's `DBQuery` event. CodeIgniter 4.7 removed
+ * the connection-level query log ($db->saveQueries / $db->getQueries()), so the
+ * event is the only supported way to observe statements; the listener is
+ * registered once and only while profiling is on.
  */
 class PerformanceFilter implements FilterInterface
 {
     private static bool $enabled = false;
     private static float $startTime = 0.0;
     private static int $startMemory = 0;
+
+    /** @var list<object> Query objects collected for the current request */
+    private static array $queries = [];
+
+    private static bool $listening = false;
 
     public function before(RequestInterface $request, $arguments = null)
     {
@@ -30,14 +41,16 @@ class PerformanceFilter implements FilterInterface
         self::$enabled = true;
         self::$startTime = microtime(true);
         self::$startMemory = memory_get_usage(false);
+        self::$queries   = [];
 
-        try {
-            $db = \Config\Database::connect(null, false);
-            if ($db) {
-                $db->saveQueries = true;
-            }
-        } catch (\Throwable $e) {
-            // Ignore DB connect errors in before filter
+        if (! self::$listening) {
+            self::$listening = true;
+
+            Events::on('DBQuery', static function ($query): void {
+                // Keep the object, not a string, so getDuration()/getOriginalQuery()
+                // stay available in after().
+                self::$queries[] = $query;
+            });
         }
     }
 
@@ -56,25 +69,20 @@ class PerformanceFilter implements FilterInterface
         $queryCount = 0;
         $totalSqlMs = 0.0;
         $slowQueries = [];
-        try {
-            $db = \Config\Database::connect(null, false);
-            if ($db) {
-                $queries = $db->getQueries();
-                $queryCount = count($queries);
-                foreach ($queries as $q) {
-                    if (is_object($q) && method_exists($q, 'getDuration')) {
-                        $durMs = round(((float) $q->getDuration()) * 1000, 2);
-                        $totalSqlMs += $durMs;
-                        if ($durMs >= 15.0) {
-                            $sql = method_exists($q, 'getOriginalQuery') ? (string)$q->getOriginalQuery() : (string)$q;
-                            $slowQueries[] = sprintf("%.2fms: %s", $durMs, substr(preg_replace('/\s+/', ' ', trim($sql)), 0, 120));
-                        }
-                    }
+
+        foreach (self::$queries as $q) {
+            if (is_object($q) && method_exists($q, 'getDuration')) {
+                $queryCount++;
+                $durMs = round(((float) $q->getDuration()) * 1000, 2);
+                $totalSqlMs += $durMs;
+                if ($durMs >= 15.0) {
+                    $sql = method_exists($q, 'getOriginalQuery') ? (string) $q->getOriginalQuery() : (string) $q;
+                    $slowQueries[] = sprintf("%.2fms: %s", $durMs, substr(preg_replace('/\s+/', ' ', trim($sql)), 0, 120));
                 }
             }
-        } catch (\Throwable $e) {
-            // Do not fail if database is not connected
         }
+
+        self::$queries = [];
 
         $logMsg = sprintf(
             "[APP_PROFILE] %s /%s %d | Time: %s ms | Peak Mem: %s MB | SQL Queries: %d | SQL Time: %s ms\n",

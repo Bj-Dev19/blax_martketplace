@@ -46,7 +46,7 @@
                         ?>
 
                         <button type="button" class="gallery-thumb rounded-xl overflow-hidden h-18 sm:h-20 cursor-pointer transition-all p-1 bg-slate-50 dark:bg-slate-800 <?= $isMainThumb ? 'border-2 border-terra-green ring-2 ring-terra-green/20' : 'border border-slate-200 dark:border-slate-700 hover:border-terra-green/50' ?>" data-image="<?= esc($detailUrl) ?>" aria-label="View product image">
-                            <img class="w-full h-full object-contain" src="<?= esc($thumbUrl) ?>" alt="<?= esc($img['alt_text'] ?? $product['name']) ?>">
+                            <img class="w-full h-full object-contain" src="<?= esc($thumbUrl) ?>" alt="<?= esc($img['alt_text'] ?? $product['name']) ?>" loading="lazy" decoding="async">
                         </button>
                     <?php endforeach; ?>
                 </div>
@@ -470,7 +470,7 @@
                         <div>
                             <div class="relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-850 p-2 flex items-center justify-center">
                                 <a href="<?= base_url('product/' . $rel['id']) ?>" class="block w-full h-full flex items-center justify-center">
-                                    <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc($relImg) ?>" alt="<?= esc($rel['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                    <img class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" src="<?= esc($relImg) ?>" alt="<?= esc($rel['name']) ?>" loading="lazy" onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
                                 </a>
 
                                 <?php if (!empty($rel['is_bestseller'])): ?>

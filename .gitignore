@@ -40,6 +40,10 @@ env
 # Local credentials, certificates, and private keys
 *.key
 *.pem
+# Exception: docker/certs holds only *public* CA bundles used to verify the
+# MySQL/Aiven server certificate. A CA certificate is not a secret and must ship
+# in the image. Do not widen this negation to private keys or client certs.
+!docker/certs/*.pem
 *.crt
 *.pfx
 *.pkcs12

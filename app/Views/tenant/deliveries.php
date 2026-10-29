@@ -284,7 +284,7 @@
                             <div class="flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2.5 min-w-0">
                                     <?php if ($profileImage !== ''): ?>
-                                        <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="Customer">
+                                        <img src="<?= esc(profile_image_url($profileImage)) ?>" class="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="Customer" loading="lazy" decoding="async">
                                     <?php else: ?>
                                         <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-xs shrink-0 ring-1 ring-terra-green/30">
                                             <?= esc($initials) ?>
@@ -857,7 +857,7 @@
                 if (subEl) subEl.textContent = 'Please check the order number or take a clearer picture.';
             }
         })
-        .catch(() => {
+       .catch(() => {
             iconEl.classList.remove('animate-spin');
             resultBox.classList.remove('bg-slate-50', 'text-slate-800', 'border-slate-200');
             resultBox.classList.add('bg-rose-500/10', 'text-rose-800', 'dark:text-rose-300', 'border-rose-500/20');
@@ -866,6 +866,55 @@
             if (subEl) subEl.textContent = 'Please try again or enter the code manually.';
         });
     }
+
+    // ── Realtime: soft-refresh the shipment grid when the poll bus reports changes ──
+    (function() {
+        let reloadTimer = null;
+        let isReloading = false;
+        const knownStatus = {};
+        document.querySelectorAll('#shipmentsGrid .shipment-card').forEach(card => {
+            knownStatus[card.dataset.tracking] = card.dataset.status;
+        });
+
+        function refreshGrid() {
+            if (isReloading) return;
+            isReloading = true;
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.ok ? r.text() : null)
+                .then(html => {
+                    if (!html) return;
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const freshGrid = doc.getElementById('shipmentsGrid');
+                    const liveGrid = document.getElementById('shipmentsGrid');
+                    if (freshGrid && liveGrid) {
+                        liveGrid.innerHTML = freshGrid.innerHTML;
+                        // Re-apply active client-side filters after swapping markup.
+                        if (typeof filterShipments === 'function') filterShipments();
+                    }
+                    const freshCount = doc.getElementById('shipmentCountBadge');
+                    const liveCount = document.getElementById('shipmentCountBadge');
+                    if (freshCount && liveCount) liveCount.textContent = freshCount.textContent;
+                })
+                .catch(() => {})
+                .finally(() => { isReloading = false; });
+        }
+
+        function scheduleReload() {
+            clearTimeout(reloadTimer);
+            reloadTimer = setTimeout(refreshGrid, 1500);
+        }
+
+        window.addEventListener('blax:delivery-update', function(e) {
+            const d = e.detail;
+            if (!d || !d.tracking_id) return;
+            const key = d.tracking_id;
+            // New shipment, or a status change on an existing one -> soft refresh.
+            if (!(key in knownStatus) || knownStatus[key] !== d.status) {
+                knownStatus[key] = d.status;
+                scheduleReload();
+            }
+        });
+    })();
 </script>
 
 <?= $this->endSection() ?>

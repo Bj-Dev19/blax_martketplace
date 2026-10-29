@@ -229,6 +229,87 @@ class Database extends Config
         } elseif ($this->readEnv('RENDER') !== null || $this->readEnv('RENDER_SERVICE_ID') !== null) {
             $this->default['pConnect'] = true;
         }
+
+        // -----------------------------------------------------------
+        // TLS to the database server.
+        //
+        // CodeIgniter only switches MySQLi into SSL mode when at least one of
+        // ssl_key / ssl_cert / ssl_ca / ssl_capath / ssl_cipher is populated
+        // (see system/Database/MySQLi/Connection.php). The shipped
+        // 'encrypt' => ['ssl_verify' => false] therefore connected in plain
+        // text no matter what it looked like. Against a public-internet host
+        // such as Aiven that means credentials and order data travel
+        // unencrypted, so the CA bundle is the switch that actually enables
+        // encryption and ssl_verify is what stops a MITM from presenting any
+        // certificate.
+        // -----------------------------------------------------------
+        $sslCa     = $this->firstEnv(['DATABASE_DEFAULT_SSL_CA', 'DB_SSL_CA', 'database.default.encrypt.ssl_ca'], '');
+        $sslCapath = $this->firstEnv(['DATABASE_DEFAULT_SSL_CAPATH', 'DB_SSL_CAPATH', 'database.default.encrypt.ssl_capath'], '');
+        $sslCipher = $this->firstEnv(['DATABASE_DEFAULT_SSL_CIPHER', 'DB_SSL_CIPHER', 'database.default.encrypt.ssl_cipher'], '');
+
+        if ($sslCa !== '' || $sslCapath !== '' || $sslCipher !== '') {
+            $encrypt   = is_array($this->default['encrypt']) ? $this->default['encrypt'] : [];
+            $encrypt   = $this->assignTlsOption($encrypt, 'ssl_ca', $sslCa);
+            $encrypt   = $this->assignTlsOption($encrypt, 'ssl_capath', $sslCapath);
+            $encrypt   = $this->assignTlsOption($encrypt, 'ssl_cipher', $sslCipher);
+
+            // Verification defaults to on whenever we bothered to load a CA.
+            $sslVerify = $this->firstEnv(['DATABASE_DEFAULT_SSL_VERIFY', 'DB_SSL_VERIFY', 'database.default.encrypt.ssl_verify'], '');
+            $encrypt['ssl_verify'] = $sslVerify === ''
+                ? ($sslCa !== '')
+                : filter_var($sslVerify, FILTER_VALIDATE_BOOLEAN);
+
+            $this->default['encrypt'] = $encrypt;
+        } elseif ($this->readEnv('RENDER') !== null || $this->readEnv('RENDER_SERVICE_ID') !== null) {
+            // Render-only notice: local and CI groups legitimately talk to a
+            // localhost socket with no TLS, and aborting the boot there would
+            // be a regression. Never log the path or any credential.
+            $this->logStartupNotice(
+                'DB TLS not configured - connecting to ' . $this->default['hostname'] . ' without certificate verification'
+            );
+        }
+    }
+
+    /**
+     * Set an encrypt option only when a value was supplied, so an empty env
+     * var cannot overwrite a value loaded from .env by the parent config.
+     *
+     * @param array<string, mixed> $encrypt
+     *
+     * @return array<string, mixed>
+     */
+    private function assignTlsOption(array $encrypt, string $key, string $value): array
+    {
+        if ($value === '') {
+            return $encrypt;
+        }
+
+        if ($key === 'ssl_ca' && ! is_readable($value)) {
+            // The driver will fail the handshake; make the reason obvious in the
+            // log instead of surfacing a generic connection error per request.
+            $this->logStartupNotice('DB_SSL_CA points at an unreadable path; the database connection will fail.');
+        }
+
+        $encrypt[$key] = $value;
+
+        return $encrypt;
+    }
+
+    /**
+     * Log during config construction without letting a logging failure take the
+     * application down with it.
+     */
+    private function logStartupNotice(string $message): void
+    {
+        if (! function_exists('log_message')) {
+            return;
+        }
+
+        try {
+            log_message('error', $message);
+        } catch (\Throwable $e) {
+            // The Logger may not be resolvable this early; nothing to recover.
+        }
     }
 
     /**

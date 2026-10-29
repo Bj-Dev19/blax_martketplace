@@ -265,6 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
             container = document.createElement('div');
             container.id = 'blax-toast-container';
             container.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0';
+            // Toast bodies here come straight from the notification poll (customer
+            // names, order numbers, uploaded file names). Announce politely rather
+            // than hijacking, and never interpolate the payload into markup.
+            container.setAttribute('aria-live', 'polite');
+            container.setAttribute('aria-atomic', 'false');
             document.body.appendChild(container);
         }
 
@@ -285,26 +290,48 @@ document.addEventListener('DOMContentLoaded', () => {
         let actionHtml = '';
         if (url) {
             actionHtml = `
-                <a href="${url}" class="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1.5">
+                <a href="#" class="blax-toast-link inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-1.5">
                     <span>View Details</span>
                     <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
                 </a>
             `;
         }
 
+        // Static skeleton only. icon/title/message all originate from the server, so
+        // interpolating them into innerHTML would be a stored-XSS sink. Each dynamic
+        // value is assigned with textContent, or via a scheme-checked href below.
         toast.innerHTML = `
             <div class="w-8 h-8 rounded-xl ${badgeStyle} border flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                <span class="material-symbols-outlined text-[18px]">${icon}</span>
+                <span class="blax-toast-icon material-symbols-outlined text-[18px]"></span>
             </div>
             <div class="flex-1 min-w-0">
-                <h4 class="text-xs font-bold text-on-surface leading-tight">${title}</h4>
-                <p class="text-xs text-on-surface-variant mt-0.5 leading-snug break-words">${message}</p>
+                <h4 class="blax-toast-title text-xs font-bold text-on-surface leading-tight"></h4>
+                <p class="blax-toast-message text-xs text-on-surface-variant mt-0.5 leading-snug break-words"></p>
                 ${actionHtml}
             </div>
             <button type="button" class="text-on-surface-variant/60 hover:text-on-surface p-1 -mr-1 rounded-lg transition-colors" onclick="this.closest('div.pointer-events-auto').remove()">
                 <span class="material-symbols-outlined text-[16px]">close</span>
             </button>
         `;
+
+        toast.querySelector('.blax-toast-icon').textContent = icon;
+        toast.querySelector('.blax-toast-title').textContent = title;
+        toast.querySelector('.blax-toast-message').textContent = message;
+
+        if (url) {
+            const link = toast.querySelector('.blax-toast-link');
+            // Block javascript:/data: and protocol-relative href injection.
+            const candidate = String(url).trim();
+            if (/^https?:\/\//i.test(candidate) || (candidate.startsWith('/') && !candidate.startsWith('//'))) {
+                link.setAttribute('href', candidate);
+            } else {
+                link.remove();
+            }
+        }
+
+        if (type === 'error') {
+            toast.setAttribute('role', 'alert');
+        }
 
         container.appendChild(toast);
         playChime(type);
@@ -355,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastNotifId = <?= !empty($recentNotifs[0]['id']) ? (int)$recentNotifs[0]['id'] : 0 ?>;
     let lastOrderSig = '';
     let lastPrintSig = '';
+    let lastDeliverySig = '';
     let knownOrderStatuses = {};
     let knownPrintStatuses = {};
     let isInitialCustomerPoll = true;
@@ -415,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastNotifId > 0) params.set('last_notif_id', lastNotifId);
         if (lastOrderSig) params.set('last_order_sig', lastOrderSig);
         if (lastPrintSig) params.set('last_print_sig', lastPrintSig);
+        if (lastDeliverySig) params.set('last_delivery_sig', lastDeliverySig);
         const qs = params.toString();
         if (qs) url += '?' + qs;
 
@@ -428,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (res.order_sig !== undefined) lastOrderSig = res.order_sig;
                 if (res.print_sig !== undefined) lastPrintSig = res.print_sig;
+                if (res.delivery_sig !== undefined) lastDeliverySig = res.delivery_sig;
 
                 // Sync header badges
                 updateCustomerBadges(res.unread_count, res.cart_count, res.active_orders_count);

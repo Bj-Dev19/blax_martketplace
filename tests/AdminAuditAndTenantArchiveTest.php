@@ -58,7 +58,7 @@ class AdminAuditAndTenantArchiveTest extends CIUnitTestCase
         $body = $res->response()->getBody();
 
         // Check header and KPI cards
-        $this->assertStringContainsString('Archive & Recovery Hub', $body);
+        $this->assertStringContainsString('Archive &amp; Recovery Hub', $body);
         $this->assertStringContainsString('Total Stored', $body);
         $this->assertStringContainsString('Archived Orders', $body);
         $this->assertStringContainsString('Archived Products', $body);

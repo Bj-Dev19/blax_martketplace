@@ -130,7 +130,7 @@
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="w-9 h-9 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-sm overflow-hidden border border-terra-green/20 shrink-0">
                                         <?php if (!empty($shopLogo)): ?>
-                                            <img src="<?= esc(product_image_url($shopLogo, 'thumbnail')) ?>" alt="<?= esc($shopName) ?>" class="w-full h-full object-cover">
+                                            <img src="<?= esc(product_image_url($shopLogo, 'thumbnail')) ?>" alt="<?= esc($shopName) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                         <?php else: ?>
                                             <span class="material-symbols-outlined text-[18px]">storefront</span>
                                         <?php endif; ?>

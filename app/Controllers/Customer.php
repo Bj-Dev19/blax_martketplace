@@ -785,18 +785,28 @@ class Customer extends BaseController
             $data['place_id']    = $placeId ?: null;
             $data['geocoded_at'] = date('Y-m-d H:i:s');
         } else {
-            $centroid = \App\Models\DeliveryModel::getBarangayCoordinate($barangay, $city);
-            if ($centroid) {
-                $data['latitude']    = $centroid['lat'];
-                $data['longitude']   = $centroid['lng'];
+            // Prefer a precise street-level geocode of the full address before any
+            // coarse fallback. The barangay centroid is only a last resort (no API key
+            // or the address could not be resolved), so the map no longer snaps the
+            // customer to a generic fake location when a real pin is available.
+            $mapsService = new \App\Services\GoogleMapsService();
+            $fullAddr = $data['address_line1'] . ', ' . $barangay . ', ' . $city . ', South Cotabato, Philippines';
+            $geo = $mapsService->geocodeAddress($fullAddr);
+
+            if ($geo && isset($geo['lat'], $geo['lng']) && \App\Models\DeliveryModel::isPolomolokCoordinate((float) $geo['lat'], (float) $geo['lng'])) {
+                $data['latitude']    = (float) $geo['lat'];
+                $data['longitude']   = (float) $geo['lng'];
+                $data['place_id']    = $geo['place_id'] ?? ($placeId ?: null);
                 $data['geocoded_at'] = date('Y-m-d H:i:s');
             } else {
-                $mapsService = new \App\Services\GoogleMapsService();
-                $fullAddr = $data['address_line1'] . ', ' . $barangay . ', ' . $city . ', South Cotabato, Philippines';
-                $geo = $mapsService->geocodeAddress($fullAddr);
-                if ($geo) {
-                    $data['latitude']    = $geo['lat'];
-                    $data['longitude']   = $geo['lng'];
+                $centroid = \App\Models\DeliveryModel::getBarangayCoordinate($barangay, $city);
+                if ($centroid) {
+                    $data['latitude']    = $centroid['lat'];
+                    $data['longitude']   = $centroid['lng'];
+                    $data['geocoded_at'] = date('Y-m-d H:i:s');
+                } elseif ($geo && isset($geo['lat'], $geo['lng'])) {
+                    $data['latitude']    = (float) $geo['lat'];
+                    $data['longitude']   = (float) $geo['lng'];
                     $data['place_id']    = $geo['place_id'] ?? null;
                     $data['geocoded_at'] = date('Y-m-d H:i:s');
                 }
@@ -967,6 +977,7 @@ class Customer extends BaseController
         $rawLastNotifId = $this->request->getGet('last_notif_id');
         $rawLastOrderSig = $this->request->getGet('last_order_sig');
         $rawLastPrintSig = $this->request->getGet('last_print_sig');
+        $rawLastDeliverySig = $this->request->getGet('last_delivery_sig');
 
         // Consolidated single-query change-detection snapshot (1 query instead of 4)
         if ($isSqlite) {
@@ -991,10 +1002,18 @@ class Customer extends BaseController
         $orderSig          = (string) ($snapshot['order_sig'] ?? '0');
         $printSig          = (string) ($snapshot['print_sig'] ?? '0');
 
+        // Customer-scoped delivery signal (id + status) so doorstep delivery transitions
+        // and courier handoffs surface on the tracking pages without a refresh.
+        $deliverySnap      = (new \App\Models\DeliveryModel())->getRealtimeDeliverySnapshot(null, $userId);
+        $deliverySig       = (string) $deliverySnap['sig'];
+        $deliveryRows      = $deliverySnap['deliveries'];
+        $maxDeliveryId     = (int) $deliverySnap['max_id'];
+        $deliveryUnchanged = ($rawLastDeliverySig === null || $rawLastDeliverySig === '' || (string) $rawLastDeliverySig === $deliverySig);
+
         // Fast path: if client provided previous hashes and no new notifications or status transitions occurred
         if ($rawLastNotifId !== null && $rawLastOrderSig !== null && $rawLastPrintSig !== null) {
             $lastNotifId = (int) $rawLastNotifId;
-            if ($currentMaxNotifId <= $lastNotifId && (string)$rawLastOrderSig === $orderSig && (string)$rawLastPrintSig === $printSig) {
+            if ($currentMaxNotifId <= $lastNotifId && (string)$rawLastOrderSig === $orderSig && (string)$rawLastPrintSig === $printSig && $deliveryUnchanged) {
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
                     ->setJSON([
@@ -1004,6 +1023,8 @@ class Customer extends BaseController
                         'max_notif_id'        => $currentMaxNotifId,
                         'order_sig'           => $orderSig,
                         'print_sig'           => $printSig,
+                        'delivery_sig'        => $deliverySig,
+                        'max_delivery_id'     => $maxDeliveryId,
                         'has_new'             => false,
                         'new_notifs'          => [],
                         'timestamp'           => date('Y-m-d H:i:s'),
@@ -1060,6 +1081,9 @@ class Customer extends BaseController
                 'has_new'             => !empty($newNotifs),
                 'active_orders'       => $activeOrders,
                 'active_printing'     => $activePrinting,
+                'delivery_sig'        => $deliverySig,
+                'max_delivery_id'     => $maxDeliveryId,
+                'active_deliveries'   => $deliveryRows,
                 'timestamp'           => date('Y-m-d H:i:s'),
             ]);
     }
@@ -1603,7 +1627,48 @@ class Customer extends BaseController
             default  => 0.00,
         };
 
-        $totalPrice = round((($pageCount * $basePerPage) + $bindingCost) * $copies, 2);
+        $printSubtotal = round((($pageCount * $basePerPage) + $bindingCost) * $copies, 2);
+
+        // Distance-based shipping for doorstep delivery printing — same quote engine
+        // (calculateDeliveryQuote) and address selection used by product-order checkout,
+        // so printing and orders never diverge on shipping math.
+        $shippingFee        = 0.00;
+        $shippingDistanceKm = null;
+        $shippingAddressId  = null;
+        $deliveryAddr       = null;
+        if ($fulfillment === 'delivery') {
+            $addresses = (new ShippingAddressModel())
+                ->where('user_id', $userId)
+                ->orderBy('is_default', 'DESC')
+                ->findAll();
+
+            if (empty($addresses)) {
+                session()->setFlashdata('error', 'Please add and set a shipping address before requesting doorstep delivery.');
+                return redirect()->to('/customer/addresses?open_add=1');
+            }
+
+            $deliveryAddr = $addresses[0];
+            foreach ($addresses as $a) {
+                if (!empty($a['is_default'])) {
+                    $deliveryAddr = $a;
+                    break;
+                }
+            }
+
+            $shippingSettings = (new \App\Models\SiteContentModel())->getShippingFeeSettings();
+            $shippingQuote    = (new \App\Services\GoogleMapsService())->calculateDeliveryQuote($shop ?? [], $deliveryAddr, $shippingSettings);
+
+            if (empty($shippingQuote['deliverable'])) {
+                session()->setFlashdata('error', $shippingQuote['error'] ?? 'Your delivery address exceeds the maximum delivery distance. Please choose Store Pick-up or select a closer address.');
+                return redirect()->back();
+            }
+
+            $shippingFee        = round((float) ($shippingQuote['shipping_fee'] ?? 0.00), 2);
+            $shippingDistanceKm = round((float) ($shippingQuote['distance_km'] ?? 0.00), 2);
+            $shippingAddressId  = (int) $deliveryAddr['id'];
+        }
+
+        $totalPrice = round($printSubtotal + $shippingFee, 2);
         $downPaymentPercent = (float) ($shopSettings['down_payment_percent'] ?? 50.00);
         $downPayment = round($totalPrice * ($downPaymentPercent / 100.00), 2);
 
@@ -1626,6 +1691,9 @@ class Customer extends BaseController
             'fulfillment_method'   => $fulfillment,
             'total_price'          => $totalPrice,
             'down_payment'         => $downPayment,
+            'shipping_fee'         => $shippingFee,
+            'distance_km'          => $shippingDistanceKm,
+            'shipping_address_id'  => $shippingAddressId,
             'progress_percent'     => 0,
             'reference_photos'     => $stagedRefPhotos,
         ];
@@ -1662,6 +1730,9 @@ class Customer extends BaseController
                 'fulfillment_method'   => $fulfillment,
                 'total_price'          => $totalPrice,
                 'down_payment'         => $downPayment,
+                'shipping_fee'         => $shippingFee,
+                'distance_km'          => $shippingDistanceKm,
+                'shipping_address_id'  => $shippingAddressId,
                 'status'               => 'new',
                 'progress_percent'     => 0,
             ];
@@ -1696,16 +1767,31 @@ class Customer extends BaseController
             ]);
 
             if ($fulfillment === 'delivery') {
-                $delModel = new DeliveryModel();
-                $delModel->insert([
+                $destAddrText = 'Doorstep Delivery';
+                if ($deliveryAddr) {
+                    $destAddrText = trim(implode(', ', array_filter([
+                        $deliveryAddr['address_line1'] ?? '',
+                        $deliveryAddr['address_line2'] ?? '',
+                        $deliveryAddr['city'] ?? 'Polomolok',
+                        $deliveryAddr['province'] ?? 'South Cotabato',
+                    ])));
+                }
+                $delData = [
                     'deliverable_type'    => 'printing_request',
                     'deliverable_id'      => $prId,
                     'tracking_id'         => $insertData['request_number'],
                     'courier_name'        => 'Store Courier',
-                    'destination_address' => 'Doorstep Delivery',
+                    'destination_address' => $destAddrText,
                     'status'              => 'pending',
                     'created_at'          => date('Y-m-d H:i:s'),
-                ]);
+                ];
+                // Carry the customer's stored precise pin so maps/quotes never fake the location
+                if ($deliveryAddr && \App\Models\DeliveryModel::isPolomolokCoordinate((float) ($deliveryAddr['latitude'] ?? 0), (float) ($deliveryAddr['longitude'] ?? 0))) {
+                    $delData['destination_latitude']  = (float) $deliveryAddr['latitude'];
+                    $delData['destination_longitude'] = (float) $deliveryAddr['longitude'];
+                }
+                $delModel = new DeliveryModel();
+                $delModel->insert($delData);
             }
 
             $db->transComplete();
@@ -1896,6 +1982,9 @@ class Customer extends BaseController
                 'fulfillment_method'   => $fulfillmentMethod = $pending['fulfillment_method'] ?? 'pickup',
                 'total_price'          => $pending['total_price'],
                 'down_payment'         => $pending['down_payment'],
+                'shipping_fee'         => $pending['shipping_fee'] ?? 0.00,
+                'distance_km'          => $pending['distance_km'] ?? null,
+                'shipping_address_id'  => $pending['shipping_address_id'] ?? null,
                 'status'               => 'new',
                 'progress_percent'     => 0,
             ];
@@ -2332,7 +2421,12 @@ class Customer extends BaseController
             default  => 0.00,
         };
 
-        $totalPrice = round((($pageCount * $basePerPage) + $bindingCost) * $copies, 2);
+        $printSubtotal = round((($pageCount * $basePerPage) + $bindingCost) * $copies, 2);
+        // Preserve the already-quoted distance shipping fee for delivery requests
+        $reshipFee = (($row['fulfillment_method'] ?? '') === 'delivery')
+            ? round((float) ($row['shipping_fee'] ?? 0.00), 2)
+            : 0.00;
+        $totalPrice = round($printSubtotal + $reshipFee, 2);
         $downPaymentPercent = (float) ($shopSettings['down_payment_percent'] ?? 50.00);
         $downPayment = round($totalPrice * ($downPaymentPercent / 100.00), 2);
 

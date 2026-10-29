@@ -62,9 +62,15 @@ RUN mkdir -p /var/www/html/writable/cache \
     && chown -R www-data:www-data /var/www/html/writable /var/www/html/public/uploads \
     && chmod -R 775 /var/www/html/writable /var/www/html/public/uploads
 
-# Copy Nginx configuration template and entrypoint script
+# Copy Nginx configuration template, shared security-header snippet, and entrypoint script
 RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/nginx.conf.template /etc/nginx/conf.d/default.conf.template
+# Must land before the build-time `nginx -t` below: the template `include`s it from
+# every location that sets its own add_header, and a missing file fails the build.
+COPY docker/nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
+
+# Normalize CRLF from Windows checkouts before nginx parses these files
+RUN sed -i 's/\r$//' /etc/nginx/conf.d/default.conf.template /etc/nginx/snippets/security-headers.conf
 
 # Validate Nginx configuration template at build time to fail fast if syntax/context is invalid
 RUN PORT=8080 envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf \

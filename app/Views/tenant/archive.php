@@ -216,7 +216,7 @@
                                         <?php if ($type === 'inventory'): ?>
                                             <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden">
                                                 <?php if (!empty($details['image_url'])): ?>
-                                                    <img src="<?= esc(product_image_url($details['image_url'])) ?>" alt="product" class="w-full h-full object-cover" onerror="this.remove()">
+                                                    <img src="<?= esc(product_image_url($details['image_url'])) ?>" alt="product" class="w-full h-full object-cover" loading="lazy" decoding="async" onerror="this.remove()">
                                                 <?php else: ?>
                                                     <span class="material-symbols-outlined text-slate-400 text-[20px]">package_2</span>
                                                 <?php endif; ?>
@@ -276,7 +276,7 @@
                                     <div class="flex items-center gap-2">
                                         <div class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center text-[11px] font-bold overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
                                             <?php if ($archiverImage !== ''): ?>
-                                                <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($archiverImage)) ?>" alt="avatar" onerror="this.remove()">
+                                                <img class="w-full h-full object-cover" src="<?= esc(profile_image_url($archiverImage)) ?>" alt="avatar" loading="lazy" decoding="async" onerror="this.remove()">
                                             <?php else: ?>
                                                 <span><?= esc($archiverInitials) ?></span>
                                             <?php endif; ?>

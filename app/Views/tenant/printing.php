@@ -142,8 +142,9 @@ $searchQuery = $filters['q'] ?? '';
     </div>
 
     <!-- Collapsible Active Production Workbench (Horizontal Shelf) -->
-    <?php if (!empty($queue)): ?>
-        <div id="productionWorkbenchContainer" class="bg-gradient-to-r from-amber-500/5 via-amber-500/10 to-orange-500/5 dark:from-amber-950/20 dark:via-amber-900/20 dark:to-orange-950/10 rounded-3xl p-5 border border-amber-500/30 shadow-xs space-y-4">
+    <!-- Always rendered in the DOM (hidden while empty) so realtime events can inject job
+         cards without a page refresh, mirroring tenant/orders.php processingQueueGrid. -->
+    <div id="productionWorkbenchContainer" class="bg-gradient-to-r from-amber-500/5 via-amber-500/10 to-orange-500/5 dark:from-amber-950/20 dark:via-amber-900/20 dark:to-orange-950/10 rounded-3xl p-5 border border-amber-500/30 shadow-xs space-y-4<?= empty($queue) ? ' hidden' : '' ?>">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-9 h-9 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold">
@@ -154,10 +155,10 @@ $searchQuery = $filters['q'] ?? '';
                             <h2 class="text-sm font-bold font-display text-slate-900 dark:text-white">Active Production Workbench</h2>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white flex items-center gap-1 shadow-2xs">
                                 <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                                <?= count($queue) ?> Active
+                                <span id="workbenchActiveCount"><?= count($queue) ?></span> Active
                             </span>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Documents currently on the printing desk ready for fulfillment</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Requests awaiting acceptance and documents currently on the printing desk</p>
                     </div>
                 </div>
                 <button type="button" onclick="toggleWorkbenchCards()" class="p-1.5 rounded-xl bg-white/80 dark:bg-slate-800 hover:bg-white text-slate-500 dark:text-slate-400 transition-colors shadow-2xs flex items-center gap-1 text-xs font-semibold cursor-pointer">
@@ -173,6 +174,7 @@ $searchQuery = $filters['q'] ?? '';
                     $qFullName = trim(($q['first_name'] ?? '') . ' ' . ($q['last_name'] ?? ''));
                     $qInitials = $qFullName !== '' ? mb_strtoupper(mb_substr($qFullName, 0, 2)) : 'CU';
                     $qIsDelivery = ($q['fulfillment_method'] ?? 'pickup') === 'delivery';
+                    $qIsNew      = ($q['status'] ?? '') === 'new';
                     $qFileName = !empty($q['file_name']) ? $q['file_name'] : 'Document.pdf';
                     $qDocType = strtoupper(!empty($q['document_type']) ? $q['document_type'] : (pathinfo($qFileName, PATHINFO_EXTENSION) ?: 'PDF'));
                     $qTotal = (float) ($q['total_price'] ?? 0);
@@ -205,8 +207,8 @@ $searchQuery = $filters['q'] ?? '';
                                             data-date="<?= esc(date('M d, Y h:i A', strtotime($q['created_at']))) ?>">
                                         #<?= esc($q['request_number']) ?>
                                     </button>
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                                        Printing
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold <?= $qIsNew ? 'bg-amber-500 text-white border border-amber-500 animate-pulse' : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20' ?>">
+                                        <?= $qIsNew ? 'New' : 'Printing' ?>
                                     </span>
                                 </div>
                                 <span class="text-[10px] text-slate-400 font-medium"><?= esc(date('g:i A', strtotime($q['created_at']))) ?></span>
@@ -247,13 +249,30 @@ $searchQuery = $filters['q'] ?? '';
 
                         <!-- Actions Area -->
                         <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                            <?php $qShipFee = (float) ($q['shipping_fee'] ?? 0); ?>
+                            <?php if ($qIsDelivery && $qShipFee > 0): ?>
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="text-slate-500 dark:text-slate-400">Shipping (<?= number_format((float) ($q['distance_km'] ?? 0), 1) ?> km):</span>
+                                    <span class="font-mono font-bold text-sky-700 dark:text-sky-400">₱<?= number_format($qShipFee, 2) ?></span>
+                                </div>
+                            <?php endif; ?>
                             <div class="flex items-center justify-between text-[11px]">
                                 <span class="text-slate-500 dark:text-slate-400">Balance:</span>
                                 <span class="font-mono font-bold text-slate-900 dark:text-white">₱<?= number_format($qBalance, 2) ?></span>
                             </div>
 
                             <!-- Primary 1-Click Action Button -->
-                            <?php if ($qIsDelivery): ?>
+                            <?php if ($qIsNew): ?>
+                                <form action="<?= base_url('tenant/printing/update-status') ?>" method="POST" onsubmit="return confirm('Accept Request #<?= esc($q['request_number'] ?? ('PR-' . $q['id'])) ?> and move it onto the printing desk?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="request_id" value="<?= (int) $q['id'] ?>">
+                                    <input type="hidden" name="status" value="in_production">
+                                    <button type="submit" class="w-full py-2 px-3 bg-terra-amber hover:bg-amber-500 active:scale-[0.98] text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                                        <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                                        <span>Accept &amp; Print</span>
+                                    </button>
+                                </form>
+                            <?php elseif ($qIsDelivery): ?>
                                 <form action="<?= base_url('tenant/printing/update-status') ?>" method="POST" onsubmit="return confirm('Dispatch Request #<?= esc($q['request_number'] ?? ('PR-' . $q['id'])) ?> as In Transit for delivery?');">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="request_id" value="<?= (int) $q['id'] ?>">
@@ -297,7 +316,6 @@ $searchQuery = $filters['q'] ?? '';
                 <?php endforeach; ?>
             </div>
         </div>
-    <?php endif; ?>
 
     <!-- 100% Full-Width Unified Print Queue Table Card -->
     <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl overflow-hidden shadow-xs border border-slate-200/80 dark:border-slate-800">
@@ -546,6 +564,10 @@ $searchQuery = $filters['q'] ?? '';
                                     <div class="min-w-[110px]">
                                         <div class="font-mono text-xs font-black text-slate-900 dark:text-white">₱<?= number_format($totalAmt, 2) ?></div>
                                         <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            <?php $rShipFee = (float) ($r['shipping_fee'] ?? 0); ?>
+                                            <?php if ($isDeliv && $rShipFee > 0): ?>
+                                                <span class="block text-sky-700 dark:text-sky-400 font-mono">Ship ₱<?= number_format($rShipFee, 2) ?><?= !empty($r['distance_km']) ? ' · ' . number_format((float) $r['distance_km'], 1) . ' km' : '' ?></span>
+                                            <?php endif; ?>
                                             <?php if ($balance <= 0): ?>
                                                 <span class="text-emerald-600 dark:text-emerald-400 font-bold">Fully Paid</span>
                                             <?php else: ?>
@@ -1367,25 +1389,201 @@ $searchQuery = $filters['q'] ?? '';
         }
     });
 
+    // --- Active Production Workbench: realtime job card injection ------------
+    const WB_BINDING = { none: 'Standard', spiral: 'Spiral Binding', hardcover: 'Hardcover', staple: 'Stapled' };
+    const wbEsc = (v) => String(v === null || v === undefined ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const wbBindingLabel = (b) => WB_BINDING[String(b || 'none').toLowerCase()] || 'Standard';
+
+    function wbSpecLine(pr) {
+        const pages = parseInt(pr.page_count || 1, 10) || 1;
+        const copies = parseInt(pr.copies || 1, 10) || 1;
+        return pages + ' pages \u2022 ' + copies + ' ' + (copies === 1 ? 'copy' : 'copies') + ' \u2022 ' + wbBindingLabel(pr.binding_option);
+    }
+
+    // Mirrors the server-rendered card markup, including the fulfillment-aware primary
+    // action: doorstep delivery => blue "Mark In Transit" (ready_for_delivery),
+    // store pick-up => green "Ready for Pick-up" (ready_for_pickup).
+    function buildWorkbenchCard(pr) {
+        const id = parseInt(pr.id, 10);
+        const reqNum = pr.request_number || ('PR-' + id);
+        const custName = pr.customer_name || String((pr.first_name || '') + ' ' + (pr.last_name || '')).trim() || 'Customer';
+        const initials = String(pr.customer_initials || custName.slice(0, 2)).toUpperCase() || 'CU';
+        const isDelivery = (pr.fulfillment_method || 'pickup') === 'delivery';
+        const isNew = String(pr.status || 'new') === 'new';
+        const fileName = pr.file_name || 'Document.pdf';
+        const docType = String(pr.document_type || 'PDF').toUpperCase();
+        const pages = parseInt(pr.page_count || 1, 10) || 1;
+        const copies = parseInt(pr.copies || 1, 10) || 1;
+        const colorMode = (String(pr.color_mode || '').toLowerCase() === 'color' ? 'Color' : 'B&W');
+        const paperSize = pr.paper_size || 'Letter';
+        const binding = wbBindingLabel(pr.binding_option);
+        const total = parseFloat((pr.total_amount !== undefined ? pr.total_amount : pr.total_price) || 0) || 0;
+        const down = parseFloat(pr.down_payment || 0) || 0;
+        const balance = Math.max(0, total - down);
+        const shipFee = parseFloat(pr.shipping_fee || 0) || 0;
+        const shipKm = parseFloat(pr.distance_km || 0) || 0;
+        const specs = wbSpecLine(pr);
+        const attachments = wbEsc(JSON.stringify(pr.attachments || []));
+
+        const primaryAction = isNew
+            ? `<form action="<?= base_url('tenant/printing/update-status') ?>" method="POST" onsubmit="return confirm('Accept Request #${wbEsc(reqNum)} and move it onto the printing desk?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="request_id" value="${id}">
+                    <input type="hidden" name="status" value="in_production">
+                    <button type="submit" class="w-full py-2 px-3 bg-terra-amber hover:bg-amber-500 active:scale-[0.98] text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                        <span>Accept &amp; Print</span>
+                    </button>
+                </form>`
+            : isDelivery
+            ? `<form action="<?= base_url('tenant/printing/update-status') ?>" method="POST" onsubmit="return confirm('Dispatch Request #${wbEsc(reqNum)} as In Transit for delivery?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="request_id" value="${id}">
+                    <input type="hidden" name="status" value="ready_for_delivery">
+                    <button type="submit" class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">local_shipping</span>
+                        <span>Mark In Transit</span>
+                    </button>
+                </form>`
+            : `<form action="<?= base_url('tenant/printing/update-status') ?>" method="POST">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="request_id" value="${id}">
+                    <input type="hidden" name="status" value="ready_for_pickup">
+                    <button type="submit" class="w-full py-2 px-3 bg-terra-green hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">storefront</span>
+                        <span>Ready for Pick-up</span>
+                    </button>
+                </form>`;
+
+        return `
+            <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl p-4 border border-amber-500/25 shadow-xs hover:border-amber-500/50 transition-all flex flex-col justify-between gap-3 group animate-fadeIn">
+                <div>
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center gap-1.5">
+                            <button type="button"
+                                    onclick="openRequestDetails(this)"
+                                    class="font-mono text-xs font-bold text-terra-green hover:underline cursor-pointer"
+                                    data-id="${id}"
+                                    data-request="${wbEsc(reqNum)}"
+                                    data-customer="${wbEsc(custName)}"
+                                    data-file="${wbEsc(fileName)}"
+                                    data-doctype="${wbEsc(docType)}"
+                                    data-changetype="${wbEsc(pr.doc_change_type || 'Print As-Is')}"
+                                    data-instructions="${wbEsc(pr.special_instructions || '')}"
+                                    data-attachments="${attachments}"
+                                    data-specs="${wbEsc(specs)}"
+                                    data-color="${wbEsc(colorMode)} \u2022 ${wbEsc(paperSize)}"
+                                    data-fulfillment="${isDelivery ? 'Delivery' : 'Pickup'}"
+                                    data-printer="Not assigned"
+                                    data-progress="0"
+                                    data-amount="${total.toFixed(2)}"
+                                    data-down="${down.toFixed(2)}"
+                                    data-date="${wbEsc(pr.placed_at_fmt || 'Just now')}">
+                                #${wbEsc(reqNum)}
+                            </button>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isNew ? 'bg-amber-500 text-white border border-amber-500 animate-pulse' : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'}">
+                                ${isNew ? 'New' : 'Printing'}
+                            </span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium">Just now</span>
+                    </div>
+
+                    <div class="mt-2.5 flex items-start gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center text-xs font-bold shrink-0">
+                            ${wbEsc(initials)}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-xs font-bold text-slate-900 dark:text-white truncate">${wbEsc(custName)}</div>
+                            <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                                <span class="material-symbols-outlined text-[14px] text-slate-400 shrink-0">description</span>
+                                <span class="truncate font-medium text-[11px]" title="${wbEsc(fileName)}">${wbEsc(fileName)}</span>
+                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${docType === 'DOCX' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'}">
+                                    ${wbEsc(docType)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5 mt-3">
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                            ${wbEsc(colorMode.toUpperCase())} \u2022 ${wbEsc(paperSize)}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                            ${pages} pgs \u00d7 ${copies} ${copies === 1 ? 'copy' : 'copies'}
+                        </span>
+                        ${binding !== 'Standard' ? `<span class="px-2 py-0.5 rounded-md bg-terra-green/10 text-terra-green border border-terra-green/20 text-[10px] font-bold">${wbEsc(binding)}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    ${isDelivery && shipFee > 0 ? `
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="text-slate-500 dark:text-slate-400">Shipping (${shipKm.toFixed(1)} km):</span>
+                            <span class="font-mono font-bold text-sky-700 dark:text-sky-400">\u20b1${shipFee.toFixed(2)}</span>
+                        </div>` : ''}
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-500 dark:text-slate-400">Balance:</span>
+                        <span class="font-mono font-bold text-slate-900 dark:text-white">\u20b1${balance.toFixed(2)}</span>
+                    </div>
+                    ${primaryAction}
+                    <div class="grid grid-cols-3 gap-1 pt-0.5">
+                        <button type="button"
+                                onclick="openRequestDetails(this.closest('.group').querySelector('button[data-request]'))"
+                                class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer">
+                            <span class="material-symbols-outlined text-[13px] text-terra-green">visibility</span>
+                            <span>Ticket</span>
+                        </button>
+                        <a href="<?= base_url('tenant/printing/download') ?>/${id}" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-[13px] text-terra-green">download</span>
+                            <span>File</span>
+                        </a>
+                        <a href="<?= base_url('tenant/printing/receipt') ?>/${id}" target="_blank" class="py-1 px-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-[13px] text-terra-green">receipt_long</span>
+                            <span>Receipt</span>
+                        </a>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // Reveals the (possibly empty) workbench shelf and prepends a live job card.
+    function injectWorkbenchCard(pr) {
+        const grid = document.getElementById('workbenchCardsGrid');
+        const shell = document.getElementById('productionWorkbenchContainer');
+        if (!grid || !shell) return false;
+        if (grid.querySelector('button[data-id="' + parseInt(pr.id, 10) + '"]')) return false;
+
+        shell.classList.remove('hidden');
+        grid.insertAdjacentHTML('afterbegin', buildWorkbenchCard(pr));
+
+        const badge = document.getElementById('workbenchActiveCount');
+        if (badge) badge.textContent = String((parseInt(badge.textContent || '0', 10) || 0) + 1);
+        return true;
+    }
+
     // Real-time Event Listener for Incoming New Printing Requests
     window.addEventListener('blax:new-printing', function(e) {
         const pr = e.detail;
         if (!pr || !pr.id) return;
 
-        const tbody = document.getElementById('printingTableBody');
-        if (!tbody) return;
-
         // Check if row already exists
         if (document.querySelector(`button[data-id="${pr.id}"]`)) return;
 
+        // Freshly submitted jobs and jobs already on the desk both belong on the shelf.
+        if (pr.status === 'in_production' || pr.status === 'new') {
+            injectWorkbenchCard(pr);
+        }
+
         // Auto reload or prepend to table if on 'new' or 'all' status view
         const currentStatus = '<?= esc($activeStatus) ?>';
-        if (currentStatus === '' || currentStatus === 'new') {
+        const tbody = document.getElementById('printingTableBody');
+        if (tbody && (currentStatus === '' || currentStatus === 'new')) {
             const reqNum = pr.request_number || ('PR-' + pr.id);
             const cleanReq = '#' + reqNum.replace(/^#+/, '');
-            const custName = (pr.first_name || '') + ' ' + (pr.last_name || '') || 'Customer';
-            const custPhone = pr.phone || pr.email || 'Direct';
-            const custInitials = (pr.first_name ? pr.first_name.charAt(0) : 'C') + (pr.last_name ? pr.last_name.charAt(0) : 'U');
+            const custName = pr.customer_name || (String((pr.first_name || '') + ' ' + (pr.last_name || '')).trim() || 'Customer');
+            const custPhone = pr.customer_phone || pr.phone || pr.customer_email || pr.email || 'Direct';
+            const custInitials = pr.customer_initials || ((pr.first_name ? pr.first_name.charAt(0) : 'C') + (pr.last_name ? pr.last_name.charAt(0) : 'U')).toUpperCase();
             const isDeliv = (pr.fulfillment_method || 'pickup') === 'delivery';
             const fileName = pr.file_name || 'Document.pdf';
             const docType = (pr.document_type || 'PDF').toUpperCase();
@@ -1397,6 +1595,8 @@ $searchQuery = $filters['q'] ?? '';
             const totalAmt = parseFloat(pr.total_price || pr.total_amount || 0);
             const downPayment = parseFloat(pr.down_payment || 0);
             const balance = Math.max(0, totalAmt - downPayment);
+            const shipFee = parseFloat(pr.shipping_fee || 0);
+            const shipKm = parseFloat(pr.distance_km || 0);
 
             const safeCustName = custName.replace(/"/g, '&quot;');
             const safeFile = fileName.replace(/"/g, '&quot;');
@@ -1479,6 +1679,7 @@ $searchQuery = $filters['q'] ?? '';
                 <td class="px-4 py-3.5">
                     <div class="min-w-[110px]">
                         <div class="font-mono text-xs font-black text-slate-900 dark:text-white">₱${totalAmt.toFixed(2)}</div>
+                        ${isDeliv && shipFee > 0 ? `<div class="text-[10px] text-sky-700 dark:text-sky-400 font-mono mt-0.5">Ship ₱${shipFee.toFixed(2)}${shipKm > 0 ? ' · ' + shipKm.toFixed(1) + ' km' : ''}</div>` : ''}
                         <div class="text-[10px] text-slate-500 mt-0.5">Bal: <b class="font-mono text-amber-600">₱${balance.toFixed(2)}</b></div>
                     </div>
                 </td>

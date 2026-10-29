@@ -5,7 +5,11 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /healthz
+    # /health is served by the PHP closure (app/Config/Routes.php), so the probe
+    # actually exercises PHP-FPM. /healthz is answered by nginx itself and would
+    # report a healthy check even with a dead PHP pool. Neither path touches the
+    # database on purpose: a transient Aiven blip must not restart a healthy app.
+    healthCheckPath: /health
     envVars:
       - key: CI_ENVIRONMENT
         value: production # never 'development' on a server
@@ -19,6 +23,37 @@ services:
         sync: false
       - key: DB_DATABASE
         sync: false
+      # TLS to Aiven. CodeIgniter enables MySQL encryption only when a CA bundle
+      # is supplied; see docs/DEPLOY_RENDER.md for where the file comes from.
+      - key: DB_SSL_CA
+        value: /var/www/html/docker/certs/aiven-ca.pem
+      - key: DB_SSL_VERIFY
+        value: "true"
+      # Cache must survive restarts: Cart::paymongoWebhook reads pending carts
+      # from the cache, and the free tier's filesystem is ephemeral. "database"
+      # is honored by app/Config/Cache.php and ci_cache is already migrated.
+      - key: CACHE_HANDLER
+        value: database
+      # Schema changes are applied deliberately (see docs/DEPLOY_RENDER.md), not
+      # implicitly on every boot, and a failed migration must fail the deploy.
+      - key: RUN_MIGRATIONS
+        value: "false"
+      # PHP-FPM sizing for the 512 MB / ~0.1 CPU free instance. Budget:
+      # 2 workers x 128 MB + 32 MB OPcache + nginx ~= 300 MB.
+      # If this service moves to a starter instance, raise to
+      # PHP_FPM_MAX_CHILDREN: "4" and PHP_MEMORY_LIMIT: 192M.
+      - key: PHP_FPM_MAX_CHILDREN
+        value: "2"
+      - key: PHP_FPM_START_SERVERS
+        value: "1"
+      - key: PHP_FPM_MIN_SPARE_SERVERS
+        value: "1"
+      - key: PHP_FPM_MAX_SPARE_SERVERS
+        value: "1"
+      - key: PHP_MEMORY_LIMIT
+        value: 128M
+      - key: PHP_OPCACHE_MEMORY
+        value: "32"
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

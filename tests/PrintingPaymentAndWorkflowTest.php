@@ -240,6 +240,79 @@ class PrintingPaymentAndWorkflowTest extends CIUnitTestCase
         $requestModel->delete($deliveryId, true);
     }
 
+    /**
+     * A freshly submitted request must show up on the tenant's hero workbench without a
+     * refresh, and must sit ahead of already-running jobs so it is never buried past the
+     * shelf limit by older in-production rows.
+     */
+    public function testProductionQueueIncludesNewRequestsAndPrioritizesThem(): void
+    {
+        $requestModel = new PrintingRequestModel();
+        $shop         = (new ShopModel())->first();
+        $this->assertNotNull($shop);
+        $shopId = (int) $shop['id'];
+
+        $customer = (new UserModel())->where('role', 'customer')->first() ?? (new UserModel())->first();
+        $this->assertNotNull($customer);
+        $customerId = (int) $customer['id'];
+
+        $stale = $requestModel->insert([
+            'request_number'     => 'PR-Q-STALE-' . rand(10000, 99999),
+            'shop_id'            => $shopId,
+            'customer_id'        => $customerId,
+            'color_mode'         => 'bw',
+            'paper_size'         => 'A4',
+            'page_count'         => 1,
+            'copies'             => 1,
+            'total_price'        => 10.00,
+            'status'             => 'in_production',
+            'fulfillment_method' => 'pickup',
+            'created_at'         => date('Y-m-d H:i:s', strtotime('-2 days')),
+        ]);
+        $fresh = $requestModel->insert([
+            'request_number'     => 'PR-Q-NEW-' . rand(10000, 99999),
+            'shop_id'            => $shopId,
+            'customer_id'        => $customerId,
+            'color_mode'         => 'color',
+            'paper_size'         => 'Letter',
+            'page_count'         => 3,
+            'copies'             => 1,
+            'total_price'        => 45.00,
+            'status'             => 'new',
+            'fulfillment_method' => 'delivery',
+            'shipping_fee'       => 70.00,
+            'distance_km'        => 5.80,
+            'created_at'         => date('Y-m-d H:i:s'),
+        ]);
+
+        try {
+            $queue    = $requestModel->getProductionQueue($shopId, 100);
+            $queueIds = array_map('intval', array_column($queue, 'id'));
+
+            $this->assertContains((int) $fresh, $queueIds, 'A new request must appear on the workbench immediately.');
+            $this->assertContains((int) $stale, $queueIds, 'In-production jobs stay on the workbench.');
+            $this->assertLessThan(
+                array_search((int) $stale, $queueIds, true),
+                array_search((int) $fresh, $queueIds, true),
+                'Un-accepted requests must sort ahead of jobs already printing, regardless of age.'
+            );
+
+            $freshRow = null;
+            foreach ($queue as $row) {
+                if ((int) $row['id'] === (int) $fresh) {
+                    $freshRow = $row;
+                    break;
+                }
+            }
+            $this->assertSame('new', $freshRow['status']);
+            $this->assertSame('delivery', $freshRow['fulfillment_method'], 'The card must render the doorstep action, not Ready for Pick-up.');
+            $this->assertEqualsWithDelta(70.00, (float) $freshRow['shipping_fee'], 0.001);
+        } finally {
+            $requestModel->delete($fresh, true);
+            $requestModel->delete($stale, true);
+        }
+    }
+
     public function testDocumentTypeFilteringAndAttachmentPreview()
     {
         $requestModel = new PrintingRequestModel();

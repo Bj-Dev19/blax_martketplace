@@ -537,6 +537,12 @@
                 $isCombined = (($type ?? 'order') === 'combined' && !empty($printing) && !empty($order));
                 $subtotal = (float) ($order['subtotal'] ?? $printing['total_price'] ?? 0);
                 $shipping = (float) ($order['shipping_fee'] ?? 0);
+                // Printing-only receipt: total_price already bundles the distance-based
+                // shipping fee, so break it out for an honest itemization.
+                if (empty($order) && !empty($printing)) {
+                    $shipping = (float) ($printing['shipping_fee'] ?? 0);
+                    $subtotal = max(0.0, (float) ($printing['total_price'] ?? 0) - $shipping);
+                }
                 $posAdd   = (float) ($order['pos_additional_amount'] ?? 0);
                 $prPrice  = $isCombined ? (float) ($printing['total_price'] ?? 0) : 0.0;
                 $grand    = $isCombined ? ((float) ($order['total_amount'] ?? 0) + $prPrice) : (float) ($order['total_amount'] ?? $printing['total_price'] ?? 0);

@@ -100,7 +100,7 @@ class CalendarScheduleRedesignTest extends CIUnitTestCase
         $this->assertStringContainsString('calHeroSaveBtn', $source);
 
         // 6. Right-Side Sticky Navigation Bar
-        $this->assertStringContainsString('On This Page', $source);
+        $this->assertStringContainsString('On this page', $source);
         $this->assertStringContainsString('hoursSectionVisibility', $source);
         $this->assertStringContainsString('hoursSectionCalendar', $source);
         $this->assertStringContainsString('hoursSectionWeekly', $source);

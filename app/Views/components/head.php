@@ -5,249 +5,24 @@
 
 <title><?= esc($title ?? 'Blax') ?></title>
 
-<?php $disableDarkTheme = $disableDarkTheme ?? false; ?>
-<!-- Early Theme Switcher Initializer (Defaults to Light Mode, Prevents FOUC) -->
-<script>
-(function() {
-    <?php if ($disableDarkTheme): ?>
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
-    window.setBlaxTheme = function() {};
-    window.toggleBlaxTheme = function() {};
-    window.updateThemeToggleIcons = function() {};
-    return;
-    <?php endif; ?>
-    window.updateThemeToggleIcons = function() {
-        const isDark = document.documentElement.classList.contains('dark');
-        document.querySelectorAll('.theme-toggle-btn').forEach(function(btn) {
-            const icon = btn.querySelector('.theme-toggle-icon, .material-symbols-outlined');
-            const text = btn.querySelector('.theme-toggle-text, .theme-mode-label');
-            if (icon) {
-                icon.textContent = isDark ? 'light_mode' : 'dark_mode';
-            }
-            if (text) {
-                text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-            }
-            btn.setAttribute('title', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-            btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-        });
-    };
+<!-- Brand / Favicon -->
+<link rel="icon" type="image/svg+xml" href="<?= base_url('favicon.svg') ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('favicon-32.png') ?>">
+<link rel="apple-touch-icon" href="<?= base_url('apple-touch-icon.png') ?>">
+<link rel="manifest" href="<?= base_url('site.webmanifest') ?>">
+<meta name="theme-color" content="#1B2A1E">
 
-    window.setBlaxTheme = function(theme) {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-            try { localStorage.setItem('blax_theme', 'dark'); } catch(e) {}
-        } else {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.classList.add('light');
-            try { localStorage.setItem('blax_theme', 'light'); } catch(e) {}
-        }
-        window.updateThemeToggleIcons();
-        window.dispatchEvent(new CustomEvent('blax:theme-changed', { detail: { theme: theme } }));
-    };
-
-    window.toggleBlaxTheme = function() {
-        const isDark = document.documentElement.classList.contains('dark');
-        window.setBlaxTheme(isDark ? 'light' : 'dark');
-    };
-
-    // Early click listener for immediate responsiveness (Theme, Notifications, Profile)
-    document.addEventListener('click', function(e) {
-        // 1. Theme toggle
-        const themeBtn = e.target.closest('.theme-toggle-btn');
-        if (themeBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.toggleBlaxTheme();
-            return;
-        }
-
-        // 2. Notification toggle
-        const notifBtn = e.target.closest('#notif-dropdown-toggle, #notif-toggle, #admin-notif-toggle');
-        if (notifBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const panel = (notifBtn.parentElement ? notifBtn.parentElement.querySelector('#notif-dropdown, #notif-panel, #admin-notif-panel') : null)
-                || document.getElementById('notif-panel') 
-                || document.getElementById('admin-notif-panel')
-                || document.getElementById('notif-dropdown');
-            if (panel) {
-                const isHidden = panel.classList.contains('hidden');
-                document.querySelectorAll('#profile-dropdown, #tenant-profile-dropdown').forEach(p => p.classList.remove('open'));
-                document.querySelectorAll('#admin-profile-quickmenu').forEach(p => p.classList.add('hidden'));
-                if (isHidden) {
-                    panel.classList.remove('hidden');
-                    notifBtn.setAttribute('aria-expanded', 'true');
-                } else {
-                    panel.classList.add('hidden');
-                    notifBtn.setAttribute('aria-expanded', 'false');
-                }
-            }
-            return;
-        }
-
-        // 3. Profile dropdown toggle
-        const profileBtn = e.target.closest('#profile-dropdown-toggle, #tenant-profile-toggle, #admin-profile-toggle');
-        if (profileBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const custDropdown = document.getElementById('profile-dropdown');
-            const tenantDropdown = document.getElementById('tenant-profile-dropdown');
-            const adminMenu = document.getElementById('admin-profile-quickmenu');
-
-            document.querySelectorAll('#notif-dropdown, #notif-panel, #admin-notif-panel').forEach(p => p.classList.add('hidden'));
-
-            if ((profileBtn.id === 'profile-dropdown-toggle' || profileBtn.matches('#profile-dropdown-toggle')) && custDropdown) {
-                const isOpen = custDropdown.classList.contains('open');
-                custDropdown.classList.toggle('open', !isOpen);
-                profileBtn.setAttribute('aria-expanded', (!isOpen).toString());
-            } else if ((profileBtn.id === 'tenant-profile-toggle' || profileBtn.matches('#tenant-profile-toggle')) && tenantDropdown) {
-                const isOpen = tenantDropdown.classList.contains('open');
-                tenantDropdown.classList.toggle('open', !isOpen);
-                profileBtn.setAttribute('aria-expanded', (!isOpen).toString());
-            } else if ((profileBtn.id === 'admin-profile-toggle' || profileBtn.matches('#admin-profile-toggle')) && adminMenu) {
-                const isHidden = adminMenu.classList.contains('hidden');
-                adminMenu.classList.toggle('hidden', !isHidden);
-                profileBtn.setAttribute('aria-expanded', isHidden.toString());
-            }
-            return;
-        }
-
-        // 4. Mobile Menu / Drawer / Sidebar Toggles (Customer, Tenant, Admin)
-        const custMenuBtn = e.target.closest('#mobile-menu-toggle');
-        if (custMenuBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const drawer = document.getElementById('mobile-drawer');
-            const backdrop = document.getElementById('mobile-drawer-backdrop');
-            if (drawer && backdrop) {
-                drawer.classList.add('open');
-                backdrop.classList.add('active');
-                document.body.classList.add('mobile-nav-open');
-            }
-            return;
-        }
-        const custCloseBtn = e.target.closest('#mobile-menu-close, #mobile-drawer-backdrop');
-        if (custCloseBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const drawer = document.getElementById('mobile-drawer');
-            const backdrop = document.getElementById('mobile-drawer-backdrop');
-            if (drawer && backdrop) {
-                drawer.classList.remove('open');
-                backdrop.classList.remove('active');
-                document.body.classList.remove('mobile-nav-open');
-            }
-            return;
-        }
-
-        const tenantMenuBtn = e.target.closest('#sidebar-toggle, #tenant-sidebar-toggle');
-        if (tenantMenuBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const sidebar = document.getElementById('tenant-sidebar');
-            const overlay = document.getElementById('tenant-sidebar-overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.add('mobile-open');
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('flex', 'z-50');
-                overlay.classList.add('active');
-                document.body.classList.add('mobile-nav-open');
-            }
-            return;
-        }
-        const tenantCloseBtn = e.target.closest('#tenant-sidebar-close, #tenant-sidebar-overlay');
-        if (tenantCloseBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const sidebar = document.getElementById('tenant-sidebar');
-            const overlay = document.getElementById('tenant-sidebar-overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.remove('mobile-open');
-                sidebar.classList.add('hidden');
-                sidebar.classList.remove('flex', 'z-50');
-                overlay.classList.remove('active');
-                document.body.classList.remove('mobile-nav-open');
-            }
-            return;
-        }
-
-        const adminMenuBtn = e.target.closest('#admin-sidebar-toggle');
-        if (adminMenuBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const sidebar = document.getElementById('admin-sidebar');
-            const overlay = document.getElementById('admin-sidebar-overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.add('mobile-open');
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('flex', 'z-50');
-                overlay.classList.add('active');
-                document.body.classList.add('mobile-nav-open');
-            }
-            return;
-        }
-        const adminCloseBtn = e.target.closest('#admin-sidebar-close, #admin-sidebar-overlay');
-        if (adminCloseBtn) {
-            e.preventDefault();
-            e.stopPropagation();
-            const sidebar = document.getElementById('admin-sidebar');
-            const overlay = document.getElementById('admin-sidebar-overlay');
-            if (sidebar && overlay) {
-                sidebar.classList.remove('mobile-open');
-                sidebar.classList.add('hidden');
-                sidebar.classList.remove('flex', 'z-50');
-                overlay.classList.remove('active');
-                document.body.classList.remove('mobile-nav-open');
-            }
-            return;
-        }
-
-        // 5. Outside clicks dismiss open menus
-        if (!e.target.closest('#notif-dropdown, #notif-panel, #admin-notif-panel')) {
-            document.querySelectorAll('#notif-dropdown, #notif-panel, #admin-notif-panel').forEach(p => p.classList.add('hidden'));
-        }
-        if (!e.target.closest('#profile-dropdown, #tenant-profile-dropdown, #admin-profile-quickmenu')) {
-            document.querySelectorAll('#profile-dropdown, #tenant-profile-dropdown').forEach(p => p.classList.remove('open'));
-            document.querySelectorAll('#admin-profile-quickmenu').forEach(p => p.classList.add('hidden'));
-        }
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('#notif-dropdown, #notif-panel, #admin-notif-panel, #admin-profile-quickmenu').forEach(p => p.classList.add('hidden'));
-            document.querySelectorAll('#profile-dropdown, #tenant-profile-dropdown').forEach(p => p.classList.remove('open'));
-            const drawer = document.getElementById('mobile-drawer');
-            const backdrop = document.getElementById('mobile-drawer-backdrop');
-            if (drawer && backdrop) { drawer.classList.remove('open'); backdrop.classList.remove('active'); }
-            const tenantSidebar = document.getElementById('tenant-sidebar');
-            const tenantOverlay = document.getElementById('tenant-sidebar-overlay');
-            if (tenantSidebar && tenantOverlay) { tenantSidebar.classList.remove('mobile-open'); tenantOverlay.classList.remove('active'); }
-            const adminSidebar = document.getElementById('admin-sidebar');
-            const adminOverlay = document.getElementById('admin-sidebar-overlay');
-            if (adminSidebar && adminOverlay) { adminSidebar.classList.remove('mobile-open'); adminOverlay.classList.remove('active'); }
-            document.body.classList.remove('mobile-nav-open');
-        }
-    });
-
-    <?php if (!$disableDarkTheme): ?>
-    try {
-        const savedTheme = localStorage.getItem('blax_theme');
-        if (savedTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-        } else {
-            document.documentElement.classList.add('light');
-            document.documentElement.classList.remove('dark');
-        }
-    } catch(e) {}
-    <?php else: ?>
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
-    <?php endif; ?>
-})();
-</script>
+<?php
+    $disableDarkTheme = $disableDarkTheme ?? false;
+    $chromePath       = FCPATH . 'js/blax-chrome.js';
+    $chromeVer        = is_file($chromePath) ? filemtime($chromePath) : '2.1.0';
+?>
+<!-- Theme switcher + header chrome handlers (prevents FOUC, wires drawers/dropdowns). -->
+<!-- The flag is inlined because it is per-route; the behaviour itself lives in a cached -->
+<!-- file so it stops riding in every page's HTML. Deliberately NOT deferred: it has to -->
+<!-- apply the theme class and register its listeners before the body finishes parsing. -->
+<script>window.BLAX_DISABLE_DARK_THEME = <?= $disableDarkTheme ? 'true' : 'false' ?>;</script>
+<script src="<?= base_url('js/blax-chrome.js?v=' . $chromeVer) ?>"></script>
 
 <script>
 window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
@@ -296,6 +71,9 @@ window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
             container = document.createElement('div');
             container.id = 'toast-container';
             container.className = 'fixed top-16 sm:top-5 right-0 sm:right-5 z-[9999] flex flex-col gap-2 pointer-events-none max-w-sm w-full px-3 sm:px-4 transition-all';
+            // Announce toasts to assistive tech; errors escalate to role="alert" below.
+            container.setAttribute('aria-live', 'polite');
+            container.setAttribute('aria-atomic', 'false');
             document.body.appendChild(container);
         }
 
@@ -317,11 +95,24 @@ window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
 
         toast.innerHTML = `
             <span class="material-symbols-outlined shrink-0 ${iconColor} text-xl">${iconName}</span>
-            <div class="flex-1 text-xs font-semibold leading-tight">${message}</div>
+            <div class="blax-toast-message flex-1 text-xs font-semibold leading-tight"></div>
             <button type="button" class="shrink-0 p-1 text-outline hover:text-on-surface rounded-full transition-colors" aria-label="Close notification">
                 <span class="material-symbols-outlined text-[16px]">close</span>
             </button>
         `;
+
+        // The message is assigned with textContent, never interpolated into the
+        // HTML string above. Callers pass server-supplied text (data.message from
+        // JSON responses, controller flash messages), so string-concatenating it
+        // here was a stored-XSS sink executing in the merchant/admin session.
+        const messageEl = toast.querySelector('.blax-toast-message');
+        if (messageEl) {
+            messageEl.textContent = (message === null || message === undefined) ? '' : String(message);
+        }
+
+        if (type === 'error') {
+            toast.setAttribute('role', 'alert');
+        }
 
         const closeBtn = toast.querySelector('button');
         if (closeBtn) {
@@ -585,4 +376,19 @@ window.BASE_URL = '<?= rtrim(base_url(), '/') ?>/';
             .dropdown-menu:hover { opacity: 1; visibility: visible; pointer-events: auto; }
         }
         .profile-dropdown-toggle { display: inline-flex; }
+
+        /* Off-screen render skipping for the long-scroll card grids.
+         * content-visibility: auto lets the browser skip layout and painting of cards that are
+         * far below the viewport, which is where the catalog and shop grids spend their time.
+         * contain-intrinsic-size gives the skipped region a plausible box so the scrollbar does
+         * not jump; the "auto" form remembers the real size once it has been rendered and is
+         * simply ignored by engines that predate it.
+         * Deliberately limited to self-contained card grids, where every absolutely positioned
+         * child is anchored to its own relative card, so the containment can never reposition a
+         * badge or dropdown. Never put this on a sticky/fixed ancestor. */
+        .cv-skip {
+            content-visibility: auto;
+            contain-intrinsic-size: 600px;
+            contain-intrinsic-size: auto 600px;
+        }
     </style>

@@ -297,7 +297,7 @@
     }
 
     const PRODUCT_URL = '<?= base_url('product/') ?>';
-    const FALLBACK_IMG = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=300&q=80';
+    const FALLBACK_IMG = '<?= placeholder_image_url() ?>';
 
     function peso(value) {
         const n = parseFloat(value);

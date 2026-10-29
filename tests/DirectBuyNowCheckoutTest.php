@@ -44,7 +44,7 @@ class DirectBuyNowCheckoutTest extends CIUnitTestCase
 
         $result->assertOK();
         $result->assertSee($product['name']);
-        $result->assertSee('Instant Direct Checkout');
+        $result->assertSee('Direct Instant Checkout');
         $result->assertSee('Payment');
     }
 

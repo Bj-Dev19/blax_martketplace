@@ -106,6 +106,11 @@
                 display: flex !important;
             }
         }
+
+        /* Compact sidebar nav vertical rhythm so the menu fits without a visible scrollbar */
+        #admin-sidebar nav > * + * { margin-top: 0.75rem !important; }
+        #admin-sidebar nav .nav-item { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        #admin-sidebar nav p.sidebar-text { margin-bottom: 0.25rem !important; }
     </style>
     <script>
         (function() {
@@ -128,9 +133,7 @@
             <!-- Brand Identity & Console Card -->
             <div class="px-2 mb-4 flex items-center justify-between sidebar-brand-box gap-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-900 via-slate-800 to-[#142b12] text-white flex items-center justify-center font-black shadow-md shadow-slate-900/20 shrink-0 border border-slate-700/50" title="Blax Console">
-                        <span class="material-symbols-outlined text-[22px] text-emerald-400">admin_panel_settings</span>
-                    </div>
+                    <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="40" height="40" class="w-10 h-10 rounded-xl shrink-0 shadow-md shadow-slate-900/20 border border-slate-700/50" title="Blax Console">
                     <div class="min-w-0 sidebar-text">
                         <div class="flex items-center gap-1.5">
                             <span class="text-base font-bold text-slate-900 dark:text-white tracking-tight font-display">Blax</span>
@@ -139,11 +142,6 @@
                         <p class="text-[11px] text-slate-400 truncate font-sans">Master Platform Ops</p>
                     </div>
                 </div>
-
-                <!-- Desktop Collapse / Expand Toggle Button -->
-                <button id="admin-sidebar-collapse-toggle" type="button" onclick="toggleAdminSidebar()" class="hidden md:flex p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs items-center justify-center shrink-0" title="Collapse / Expand navigation (Icon Rail Mode)">
-                    <span id="admin-sidebar-collapse-icon" class="material-symbols-outlined text-[19px]">chevron_left</span>
-                </button>
 
                 <!-- Mobile Close Button -->
                 <button id="admin-sidebar-close" type="button" class="md:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative z-50" aria-label="Close navigation" onclick="const s=document.getElementById('admin-sidebar');if(s){s.classList.remove('mobile-open','flex','z-50');s.classList.add('hidden');}const o=document.getElementById('admin-sidebar-overlay');if(o){o.classList.remove('active');}document.body.classList.remove('mobile-nav-open');">
@@ -489,6 +487,8 @@
         let lastOrderId = null;
         let lastPrintingId = null;
         let lastNotifId = null;
+        let lastDeliverySig = null;
+        let lastMaxDeliveryId = 0;
         let isInitial = true;
 
         function getAdminToastContainer() {
@@ -497,6 +497,10 @@
                 container = document.createElement('div');
                 container.id = 'blax-admin-toast-container';
                 container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full';
+                // Toasts carry server-generated, user-supplied text (customer names,
+                // notification bodies). Announce them without hijacking the whole page.
+                container.setAttribute('aria-live', 'polite');
+                container.setAttribute('aria-atomic', 'false');
                 document.body.appendChild(container);
             }
             return container;
@@ -545,29 +549,42 @@
             toast.className = 'pointer-events-auto bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-start gap-3 transform translate-y-[-10px] opacity-0 transition-all duration-300';
             
             const isOrder = type === 'order';
-            const icon = isOrder ? 'shopping_cart' : 'print';
-            const iconBg = isOrder ? 'bg-terra-green/10 text-terra-green' : 'bg-purple-500/10 text-purple-600';
-            const title = isOrder ? `Platform Order #${data.order_number}` : `Printing #${data.request_number}`;
-            const sub = `${data.shop_name} • ${data.customer_name} (₱${data.total_amount_fmt})`;
+            const isDelivery = type === 'delivery';
+            const icon = isDelivery ? 'local_shipping' : (isOrder ? 'shopping_cart' : 'print');
+            const iconBg = isDelivery ? 'bg-sky-500/10 text-sky-600' : (isOrder ? 'bg-terra-green/10 text-terra-green' : 'bg-purple-500/10 text-purple-600');
+            const title = isDelivery ? `Delivery #${data.ref_number || data.tracking_id || data.id}` : (isOrder ? `Platform Order #${data.order_number}` : `Printing #${data.request_number}`);
+            const sub = isDelivery
+                ? `${data.shop_name || ''} • ${data.customer_name || 'Customer'} (${data.status || 'shipped'})`
+                : `${data.shop_name} • ${data.customer_name} (₱${data.total_amount_fmt})`;
 
+            // Static skeleton only. title/sub/fulfillment_method are built from the
+            // realtime poll payload (customer_name, shop_name, order_number), i.e.
+            // user-controlled text rendered inside the admin session, so none of it
+            // may be interpolated into this string. Each value is set via textContent.
             toast.innerHTML = `
-                <div class="w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-2xs">
-                    <span class="material-symbols-outlined text-[20px]">${icon}</span>
+                <div class="blax-admin-toast-badge w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-2xs">
+                    <span class="blax-admin-toast-icon material-symbols-outlined text-[20px]"></span>
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-1">
-                        <span class="text-xs font-bold text-slate-900 dark:text-white truncate font-display">${title}</span>
+                        <span class="blax-admin-toast-title text-xs font-bold text-slate-900 dark:text-white truncate font-display"></span>
                         <span class="text-[10px] font-semibold text-terra-green bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full font-mono">Realtime</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${sub}</p>
+                    <p class="blax-admin-toast-sub text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate"></p>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider font-mono">${data.fulfillment_method || 'Delivery'}</span>
+                        <span class="blax-admin-toast-fulfillment text-[10px] text-slate-400 font-medium uppercase tracking-wider font-mono"></span>
                     </div>
                 </div>
                 <button type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 -mr-1 text-xs cursor-pointer" onclick="this.closest('div.pointer-events-auto').remove()">
                     <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>
             `;
+
+            toast.querySelector('.blax-admin-toast-icon').textContent = icon;
+            toast.querySelector('.blax-admin-toast-title').textContent = title;
+            toast.querySelector('.blax-admin-toast-sub').textContent = sub;
+            toast.querySelector('.blax-admin-toast-fulfillment').textContent = data.fulfillment_method || 'Delivery';
+            toast.setAttribute('role', 'status');
 
             container.appendChild(toast);
             requestAnimationFrame(() => {
@@ -592,6 +609,8 @@
             if (lastOrderId !== null) params.push('last_order_id=' + encodeURIComponent(lastOrderId));
             if (lastPrintingId !== null) params.push('last_printing_id=' + encodeURIComponent(lastPrintingId));
             if (lastNotifId !== null) params.push('last_notif_id=' + encodeURIComponent(lastNotifId));
+            if (lastDeliverySig !== null) params.push('last_delivery_sig=' + encodeURIComponent(lastDeliverySig));
+            params.push('last_max_delivery_id=' + encodeURIComponent(lastMaxDeliveryId || 0));
             params.push('_t=' + Date.now());
             if (params.length > 0) url += '?' + params.join('&');
 
@@ -607,9 +626,14 @@
                         lastOrderId = res.max_order_id || 0;
                         lastPrintingId = res.max_printing_id || 0;
                         lastNotifId = res.max_notif_id || 0;
+                        if (typeof res.delivery_sig !== 'undefined') lastDeliverySig = res.delivery_sig;
+                        if (typeof res.max_delivery_id !== 'undefined') lastMaxDeliveryId = res.max_delivery_id || 0;
                         isInitial = false;
                         if (typeof res.unread_count === 'number') {
                             updateAdminNotifBadge(res.unread_count);
+                        }
+                        if (Array.isArray(res.active_deliveries)) {
+                            res.active_deliveries.forEach(d => window.dispatchEvent(new CustomEvent('blax:admin-delivery-update', { detail: d })));
                         }
                         return;
                     }
@@ -617,6 +641,8 @@
                     if (res.max_order_id) lastOrderId = Math.max(lastOrderId || 0, res.max_order_id);
                     if (res.max_printing_id) lastPrintingId = Math.max(lastPrintingId || 0, res.max_printing_id);
                     if (res.max_notif_id) lastNotifId = Math.max(lastNotifId || 0, res.max_notif_id);
+                    if (typeof res.delivery_sig !== 'undefined') lastDeliverySig = res.delivery_sig;
+                    if (typeof res.max_delivery_id !== 'undefined') lastMaxDeliveryId = Math.max(lastMaxDeliveryId || 0, res.max_delivery_id);
 
                     if (typeof res.unread_count === 'number') {
                         updateAdminNotifBadge(res.unread_count);
@@ -643,6 +669,17 @@
                         res.new_printing.forEach(pr => {
                             showAdminToast('printing', pr);
                             window.dispatchEvent(new CustomEvent('blax:admin-new-printing', { detail: pr }));
+                        });
+                    }
+
+                    if (Array.isArray(res.new_deliveries) && res.new_deliveries.length > 0) {
+                        playAdminChime();
+                        res.new_deliveries.forEach(d => showAdminToast('delivery', d));
+                    }
+
+                    if (Array.isArray(res.active_deliveries)) {
+                        res.active_deliveries.forEach(d => {
+                            window.dispatchEvent(new CustomEvent('blax:admin-delivery-update', { detail: d }));
                         });
                     }
                 })
@@ -802,26 +839,50 @@
             let actionHtml = '';
             if (url) {
                 actionHtml = `
-                    <a href="${url}" class="inline-flex items-center gap-1 text-[11px] font-bold text-terra-green hover:underline mt-1.5">
+                    <a href="#" class="blax-toast-link inline-flex items-center gap-1 text-[11px] font-bold text-terra-green hover:underline mt-1.5">
                         <span>View Details</span>
                         <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
                     </a>
                 `;
             }
 
+            // Static skeleton only. title/message/icon/url all originate from the
+            // server (notification rows built from customer names, order numbers and
+            // uploaded file names), so interpolating them into innerHTML here would
+            // be a stored-XSS sink executing in the admin session. Every dynamic
+            // value below is assigned with textContent, or via a scheme-checked href.
             toast.innerHTML = `
                 <div class="w-8 h-8 rounded-xl ${badgeStyle} border flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                    <span class="material-symbols-outlined text-[18px]">${icon}</span>
+                    <span class="blax-toast-icon material-symbols-outlined text-[18px]"></span>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h4 class="text-xs font-bold text-slate-900 dark:text-white leading-tight font-display">${title}</h4>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words">${message}</p>
+                    <h4 class="blax-toast-title text-xs font-bold text-slate-900 dark:text-white leading-tight font-display"></h4>
+                    <p class="blax-toast-message text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words"></p>
                     ${actionHtml}
                 </div>
                 <button type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 -mr-1 rounded-lg transition-colors cursor-pointer" onclick="this.closest('div.pointer-events-auto').remove()">
                     <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>
             `;
+
+            toast.querySelector('.blax-toast-icon').textContent = icon;
+            toast.querySelector('.blax-toast-title').textContent = title;
+            toast.querySelector('.blax-toast-message').textContent = message;
+
+            if (url) {
+                const link = toast.querySelector('.blax-toast-link');
+                // Block javascript:/data: and other scheme-based href injection.
+                const candidate = String(url).trim();
+                if (/^https?:\/\//i.test(candidate) || (candidate.startsWith('/') && !candidate.startsWith('//'))) {
+                    link.setAttribute('href', candidate);
+                } else {
+                    link.remove();
+                }
+            }
+
+            if (type === 'error') {
+                toast.setAttribute('role', 'alert');
+            }
 
             container.appendChild(toast);
             playAdminChime();

@@ -236,13 +236,19 @@ class SiteContentModel extends Model
             'included_distance_km'     => 2.00,
             'additional_fee_per_km'    => 10.00,
             'max_delivery_distance_km' => 25.00,
+            // TEST-ONLY simulated distance override — disabled by default so live
+            // quotes always resolve real route kilometers.
+            'simulate_distance_km'     => 0,
+            'override_distance_km'     => null,
         ];
 
         $keyMap = [
-            'shipping_base_fee'        => 'base_shipping_fee',
-            'shipping_included_km'     => 'included_distance_km',
-            'shipping_per_km_fee'      => 'additional_fee_per_km',
-            'shipping_max_distance_km' => 'max_delivery_distance_km',
+            'shipping_base_fee'             => 'base_shipping_fee',
+            'shipping_included_km'          => 'included_distance_km',
+            'shipping_per_km_fee'           => 'additional_fee_per_km',
+            'shipping_max_distance_km'      => 'max_delivery_distance_km',
+            'shipping_simulate_distance_km' => 'simulate_distance_km',
+            'shipping_override_distance_km' => 'override_distance_km',
         ];
 
         try {
@@ -315,6 +321,47 @@ class SiteContentModel extends Model
                     'label'        => $meta['label'],
                     'content_type' => 'text',
                     'text_value'   => $formatted,
+                    'sort_order'   => $meta['sort'],
+                    'updated_by'   => $updatedBy,
+                ]);
+            }
+        }
+
+        // TEST-ONLY simulated distance override (explicit opt-in flag, never implied).
+        // Stored as plain '0'/'1' because "0.00" would evaluate truthy as a boolean.
+        $simEntries = [
+            'shipping_simulate_distance_km' => [
+                'label' => 'TEST ONLY: Simulated Distance Override Enabled',
+                'value' => !empty($settings['simulate_distance_km']) ? '1' : '0',
+                'sort'  => 14,
+            ],
+            'shipping_override_distance_km' => [
+                'label' => 'TEST ONLY: Simulated Distance (km)',
+                'value' => (isset($settings['override_distance_km']) && is_numeric($settings['override_distance_km']))
+                    ? number_format(max(0.0, (float) $settings['override_distance_km']), 2, '.', '')
+                    : '0.00',
+                'sort'  => 15,
+            ],
+        ];
+
+        foreach ($simEntries as $contentKey => $meta) {
+            $existing = $this->where('page', 'platform')->where('content_key', $contentKey)->first();
+            if ($existing) {
+                $updateData = [
+                    'text_value' => $meta['value'],
+                    'label'      => $meta['label'],
+                ];
+                if ($updatedBy !== null) {
+                    $updateData['updated_by'] = $updatedBy;
+                }
+                $this->update($existing['id'], $updateData);
+            } else {
+                $this->insert([
+                    'page'         => 'platform',
+                    'content_key'  => $contentKey,
+                    'label'        => $meta['label'],
+                    'content_type' => 'text',
+                    'text_value'   => $meta['value'],
                     'sort_order'   => $meta['sort'],
                     'updated_by'   => $updatedBy,
                 ]);

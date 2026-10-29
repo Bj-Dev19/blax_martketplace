@@ -184,7 +184,7 @@ class Home extends BaseController
 
         if ($products === []) {
             $reply    = 'I could not find an exact match. Here are some popular options from the marketplace:';
-            $products = array_slice($productModel->getProductsWithDetails(), 0, 4);
+            $products = $productModel->getProductsWithDetails(null, null, null, 4);
         } else {
             $reply = 'I found ' . count($products) . ' matching item(s) in our catalog:';
         }
@@ -215,6 +215,9 @@ class Home extends BaseController
             }
         }
 
-        return array_slice($productModel->getProductsWithDetails(null, null, $message), 0, $limit);
+        // Push the limit into SQL instead of slicing a full result set: the search
+        // branch would otherwise materialize every matching catalog row (plus its
+        // per-row variant COUNT) just to keep the first few.
+        return $productModel->getProductsWithDetails(null, null, $message, $limit);
     }
 }

@@ -48,7 +48,7 @@
     </div>
 
     <!-- Product Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+    <div class="cv-skip grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
 
         <?php if (!empty($products)): ?>
             <?php foreach ($products as $p): ?>
@@ -60,7 +60,7 @@
                     
                     <div class="relative aspect-square bg-slate-50 dark:bg-slate-800/50 overflow-hidden flex items-center justify-center p-2.5">
                         <a href="<?= base_url('product/' . $p['id']) ?>" class="block w-full h-full flex items-center justify-center">
-                            <img src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                            <img src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
                         </a>
 
                         <?php if (!empty($p['shop_name'])): ?>

@@ -123,7 +123,13 @@ class ContentSecurityPolicy extends BaseConfig
         'https://checkout.paymongo.com',
     ];
 
-    public $frameAncestors = null;
+    /**
+     * Clickjacking defence for the CSP layer. Previously null, which emitted no
+     * frame-ancestors directive at all and left us relying solely on the nginx
+     * X-Frame-Options header - a header that was being dropped on every static
+     * asset response. Keep in sync with X-Frame-Options SAMEORIGIN.
+     */
+    public $frameAncestors = ['self'];
 
     public $frameSrc = [
         'self',

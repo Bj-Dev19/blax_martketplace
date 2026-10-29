@@ -186,25 +186,30 @@ class CustomerOrderController extends BaseController
         }
         $storeCoords = [$storeLat, $storeLng];
 
-        // 2. Destination coordinates
-        if ($shippingAddress && !empty($shippingAddress['latitude']) && !empty($shippingAddress['longitude']) && (float) $shippingAddress['latitude'] != 0) {
+        // 2. Destination coordinates — stored precise address coord first, then geocode,
+        // then barangay centroid (flagged approximate); town center only as true last resort.
+        $destApproximate = false;
+        if ($shippingAddress && DeliveryModel::isPolomolokCoordinate((float) ($shippingAddress['latitude'] ?? 0), (float) ($shippingAddress['longitude'] ?? 0))) {
             $destLat = (float) $shippingAddress['latitude'];
             $destLng = (float) $shippingAddress['longitude'];
         } else {
             $geoDest = !empty($destAddressText) ? $mapsService->geocodeAddress($destAddressText) : null;
-            if ($geoDest) {
+            if ($geoDest && DeliveryModel::isPolomolokCoordinate((float) $geoDest['lat'], (float) $geoDest['lng'])) {
                 $destLat = $geoDest['lat'];
                 $destLng = $geoDest['lng'];
-                if ($shippingAddress && !empty($shippingAddress['id'])) {
+                // Only Google-resolved results (with place_id) are precise enough to persist
+                if (!empty($geoDest['place_id']) && $shippingAddress && !empty($shippingAddress['id'])) {
                     $shippingAddressModel->update($shippingAddress['id'], [
                         'latitude'    => $destLat,
                         'longitude'   => $destLng,
-                        'place_id'    => $geoDest['place_id'] ?? null,
+                        'place_id'    => $geoDest['place_id'],
                         'geocoded_at' => date('Y-m-d H:i:s'),
                     ]);
+                } else {
+                    $destApproximate = empty($geoDest['place_id']);
                 }
             } else {
-                $centroid = DeliveryModel::getBarangayCoordinate($shippingAddress['address_line2'] ?? '', $shippingAddress['city'] ?? '');
+                $centroid = DeliveryModel::getBarangayCoordinate(($shippingAddress['address_line2'] ?? '') !== '' ? ($shippingAddress['address_line2'] ?? '') : $destAddressText, $shippingAddress['city'] ?? '');
                 if ($centroid) {
                     $destLat = $centroid['lat'];
                     $destLng = $centroid['lng'];
@@ -212,6 +217,7 @@ class CustomerOrderController extends BaseController
                     $destLat = DeliveryModel::POLOMOLOK_CENTER_LAT;
                     $destLng = DeliveryModel::POLOMOLOK_CENTER_LNG;
                 }
+                $destApproximate = true;
             }
         }
         $destCoords = [$destLat, $destLng];
@@ -353,6 +359,7 @@ class CustomerOrderController extends BaseController
             'destCoords'       => $destCoords,
             'courierCoords'    => $courierCoords,
             'destAddressText'  => $destAddressText,
+            'destApproximate'  => $destApproximate,
         ]);
     }
 
@@ -632,17 +639,20 @@ class CustomerOrderController extends BaseController
         }
         $storeCoords = [$storeLat, $storeLng];
 
-        // 2. Destination coords
-        if ($shippingAddress && !empty($shippingAddress['latitude']) && !empty($shippingAddress['longitude']) && (float) $shippingAddress['latitude'] != 0) {
+        // 2. Destination coords — stored precise coord wins; centroid/town center only as
+        // flagged-approximate fallbacks so the map never fakes a customer pin silently.
+        $destApproximate = false;
+        if ($shippingAddress && DeliveryModel::isPolomolokCoordinate((float) ($shippingAddress['latitude'] ?? 0), (float) ($shippingAddress['longitude'] ?? 0))) {
             $destLat = (float) $shippingAddress['latitude'];
             $destLng = (float) $shippingAddress['longitude'];
         } else {
             $geoDest = !empty($destAddressText) ? $mapsService->geocodeAddress($destAddressText) : null;
-            if ($geoDest) {
+            if ($geoDest && DeliveryModel::isPolomolokCoordinate((float) $geoDest['lat'], (float) $geoDest['lng'])) {
                 $destLat = $geoDest['lat'];
                 $destLng = $geoDest['lng'];
+                $destApproximate = empty($geoDest['place_id']);
             } else {
-                $centroid = DeliveryModel::getBarangayCoordinate($shippingAddress['address_line2'] ?? '', $shippingAddress['city'] ?? '');
+                $centroid = DeliveryModel::getBarangayCoordinate(($shippingAddress['address_line2'] ?? '') !== '' ? ($shippingAddress['address_line2'] ?? '') : $destAddressText, $shippingAddress['city'] ?? '');
                 if ($centroid) {
                     $destLat = $centroid['lat'];
                     $destLng = $centroid['lng'];
@@ -650,6 +660,7 @@ class CustomerOrderController extends BaseController
                     $destLat = DeliveryModel::POLOMOLOK_CENTER_LAT;
                     $destLng = DeliveryModel::POLOMOLOK_CENTER_LNG;
                 }
+                $destApproximate = true;
             }
         }
         $destCoords = [$destLat, $destLng];
@@ -688,7 +699,10 @@ class CustomerOrderController extends BaseController
             $badgeClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300';
         }
 
-        // Synthesize $order object for view
+        // Synthesize $order object for view — shipping is the real quoted distance fee
+        // stored at submit time (total_price already includes it for new requests)
+        $prShipFee = round((float) ($req['shipping_fee'] ?? 0), 2);
+        $prGrandTotal = round((float) ($req['total_price'] ?? 0), 2);
         $order = [
             'id'                  => $req['id'],
             'order_number'        => $req['request_number'] ?? ('PR-' . $req['id']),
@@ -698,9 +712,10 @@ class CustomerOrderController extends BaseController
             'fulfillment_method'  => 'delivery',
             'payment_method'      => 'Online / COD',
             'payment_status'      => $status === 'completed' ? 'paid' : 'down_payment_paid',
-            'subtotal'            => (float) ($req['total_price'] ?? 0),
-            'shipping_fee'        => 50.00,
-            'total_amount'        => (float) (($req['total_price'] ?? 0) + 50.00),
+            'subtotal'            => round(max(0.0, $prGrandTotal - $prShipFee), 2),
+            'shipping_fee'        => $prShipFee,
+            'distance_km'         => isset($req['distance_km']) ? (float) $req['distance_km'] : null,
+            'total_amount'        => $prGrandTotal,
             'placed_at'           => $req['created_at'] ?? date('Y-m-d H:i:s'),
             'completed_at'        => $req['completed_at'] ?? null,
             'delivery_address'    => $destAddressText,
@@ -789,6 +804,7 @@ class CustomerOrderController extends BaseController
             'milestones'       => $milestones,
             'backUrl'          => base_url('customer/printing'),
             'backLabel'        => 'Back to Printing Requests',
+            'destApproximate'  => $destApproximate,
             'pollPositionUrl'  => base_url('customer/printing/track/' . ($req['request_number'] ?? $req['id']) . '/position'),
         ]);
     }

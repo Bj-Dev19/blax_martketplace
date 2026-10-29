@@ -1,0 +1,4 @@
+# Public CA bundles for database TLS verification live here (see .gitignore).
+# Drop the Aiven service CA as aiven-ca.pem; the Render env var points at
+# /var/www/html/docker/certs/aiven-ca.pem. Private keys must never be placed
+# in this directory.

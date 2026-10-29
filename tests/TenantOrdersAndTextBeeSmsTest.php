@@ -287,6 +287,12 @@ class TenantOrdersAndTextBeeSmsTest extends CIUnitTestCase
 
         $uniq = uniqid('', false) . rand(100, 999);
 
+        // The queue is a bounded FIFO window (oldest placed first) so a shop with a long
+        // backlog cannot blow up the page. Backdate these rows to make them the oldest in
+        // the shop, which is what keeps the assertions below deterministic regardless of how
+        // much ambient in-prep data shop 1 has accumulated.
+        $oldest = date('Y-m-d H:i:s', strtotime('-120 days'));
+
         // 1. Create a processing order with Store Pick-up
         $pickupOrderNum = 'TEST-PROC-PKP-' . $uniq;
         $pickupOrderId = $orderModel->insert([
@@ -301,7 +307,7 @@ class TenantOrdersAndTextBeeSmsTest extends CIUnitTestCase
             'total_amount'       => 120.00,
             'status'             => 'processing',
             'payment_status'     => 'unpaid',
-            'placed_at'          => date('Y-m-d H:i:s'),
+            'placed_at'          => $oldest,
         ]);
 
         $orderItemModel->insert([
@@ -327,7 +333,7 @@ class TenantOrdersAndTextBeeSmsTest extends CIUnitTestCase
             'total_amount'       => 300.00,
             'status'             => 'processing',
             'payment_status'     => 'paid',
-            'placed_at'          => date('Y-m-d H:i:s'),
+            'placed_at'          => $oldest,
         ]);
 
         $orderItemModel->insert([
@@ -364,8 +370,9 @@ class TenantOrdersAndTextBeeSmsTest extends CIUnitTestCase
         $this->assertStringContainsString('Ready for Pick-up', $body);
         $this->assertStringContainsString('value="ready_for_pickup"', $body);
 
-        // Verify context-aware button for Doorstep Delivery is "Shipped"
-        $this->assertStringContainsString('Shipped', $body);
+        // Verify context-aware button for Doorstep Delivery dispatches as
+        // "shipped", which the tenant UI labels "In Transit"
+        $this->assertStringContainsString('<span>In Transit</span>', $body);
         $this->assertStringContainsString('value="shipped"', $body);
 
         // Verify explicit "View Details" button is rendered outside in the orders table

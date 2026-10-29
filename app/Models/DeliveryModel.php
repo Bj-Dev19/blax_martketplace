@@ -17,6 +17,8 @@ class DeliveryModel extends Model
         'tracking_id',
         'courier_name',
         'destination_address',
+        'destination_latitude',
+        'destination_longitude',
         'current_lat',
         'current_lng',
         'location_updated_at',
@@ -581,7 +583,8 @@ class DeliveryModel extends Model
                 $r['current_lat'] = number_format($lat, 7, '.', '');
                 $r['current_lng'] = number_format($lng, 7, '.', '');
             } else {
-                // No coordinates ever saved: initial fallback to shop or Polomolok center
+                // No coordinates ever saved: prefer the real shop pin, then the
+                // destination's barangay centroid; town center only as true last resort.
                 $r['location_is_stale'] = true;
                 $shopLat = (float) ($r['shop_lat'] ?? 0);
                 $shopLng = (float) ($r['shop_lng'] ?? 0);
@@ -589,8 +592,14 @@ class DeliveryModel extends Model
                     $r['current_lat'] = number_format($shopLat, 7, '.', '');
                     $r['current_lng'] = number_format($shopLng, 7, '.', '');
                 } else {
-                    $r['current_lat'] = number_format(self::POLOMOLOK_CENTER_LAT, 7, '.', '');
-                    $r['current_lng'] = number_format(self::POLOMOLOK_CENTER_LNG, 7, '.', '');
+                    $centroid = self::getBarangayCoordinate((string) ($r['destination_address'] ?? ''));
+                    if ($centroid) {
+                        $r['current_lat'] = number_format($centroid['lat'], 7, '.', '');
+                        $r['current_lng'] = number_format($centroid['lng'], 7, '.', '');
+                    } else {
+                        $r['current_lat'] = number_format(self::POLOMOLOK_CENTER_LAT, 7, '.', '');
+                        $r['current_lng'] = number_format(self::POLOMOLOK_CENTER_LNG, 7, '.', '');
+                    }
                 }
             }
         }
@@ -639,6 +648,75 @@ class DeliveryModel extends Model
         }
 
         return $activePins;
+    }
+
+    /**
+     * Lightweight realtime snapshot of a scope's active doorstep deliveries for the
+     * polling bus. Returns a stable change signature (id + status only, ignoring GPS
+     * churn) plus the current active rows so tenants, admins, and customers can update
+     * their queues/maps without a page refresh.
+     *
+     * @param int|null $shopId     When set, scope deliveries to this shop (tenant poll).
+     * @param int|null $customerId When set (and no shopId), scope to this customer's records.
+     * @return array{sig: string, max_id: int, deliveries: array}
+     */
+    public function getRealtimeDeliverySnapshot(?int $shopId = null, ?int $customerId = null): array
+    {
+        $builder = $this->db->table('deliveries d')
+            ->select("d.id, d.tracking_id, d.status, d.deliverable_type, d.destination_address, d.current_lat, d.current_lng, d.location_updated_at, COALESCE(o.order_number, pr.request_number) AS ref_number, COALESCE(o.customer_id, pr.customer_id) AS customer_id, u.first_name, u.last_name, s.shop_name", false)
+            ->join('orders o', "o.id = d.deliverable_id AND d.deliverable_type = 'order'", 'left')
+            ->join('printing_requests pr', "pr.id = d.deliverable_id AND d.deliverable_type = 'printing_request'", 'left')
+            ->join('users u', 'u.id = COALESCE(o.customer_id, pr.customer_id)', 'left')
+            ->join('shops s', 's.id = COALESCE(o.shop_id, pr.shop_id)', 'left')
+            ->where("COALESCE(o.fulfillment_method, pr.fulfillment_method)", 'delivery');
+
+        if ($shopId !== null && $shopId > 0) {
+            $builder->groupStart()
+                ->where('o.shop_id', $shopId)
+                ->orWhere('pr.shop_id', $shopId)
+                ->groupEnd()
+                ->whereIn('d.status', ['shipped', 'in_transit']);
+        } elseif ($customerId !== null && $customerId > 0) {
+            $builder->where('COALESCE(o.customer_id, pr.customer_id)', $customerId)
+                ->whereIn('d.status', ['shipped', 'in_transit', 'delivered', 'returned']);
+        } else {
+            // Admin platform-wide: active shipments only.
+            $builder->whereIn('d.status', ['shipped', 'in_transit']);
+        }
+
+        $rows = $builder->orderBy('d.id', 'ASC')->get()->getResultArray();
+
+        // Signature: id + status (position intentionally excluded to avoid churn).
+        $sigParts = [];
+        $maxId    = 0;
+        $deliveries = [];
+        foreach ($rows as $r) {
+            $id = (int) $r['id'];
+            if ($id > $maxId) {
+                $maxId = $id;
+            }
+            $sigParts[] = $id . ':' . $r['status'];
+            $deliveries[] = [
+                'id'                => $id,
+                'tracking_id'       => $r['tracking_id'],
+                'ref_number'        => $r['ref_number'],
+                'status'            => $r['status'],
+                'deliverable_type'  => $r['deliverable_type'],
+                'destination_address' => $r['destination_address'],
+                'current_lat'       => $r['current_lat'] !== null && $r['current_lat'] !== '' ? number_format((float) $r['current_lat'], 7, '.', '') : null,
+                'current_lng'       => $r['current_lng'] !== null && $r['current_lng'] !== '' ? number_format((float) $r['current_lng'], 7, '.', '') : null,
+                'location_updated_at' => $r['location_updated_at'],
+                'customer_name'     => trim((string) ($r['first_name'] ?? '') . ' ' . (string) ($r['last_name'] ?? '')),
+                'shop_name'         => $r['shop_name'] ?? '',
+            ];
+        }
+        sort($sigParts);
+
+        return [
+            'sig'        => md5(implode('|', $sigParts)),
+            'max_id'     => $maxId,
+            'deliveries' => $deliveries,
+        ];
     }
 
     /**

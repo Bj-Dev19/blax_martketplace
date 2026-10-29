@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Session\Handlers;
 
 use CodeIgniter\Session\Handlers\DatabaseHandler;
-use ReturnTypeWillChange;
 
 /**
  * High-performance database session handler optimized for serverless environments
@@ -51,11 +50,11 @@ class OptimizedDatabaseHandler extends DatabaseHandler
     /**
      * Reads session data from the database.
      *
-     * @param string $id
-     * @return false|string
+     * The return type is declared because CodeIgniter 4.7 added `string|false`
+     * to DatabaseHandler::read(); an untyped override is a fatal error against
+     * the new parent signature.
      */
-    #[ReturnTypeWillChange]
-    public function read($id)
+    public function read($id): false|string
     {
         if (! isset($this->sessionID)) {
             $this->sessionID = $id;

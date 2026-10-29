@@ -172,7 +172,7 @@
                                     <!-- Product Image Thumbnail (Fixed valid Tailwind v3 w-20 h-20 on mobile, sm:w-24 sm:h-24 on desktop) -->
                                     <div class="w-20 h-20 sm:w-24 sm:h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden shrink-0 border border-slate-200/90 dark:border-slate-700 relative flex items-center justify-center p-1.5">
                                         <?php if (!empty($itemImage)): ?>
-                                            <img alt="<?= esc($item['product_name'] ?? $item['name'] ?? 'Product') ?>" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" src="<?= esc($itemImage) ?>">
+                                            <img alt="<?= esc($item['product_name'] ?? $item['name'] ?? 'Product') ?>" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" src="<?= esc($itemImage) ?>" loading="lazy" decoding="async">
                                         <?php else: ?>
                                             <div class="w-full h-full flex items-center justify-center text-slate-400">
                                                 <span class="material-symbols-outlined text-3xl">inventory_2</span>
@@ -555,6 +555,7 @@
         var totalFee = 0;
         var outOfRangeError = null;
         var distances = [];
+        var unmeasured = 0;
 
         if (!selectedShopIds || selectedShopIds.length === 0) {
             return { totalFee: shipping, deliverable: true, outOfRangeError: null, distanceSummary: 'Select items to view route distance' };
@@ -564,7 +565,12 @@
             var q = shopQuotes && shopQuotes[sId] ? shopQuotes[sId] : null;
             if (q) {
                 totalFee += parseFloat(q.shipping_fee) || 0;
-                if (q.distance_text) distances.push(q.distance_text);
+                if (q.distance_approximate) {
+                    // Shop and address collapse onto one point: distance is unknown, base fee applies.
+                    unmeasured++;
+                } else if (q.distance_text) {
+                    distances.push(q.distance_text);
+                }
                 if (!q.deliverable && !outOfRangeError) {
                     outOfRangeError = q.error || 'Selected address exceeds the maximum delivery distance.';
                 }
@@ -576,6 +582,10 @@
         var distText = distances.length === 1
             ? ('Road distance: ' + distances[0])
             : (distances.length > 1 ? ('Routes: ' + distances.join(', ')) : 'Distance-based fee via Google Maps');
+        if (unmeasured > 0) {
+            distText += ' \u2014 ' + unmeasured + (unmeasured === 1 ? ' stop' : ' stops')
+                + ' too close to measure, base fee applied';
+        }
 
         return {
             totalFee: Math.round(totalFee * 100) / 100,

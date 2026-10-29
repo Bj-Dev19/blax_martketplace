@@ -136,6 +136,12 @@
                 display: flex !important;
             }
         }
+
+        /* Compact sidebar nav vertical rhythm so the menu fits without a visible scrollbar */
+        #tenant-sidebar nav > * + * { margin-top: 0.75rem !important; }
+        #tenant-sidebar nav .nav-item { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+        #tenant-sidebar nav p.sidebar-text { margin-bottom: 0.25rem !important; }
+
         #blax-page-loader {
             position: fixed;
             top: 0;
@@ -206,9 +212,7 @@
             <!-- Brand Identity & Store Card -->
             <div class="px-2 mb-5 flex items-center justify-between sidebar-brand-box gap-2">
                 <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-terra-green via-terra-green-dark to-terra-earth text-white flex items-center justify-center font-black shadow-lg shadow-terra-green/20 shrink-0 ring-2 ring-white/20" title="<?= esc($shopName) ?>">
-                        <span class="material-symbols-outlined text-[22px]">storefront</span>
-                    </div>
+                    <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="40" height="40" class="w-10 h-10 rounded-2xl shrink-0 shadow-lg shadow-terra-green/20 ring-2 ring-white/20" title="<?= esc($shopName) ?>">
                     <div class="min-w-0 sidebar-text">
                         <div class="flex items-center gap-1.5">
                             <span class="text-base font-display font-extrabold text-slate-900 dark:text-white tracking-tight">Blax</span>
@@ -218,11 +222,6 @@
                     </div>
                 </div>
 
-                <!-- Desktop Collapse / Expand Toggle Button -->
-                <button id="tenant-sidebar-collapse-toggle" type="button" onclick="toggleTenantSidebar()" class="hidden md:flex p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs items-center justify-center shrink-0" title="Collapse / Expand navigation (Icon Rail Mode)">
-                    <span id="tenant-sidebar-collapse-icon" class="material-symbols-outlined text-[19px]">chevron_left</span>
-                </button>
-
                 <!-- Mobile Close Button -->
                 <button id="tenant-sidebar-close" type="button" class="md:hidden text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative z-50" aria-label="Close navigation">
                     <span class="material-symbols-outlined text-[20px] pointer-events-none">close</span>
@@ -230,7 +229,7 @@
             </div>
 
             <!-- Grouped Navigation -->
-            <nav class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+            <nav class="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1">
 
                 <!-- 1. OPERATIONS -->
                 <div>
@@ -331,7 +330,7 @@
                 <a href="<?= base_url('tenant/settings') ?>" class="sidebar-profile-card flex items-center gap-2.5 p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 transition-all group shadow-2xs" title="<?= esc($shopName) ?> Settings">
                     <div class="w-8 h-8 rounded-xl bg-terra-green/10 dark:bg-terra-green/20 text-terra-green flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-terra-green/20">
                         <?php if (!empty($shop['logo_url'])): ?>
-                            <img src="<?= esc(logo_url($shop['logo_url'])) ?>" alt="<?= esc($shopName) ?>" class="w-full h-full object-cover">
+                            <img src="<?= esc(logo_url($shop['logo_url'])) ?>" alt="<?= esc($shopName) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                         <?php else: ?>
                             <span><?= esc(strtoupper(substr($shopName, 0, 2))) ?></span>
                         <?php endif; ?>
@@ -491,7 +490,7 @@
                         <button id="tenant-profile-toggle" type="button" class="profile-dropdown-toggle flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
                             <div class="w-8 h-8 rounded-full bg-terra-green/10 dark:bg-terra-green/20 border border-terra-green/30 flex items-center justify-center text-terra-green font-bold text-xs overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-terra-green/30 transition-all">
                                 <?php if ($tenantAvatarUrl !== ''): ?>
-                                    <img src="<?= esc($tenantAvatarUrl) ?>" class="w-full h-full object-cover" alt="<?= esc($shopName) ?>">
+                                    <img src="<?= esc($tenantAvatarUrl) ?>" class="w-full h-full object-cover" alt="<?= esc($shopName) ?>" loading="lazy" decoding="async">
                                 <?php else: ?>
                                     <span><?= esc(strtoupper(substr($shopName, 0, 2))) ?></span>
                                 <?php endif; ?>
@@ -638,7 +637,7 @@
                 if (modal) modal.classList.add('hidden');
                 sessionStorage.setItem(dismissedKey, 'true');
                 if (typeof showToast === 'function') {
-                    showToast('Store is now OPEN today! Customers can now order.', false);
+                    showToast('Store is now OPEN today! Customers can now order.', 'success');
                 }
                 setTimeout(() => window.location.reload(), 800);
             } catch (err) {
@@ -763,6 +762,8 @@
         let lastOrderId = bootstrap && typeof bootstrap.max_order_id !== 'undefined' ? bootstrap.max_order_id : null;
         let lastPrintingId = bootstrap && typeof bootstrap.max_printing_id !== 'undefined' ? bootstrap.max_printing_id : null;
         let lastNotifId = bootstrap && typeof bootstrap.max_notif_id !== 'undefined' ? bootstrap.max_notif_id : null;
+        let lastDeliverySig = bootstrap && typeof bootstrap.delivery_sig !== 'undefined' ? bootstrap.delivery_sig : null;
+        let lastMaxDeliveryId = bootstrap && typeof bootstrap.max_delivery_id !== 'undefined' ? bootstrap.max_delivery_id : 0;
         let isInitial = !(bootstrap && lastOrderId !== null && lastPrintingId !== null);
         let isPollInFlight = false;
         let abortCtrl = null;
@@ -775,6 +776,8 @@
                 container = document.createElement('div');
                 container.id = 'blax-tenant-toast-container';
                 container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full';
+                container.setAttribute('aria-live', 'polite');
+                container.setAttribute('aria-atomic', 'false');
                 document.body.appendChild(container);
             }
             return container;
@@ -825,24 +828,32 @@
             toast.className = 'pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-start gap-3 transform translate-y-[-10px] opacity-0 transition-all duration-300';
             
             const isOrder = type === 'order';
-            const icon = isOrder ? 'shopping_bag' : 'print';
-            const iconBg = isOrder ? 'bg-terra-green/10 text-terra-green border border-terra-green/20' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20';
-            const title = isOrder ? `New Order #${data.order_number || data.id}` : `New Print #${data.request_number || data.id}`;
-            const sub = isOrder 
-                ? `${data.customer_name || 'Customer'} • ₱${data.total_amount_fmt || '0.00'} (${data.is_pickup ? 'Pick-up' : 'Delivery'})`
-                : `${data.customer_name || 'Customer'} • ${data.service_name || 'Printing'} (₱${data.total_amount_fmt || '0.00'})`;
-            const linkUrl = isOrder ? '<?= base_url('tenant/orders') ?>' : '<?= base_url('tenant/printing') ?>';
+            const isDelivery = type === 'delivery';
+            const icon = isDelivery ? 'local_shipping' : (isOrder ? 'shopping_bag' : 'print');
+            const iconBg = isDelivery ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20' : (isOrder ? 'bg-terra-green/10 text-terra-green border border-terra-green/20' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20');
+            const title = isDelivery ? `Delivery #${data.ref_number || data.tracking_id || data.id}` : (isOrder ? `New Order #${data.order_number || data.id}` : `New Print #${data.request_number || data.id}`);
+            const sub = isDelivery
+                ? `${data.customer_name || 'Customer'} • ${data.status || 'shipped'}`
+                : (isOrder
+                    ? `${data.customer_name || 'Customer'} • ₱${data.total_amount_fmt || '0.00'} (${data.is_pickup ? 'Pick-up' : 'Delivery'})`
+                    : `${data.customer_name || 'Customer'} • ${data.service_name || 'Printing'} (₱${data.total_amount_fmt || '0.00'})`);
+            const linkUrl = isDelivery ? '<?= base_url('tenant/deliveries') ?>' : (isOrder ? '<?= base_url('tenant/orders') ?>' : '<?= base_url('tenant/printing') ?>');
 
+            // Static skeleton only. title/sub come from the realtime poll payload
+            // (customer_name, order_number, service_name), i.e. user-controlled text
+            // rendered inside the merchant session, so they are assigned with
+            // textContent instead of being interpolated into this string.
+            // linkUrl is safe: it is a server-rendered base_url() constant.
             toast.innerHTML = `
                 <div class="w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0 shadow-2xs">
-                    <span class="material-symbols-outlined text-[20px]">${icon}</span>
+                    <span class="blax-tenant-toast-icon material-symbols-outlined text-[20px]"></span>
                 </div>
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-1">
-                        <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${title}</span>
+                        <span class="blax-tenant-toast-title text-xs font-bold text-slate-900 dark:text-white truncate"></span>
                         <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-full border border-emerald-500/20">Just Now</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">${sub}</p>
+                    <p class="blax-tenant-toast-sub text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate"></p>
                     <div class="flex items-center gap-2 mt-2">
                         <a href="${linkUrl}" class="text-[11px] font-bold text-terra-green hover:underline flex items-center gap-0.5">
                             <span>Open in Queue</span>
@@ -854,6 +865,11 @@
                     <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>
             `;
+
+            toast.querySelector('.blax-tenant-toast-icon').textContent = icon;
+            toast.querySelector('.blax-tenant-toast-title').textContent = title;
+            toast.querySelector('.blax-tenant-toast-sub').textContent = sub;
+            toast.setAttribute('role', 'status');
 
             container.appendChild(toast);
             requestAnimationFrame(() => {
@@ -999,6 +1015,10 @@
                     if (lastNotifId !== null) {
                         url += `&last_notif_id=${encodeURIComponent(lastNotifId)}`;
                     }
+                    if (lastDeliverySig !== null) {
+                        url += `&last_delivery_sig=${encodeURIComponent(lastDeliverySig)}`;
+                    }
+                    url += `&last_max_delivery_id=${encodeURIComponent(lastMaxDeliveryId || 0)}`;
                 }
 
                 const res = await fetch(url, {
@@ -1019,15 +1039,27 @@
                     lastOrderId = data.max_order_id || 0;
                     lastPrintingId = data.max_printing_id || 0;
                     lastNotifId = data.max_notif_id || 0;
+                    if (typeof data.delivery_sig !== 'undefined') lastDeliverySig = data.delivery_sig;
+                    if (typeof data.max_delivery_id !== 'undefined') lastMaxDeliveryId = data.max_delivery_id || 0;
                     isInitial = false;
                     if (typeof data.unread_count !== 'undefined') {
                         updateNotificationsUI(data.unread_count, data.notifications);
+                    }
+                    // Seed delivery rows on first poll so the queue/map matches server state.
+                    if (Array.isArray(data.active_deliveries)) {
+                        data.active_deliveries.forEach(d => window.dispatchEvent(new CustomEvent('blax:delivery-update', { detail: d })));
                     }
                     return;
                 }
 
                 if (data.max_notif_id) {
                     lastNotifId = Math.max(lastNotifId || 0, data.max_notif_id);
+                }
+                if (typeof data.delivery_sig !== 'undefined') {
+                    lastDeliverySig = data.delivery_sig;
+                }
+                if (typeof data.max_delivery_id !== 'undefined') {
+                    lastMaxDeliveryId = Math.max(lastMaxDeliveryId || 0, data.max_delivery_id);
                 }
 
                 if (data.changed === false) {
@@ -1057,6 +1089,18 @@
                 }
                 if (data.max_printing_id) {
                     lastPrintingId = Math.max(lastPrintingId, data.max_printing_id);
+                }
+
+                // Process delivery updates (new shipments toast + reconcile rows silently)
+                if (Array.isArray(data.new_deliveries) && data.new_deliveries.length > 0) {
+                    data.new_deliveries.forEach(d => {
+                        showRealtimeToast('delivery', d);
+                    });
+                }
+                if (Array.isArray(data.active_deliveries)) {
+                    data.active_deliveries.forEach(d => {
+                        window.dispatchEvent(new CustomEvent('blax:delivery-update', { detail: d }));
+                    });
                 }
 
                 // Dispatch summary updates if available

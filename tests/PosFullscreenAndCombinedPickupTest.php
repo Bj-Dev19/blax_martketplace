@@ -8,12 +8,16 @@ use App\Models\PrintingRequestModel;
 use App\Models\PaymentModel;
 use App\Models\AuditLogModel;
 
+require_once __DIR__ . '/support/PosPickupFixtures.php';
+
 class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
 {
     use FeatureTestTrait;
+    use PosPickupFixtures;
 
     protected function tearDown(): void
     {
+        $this->posCleanup();
         \Config\Services::resetSingle('renderer');
         parent::tearDown();
     }
@@ -43,13 +47,13 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $res->assertOK();
         $posBody = $res->response()->getBody();
 
-        // Aside should have id="tenant-sidebar" with class containing hidden and NOT md:flex
+        // Fullscreen here means: same hub shell, but the content is not put in the
+        // centred max-w-7xl reading column, and the sidebar boots collapsed so the
+        // register owns the width (layouts/tenant.php $fullscreenLayout / $isPos).
         $this->assertStringContainsString('id="tenant-sidebar"', $posBody);
-        $this->assertStringContainsString('<main class="flex-1 ml-0 overflow-y-auto bg-surface relative">', $posBody);
-        $this->assertStringNotContainsString('md:ml-64', $posBody);
-
-        // Sidebar toggle button should NOT have md:hidden on fullscreen POS page
-        $this->assertMatchesRegularExpression('/id="sidebar-toggle"[^>]*class="[^"]*p-2[^"]*"(?!.*md:hidden)/', $posBody);
+        $this->assertStringContainsString('<div class="p-2 sm:p-3 md:p-4 w-full">', $posBody);
+        $this->assertStringNotContainsString('max-w-7xl mx-auto space-y-6 w-full', $posBody);
+        $this->assertStringContainsString('const isPos = true;', $posBody);
 
         \Config\Services::resetSingle('renderer');
 
@@ -58,7 +62,10 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $ordersRes->assertOK();
         $ordersBody = $ordersRes->response()->getBody();
 
-        // Main on standard page should retain md:ml-64
+        // Standard pages keep the reading column and an expanded sidebar.
+        $this->assertStringContainsString('max-w-7xl mx-auto space-y-6 w-full', $ordersBody);
+        $this->assertStringNotContainsString('<div class="p-2 sm:p-3 md:p-4 w-full">', $ordersBody);
+        $this->assertStringContainsString('const isPos = false;', $ordersBody);
         $this->assertStringContainsString('md:ml-64', $ordersBody);
         // Sidebar toggle should be hidden on desktop (md:hidden)
         $this->assertStringContainsString('md:hidden', $ordersBody);
@@ -104,19 +111,21 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $ordNum = 'ORD-CROSS-' . $uniq;
         $prNum = 'PR-CROSS-' . $uniq;
 
-        // Insert ready product order
+        // Insert ready product order (anchored at QUEUE_ANCHOR: the selectors only
+        // render the oldest 50 queued rows, so a "now" fixture would be cut off)
         $orderId = $orderModel->insert([
             'order_number'       => $ordNum,
             'customer_id'        => $customerId,
             'shop_id'            => $shopId,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 150.00,
             'total_amount'       => 150.00,
             'status'             => 'ready_for_pickup',
             'payment_status'     => 'unpaid',
-            'placed_at'          => date('Y-m-d H:i:s'),
+            'placed_at'          => self::QUEUE_ANCHOR,
         ]);
+        $this->posTrack('orders', $orderId);
 
         // Insert ready printing request
         $prId = $prModel->insert([
@@ -130,21 +139,25 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'status'             => 'ready_for_pickup',
             'total_price'        => 80.00,
             'down_payment'       => 40.00,
-            'created_at'         => date('Y-m-d H:i:s'),
+            'created_at'         => self::QUEUE_ANCHOR,
         ]);
+        $this->posTrack('printing_requests', $prId);
 
         $res = $this->asTenant(1)->get('tenant/pos');
         $res->assertOK();
         $body = $res->response()->getBody();
 
-        // Product Order modal should have "+ Also has Ready Printing" chip and "Pick Up Combined"
-        $this->assertStringContainsString('+ Also has Ready Printing', $body);
-        $this->assertStringContainsString('Pick Up Combined', $body);
+        // Cross-reference must appear in BOTH modals: one linked-pair chip on the
+        // product card and one on the printing card.
+        $this->assertGreaterThanOrEqual(
+            2,
+            substr_count($body, 'Linked pair'),
+            'Both the product order card and the printing card must carry the linked-pair chip'
+        );
+        $this->assertStringContainsString('Dual_Thesis_' . $uniq . '.pdf', $body, 'Product card must surface the linked printing job');
+        $this->assertStringContainsString('Load Both to POS', $body);
         $this->assertStringContainsString('order_id=' . $orderId, $body);
         $this->assertStringContainsString('printing_id=' . $prId, $body);
-
-        // Printing modal should have "+ Also has Ready Product Order" chip
-        $this->assertStringContainsString('+ Also has Ready Product Order', $body);
     }
 
     /**
@@ -184,6 +197,7 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'unit_price'   => 100.00,
             'line_total'   => 200.00,
         ]);
+        $this->posTrack('orders', $orderId);
 
         $prId = $prModel->insert([
             'request_number'     => $prNum,
@@ -198,6 +212,7 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'down_payment'       => 45.00, // 45 remaining
             'created_at'         => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('printing_requests', $prId);
 
         // Load both into POS
         $res = $this->asTenant(1)->get('tenant/pos?order_id=' . $orderId . '&printing_id=' . $prId);
@@ -205,9 +220,9 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $body = $res->response()->getBody();
 
         // Check combined master banner
-        $this->assertStringContainsString('Combined Store Pick-up Transaction', $body);
-        $this->assertStringContainsString('Order + Printing', $body);
-        $this->assertStringContainsString('together in one unified checkout', $body);
+        $this->assertStringContainsString('Combined Pick-up POS', $body);
+        $this->assertStringContainsString('Combined Pick-up Summary', $body);
+        $this->assertStringContainsString('in a single checkout without double-charging', $body);
 
         // Check both order and printing reference badges
         $this->assertStringContainsString($ordNum, $body);
@@ -221,8 +236,8 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $this->assertStringContainsString('Combined Amount to Collect:', $body);
 
         // Check redesigned pick-up fulfillment card
-        $this->assertStringContainsString('Items to Hand Over', $body);
-        $this->assertStringContainsString('Order Paid Online', $body);
+        $this->assertStringContainsString('Hand Over:', $body);
+        $this->assertStringContainsString('PAID ONLINE', $body);
         $this->assertStringContainsString('Exit', $body);
     }
 
@@ -243,19 +258,20 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
         $ordNum = 'ORD-ATOMIC-' . $uniq;
         $prNum = 'PR-ATOMIC-' . $uniq;
 
-        // Order is unpaid counter_cash: 100.00 due
+        // Order is unpaid counter cash: 100.00 due
         $orderId = $orderModel->insert([
             'order_number'       => $ordNum,
             'customer_id'        => $customerId,
             'shop_id'            => $shopId,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 100.00,
             'total_amount'       => 100.00,
             'status'             => 'ready_for_pickup',
             'payment_status'     => 'unpaid',
             'placed_at'          => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('orders', $orderId);
 
         // Printing request has 30.00 remaining balance
         $prId = $prModel->insert([
@@ -271,9 +287,10 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'down_payment'       => 30.00,
             'created_at'         => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('printing_requests', $prId);
 
         // Simulate 30.00 down payment already verified online
-        $paymentModel->insert([
+        $this->posTrack('payments', $paymentModel->insert([
             'payable_type'     => 'printing_request',
             'payable_id'       => $prId,
             'method'           => 'gcash',
@@ -282,7 +299,7 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'status'           => 'verified',
             'processed_at'     => date('Y-m-d H:i:s'),
             'created_at'       => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         // Complete combined pickup via POS
         $completeRes = $this->asTenant(1)->post('tenant/pos/complete-pickup', [
@@ -349,13 +366,14 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'customer_id'        => $customerId,
             'shop_id'            => $shopId,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 125.00,
             'total_amount'       => 125.00,
             'status'             => 'completed',
             'payment_status'     => 'paid',
             'placed_at'          => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('orders', $orderId);
 
         $orderItemModel->insert([
             'order_id'     => $orderId,
@@ -388,6 +406,7 @@ class PosFullscreenAndCombinedPickupTest extends CIUnitTestCase
             'total_price'        => 50.00,
             'created_at'         => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('printing_requests', $prId);
 
         // 1. Load receipt from order endpoint with ?printing_id
         $rcptRes = $this->asTenant(1)->get('tenant/orders/receipt/' . $orderId . '?printing_id=' . $prId);

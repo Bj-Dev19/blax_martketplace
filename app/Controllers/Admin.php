@@ -377,6 +377,7 @@ class Admin extends BaseController
         $rawLastOrderId = $this->request->getGet('last_order_id');
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
         $rawLastNotifId = $this->request->getGet('last_notif_id');
+        $rawLastDeliverySig = $this->request->getGet('last_delivery_sig');
 
         // Consolidated platform snapshot in 1 single round-trip query
         $db = \Config\Database::connect();
@@ -392,13 +393,20 @@ class Admin extends BaseController
         $currentMaxNotifId = (int) ($snapRow['max_notif_id'] ?? 0);
         $unreadCount       = (int) ($snapRow['unread_count'] ?? 0);
 
+        // Platform-wide delivery change signal for the live dispatch map.
+        $deliverySnap   = (new \App\Models\DeliveryModel())->getRealtimeDeliverySnapshot(null, null);
+        $deliverySig    = (string) $deliverySnap['sig'];
+        $deliveryRows   = $deliverySnap['deliveries'];
+        $maxDeliveryId  = (int) $deliverySnap['max_id'];
+        $deliveryUnchanged = ($rawLastDeliverySig === null || $rawLastDeliverySig === '' || (string) $rawLastDeliverySig === $deliverySig);
+
         // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately
         if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
             $lastOrderId = (int) $rawLastOrderId;
             $lastPrintingId = (int) $rawLastPrintingId;
             $lastNotifId = $rawLastNotifId !== null && $rawLastNotifId !== '' ? (int) $rawLastNotifId : null;
 
-            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId)) {
+            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId) && $deliveryUnchanged) {
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
                     ->setJSON([
@@ -413,6 +421,8 @@ class Admin extends BaseController
                         'new_printing'     => [],
                         'unread_count'     => $unreadCount,
                         'notifications'    => [],
+                        'delivery_sig'     => $deliverySig,
+                        'max_delivery_id'  => $maxDeliveryId,
                         'timestamp'        => date('Y-m-d H:i:s'),
                     ]);
             }
@@ -489,6 +499,17 @@ class Admin extends BaseController
         $activeShops  = $db->table('shops')->where('status', 'active')->countAllResults();
         $pendingPayments = $db->table('payout_requests')->where('status', 'pending')->where('destination_method', 'gcash')->countAllResults();
 
+        $knownMaxDeliveryId = $this->request->getGet('last_max_delivery_id');
+        $newDeliveries = [];
+        if ($knownMaxDeliveryId !== null && $knownMaxDeliveryId !== '') {
+            $kId = (int) $knownMaxDeliveryId;
+            foreach ($deliveryRows as $dRow) {
+                if ((int) $dRow['id'] > $kId) {
+                    $newDeliveries[] = $dRow;
+                }
+            }
+        }
+
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
@@ -503,6 +524,10 @@ class Admin extends BaseController
                 'new_printing'     => $newPrinting,
                 'unread_count'     => $unreadCount,
                 'notifications'    => $recentNotifs,
+                'delivery_sig'     => $deliverySig,
+                'max_delivery_id'  => $maxDeliveryId,
+                'new_deliveries'   => $newDeliveries,
+                'active_deliveries' => $deliveryRows,
                 'summary'          => [
                     'pending_shops'    => $pendingShops,
                     'active_shops'     => $activeShops,
@@ -1997,6 +2022,19 @@ class Admin extends BaseController
             return redirect()->back()->withInput()->with('error', 'Maximum delivery distance (' . number_format($maxDistKm, 1) . ' km) must be greater than or equal to the included distance (' . number_format($includedKm, 1) . ' km).');
         }
 
+        // TEST-ONLY simulated distance override: opt-in checkbox, disabled unless explicitly
+        // checked. Live marketplace quotes always use real route km when this is off.
+        $simulateEnabled = $this->request->getPost('simulate_distance_km') === '1';
+        $rawOverride     = $this->request->getPost('override_distance_km');
+        $overrideKm      = 0.00;
+
+        if ($simulateEnabled) {
+            if (!is_numeric($rawOverride) || (float) $rawOverride < 0.1 || (float) $rawOverride > 200) {
+                return redirect()->back()->withInput()->with('error', 'Simulated distance must be a valid number between 0.1 km and 200 km when the test override is enabled.');
+            }
+            $overrideKm = round((float) $rawOverride, 2);
+        }
+
         $adminId = (int) session()->get('user_id');
         $model   = new SiteContentModel();
         $model->saveShippingFeeSettings([
@@ -2004,6 +2042,8 @@ class Admin extends BaseController
             'included_distance_km'     => $includedKm,
             'additional_fee_per_km'    => $perKmFee,
             'max_delivery_distance_km' => $maxDistKm,
+            'simulate_distance_km'     => $simulateEnabled ? 1 : 0,
+            'override_distance_km'     => $overrideKm,
         ], $adminId);
 
         try {
@@ -2011,11 +2051,12 @@ class Admin extends BaseController
                 $adminId,
                 'admin',
                 sprintf(
-                    'Updated Shipping Fee Settings (Base: ₱%.2f, Included: %.1fkm, +₱%.2f/km, Max: %.1fkm)',
+                    'Updated Shipping Fee Settings (Base: ₱%.2f, Included: %.1fkm, +₱%.2f/km, Max: %.1fkm%s)',
                     $baseFee,
                     $includedKm,
                     $perKmFee,
-                    $maxDistKm
+                    $maxDistKm,
+                    $simulateEnabled ? ', TEST simulated distance: ' . number_format($overrideKm, 2) . 'km' : ''
                 ),
                 'platform_settings',
                 'success',

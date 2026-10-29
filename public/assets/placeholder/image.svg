@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="No image available">
+    <rect width="600" height="600" fill="#F1F5F3"/>
+    <rect width="600" height="600" fill="url(#sheen)"/>
+    <defs>
+        <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#EAF4E8"/>
+            <stop offset="1" stop-color="#E7EDF1"/>
+        </linearGradient>
+    </defs>
+    <g fill="none" stroke="#4A943E" stroke-opacity=".38" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="186" y="200" width="228" height="184" rx="22"/>
+        <path d="M186 336l66-62 52 48 44-40 66 62"/>
+        <circle cx="366" cy="248" r="17" fill="#4A943E" fill-opacity=".28" stroke="none"/>
+    </g>
+</svg>

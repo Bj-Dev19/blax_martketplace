@@ -16,7 +16,7 @@ class AuthRateLimiter implements FilterInterface
         }
 
         $throttler = service('throttler');
-        $ip = $request->getIPAddress() ?: '127.0.0.1';
+        $ip = client_ip($request) ?: '127.0.0.1';
         $key = 'auth_throttle_' . md5($ip);
 
         // 10 attempts per 300 seconds (5 minutes)

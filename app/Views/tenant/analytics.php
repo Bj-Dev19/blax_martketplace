@@ -782,7 +782,7 @@ $detectedSeason   = $seasonal_data['detected_active_season'] ?? 'holiday';
                                         <div class="flex items-center gap-3">
                                             <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 dark:border-slate-600 shadow-2xs">
                                                 <?php if (!empty($r['image_url'])): ?>
-                                                    <img src="<?= esc($r['image_url']) ?>" alt="<?= esc($r['name']) ?>" class="w-full h-full object-cover">
+                                                    <img src="<?= esc($r['image_url']) ?>" alt="<?= esc($r['name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                                 <?php else: ?>
                                                     <span class="material-symbols-outlined text-[24px] text-terra-green">inventory_2</span>
                                                 <?php endif; ?>
@@ -1119,7 +1119,7 @@ $detectedSeason   = $seasonal_data['detected_active_season'] ?? 'holiday';
                                             <div class="flex items-center gap-3">
                                                 <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700">
                                                     <?php if (!empty($r['image_url'])): ?>
-                                                        <img src="<?= esc($r['image_url']) ?>" alt="<?= esc($r['name']) ?>" class="w-full h-full object-cover">
+                                                        <img src="<?= esc($r['image_url']) ?>" alt="<?= esc($r['name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                                     <?php else: ?>
                                                         <span class="material-symbols-outlined text-[20px] text-terra-green">inventory_2</span>
                                                     <?php endif; ?>
@@ -1352,7 +1352,7 @@ $detectedSeason   = $seasonal_data['detected_active_season'] ?? 'holiday';
                         <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex flex-col justify-between hover:border-terra-green/40 transition-all">
                             <div>
                                 <div class="w-full aspect-video rounded-xl bg-white dark:bg-slate-800 overflow-hidden mb-2.5 flex items-center justify-center p-2 border border-slate-100 dark:border-slate-700/50">
-                                    <img src="<?= esc($pImg) ?>" alt="<?= esc($mp['name']) ?>" class="w-full h-full object-contain">
+                                    <img src="<?= esc($pImg) ?>" alt="<?= esc($mp['name']) ?>" class="w-full h-full object-contain" loading="lazy" decoding="async">
                                 </div>
                                 <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-1" title="<?= esc($mp['name']) ?>">
                                     <?= esc($mp['name']) ?>
@@ -1715,7 +1715,7 @@ function toggleAiReason(idx) {
                         }
 
                         const imageEl = r.image_url
-                            ? `<img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.name)}" class="w-full h-full object-cover">`
+                            ? `<img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.name)}" class="w-full h-full object-cover" loading="lazy" decoding="async">`
                             : `<span class="material-symbols-outlined text-[24px] text-terra-green">inventory_2</span>`;
 
                         let actionBtnHtml = '';
@@ -1834,7 +1834,7 @@ function toggleAiReason(idx) {
                             : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"><span class="material-symbols-outlined text-[13px]">check</span><span>Optimal</span></span>`;
 
                         const imageEl = r.image_url
-                            ? `<img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.name)}" class="w-full h-full object-cover">`
+                            ? `<img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.name)}" class="w-full h-full object-cover" loading="lazy" decoding="async">`
                             : `<span class="material-symbols-outlined text-[20px] text-terra-green">inventory_2</span>`;
 
                         const restockActionBtn = (r.restock_units > 0)

@@ -191,7 +191,8 @@ class CustomerOrderTrackingTest extends CIUnitTestCase
         // 6. Interactive Google Map
         $this->assertStringContainsString('id="trackMap"', $body);
         $this->assertStringContainsString('Center on Courier', $body);
-        $this->assertStringContainsString('Live Route Tracking', $body);
+        $this->assertStringContainsString('Live Route', $body);
+        $this->assertStringContainsString('id="liveRouteStats"', $body);
         $this->assertStringContainsString('maps.googleapis.com', $body);
         $this->assertStringContainsString('STORE_COORDS', $body);
         $this->assertStringContainsString('COURIER_COORDS', $body);
@@ -260,19 +261,19 @@ class CustomerOrderTrackingTest extends CIUnitTestCase
             'placed_at'          => date('Y-m-d H:i:s'),
         ]);
 
-        // 1. Check orders index view: Stepper has "Shipped" and button shows "Tracking available once shipped"
+        // 1. Orders index: the stepper names milestone 3 per fulfilment method
+        //    ("On the Way" for delivery, "Pickup Ready" for collection), and the
+        //    track button is simply not rendered until the order ships.
         $result = $this->asCustomer((int) $customer['id'], $customer['email'])
             ->get('customer/orders');
         $result->assertOK();
         $body = $result->response()->getBody();
 
-        // Must show 'Shipped' in timeline, NOT 'In Transit'
-        $this->assertStringContainsString('Shipped', $body);
+        $this->assertStringContainsString('On the Way', $body, 'Delivery stepper must name the shipped milestone');
         $this->assertStringNotContainsString('In Transit', $body);
 
-        // For this pending order, 'Track Order' link must NOT be present
+        // For this pending order, no tracking URL may exist yet
         $this->assertStringNotContainsString('/customer/orders/track/' . $orderNumber, $body);
-        $this->assertStringContainsString('Tracking available once shipped', $body);
 
         // 2. Direct GET to track endpoint on pending order must redirect back with notice
         $trackResult = $this->asCustomer((int) $customer['id'], $customer['email'])
@@ -288,5 +289,6 @@ class CustomerOrderTrackingTest extends CIUnitTestCase
         $bodyShipped = $resultShipped->response()->getBody();
 
         $this->assertStringContainsString('/customer/orders/track/' . $orderNumber, $bodyShipped);
+        $this->assertStringContainsString('Track Order', $bodyShipped, 'The track button appears only once the order has shipped');
     }
 }

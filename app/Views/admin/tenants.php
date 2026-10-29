@@ -210,7 +210,7 @@
                                 <div class="flex items-center gap-3">
                                     <div class="w-11 h-11 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center font-black text-xs shrink-0 shadow-2xs overflow-hidden">
                                         <?php if (!empty($t['logo_url'])): ?>
-                                            <img src="<?= esc(logo_url($t['logo_url'])) ?>" alt="<?= esc($t['shop_name']) ?>" class="w-full h-full object-cover">
+                                            <img src="<?= esc(logo_url($t['logo_url'])) ?>" alt="<?= esc($t['shop_name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                         <?php else: ?>
                                             <span class="font-display font-black text-sm"><?= esc(mb_strtoupper(mb_substr($t['shop_name'] ?? 'S', 0, 2))) ?></span>
                                         <?php endif; ?>

@@ -60,8 +60,8 @@ final class CmsIntegrationTest extends CIUnitTestCase
         $this->assertStringContainsString('pv-announcement-bar', $viewOutput);
         $this->assertStringContainsString('pv-hero-banner', $viewOutput);
         $this->assertStringContainsString('pv-footer', $viewOutput);
-        $this->assertStringContainsString('Live on Homepage Hero', $viewOutput);
-        $this->assertStringContainsString('Important Developer Notice', $viewOutput);
+        $this->assertStringContainsString('Homepage Hero &amp; Catalog', $viewOutput);
+        $this->assertStringContainsString('Footer &amp; Support Contacts', $viewOutput);
     }
 
     public function testAnnouncementBarRendersWhenActiveAndHidesWhenInactive(): void
@@ -111,7 +111,7 @@ final class CmsIntegrationTest extends CIUnitTestCase
         $this->assertStringContainsString('+63 999 888 7777', $html);
         $this->assertStringContainsString('123 Market St, Polomolok Hub', $html);
         $this->assertStringContainsString('© 2026 Customized Blax Copyright Notice.', $html);
-        $this->assertStringContainsString('Contact Us', $html);
+        $this->assertStringContainsString('Contact &amp; Support', $html);
     }
 
     public function testHomeViewRendersHeroCtaAndPromotionalBlocks(): void

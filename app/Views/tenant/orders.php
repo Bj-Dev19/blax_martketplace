@@ -121,10 +121,16 @@
 
     <!-- Active Processing & Packing Queue Container -->
     <?php
-    $procCount = count($processingOrders ?? []);
-    $pickupProcCount = 0;
-    $deliveryProcCount = 0;
-    if (!empty($processingOrders)) {
+    // The grid is capped by the model, so badges read from the true counts whenever the
+    // controller supplies them; count() stays as the fallback for older/other callers.
+    $procCounts      = $processingCounts ?? null;
+    $procShown       = count($processingOrders ?? []);
+    $procCount       = $procCounts['all'] ?? $procShown;
+    $pickupProcCount = $procCounts['pickup'] ?? 0;
+    $deliveryProcCount = $procCounts['delivery'] ?? 0;
+    if ($procCounts === null && !empty($processingOrders)) {
+        $pickupProcCount = 0;
+        $deliveryProcCount = 0;
         foreach ($processingOrders as $po) {
             if (($po['fulfillment_method'] ?? 'delivery') === 'pickup') {
                 $pickupProcCount++;
@@ -133,6 +139,7 @@
             }
         }
     }
+    $procHidden = max(0, $procCount - $procShown);
     ?>
     <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
         
@@ -263,7 +270,7 @@
                                             <div class="flex items-center justify-between gap-2 text-xs">
                                                  <div class="flex items-center gap-2 min-w-0 flex-1">
                                                     <?php if (!empty($it['product_image'])): ?>
-                                                        <img src="<?= esc(product_image_url($it['product_image'], 'thumbnail')) ?>" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="">
+                                                        <img src="<?= esc(product_image_url($it['product_image'], 'thumbnail')) ?>" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="" loading="lazy" decoding="async">
                                                     <?php else: ?>
                                                         <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-[14px] material-symbols-outlined">inventory_2</span>
                                                     <?php endif; ?>
@@ -362,6 +369,14 @@
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
+
+            <?php if ($procHidden > 0): ?>
+                <!-- Shown when the queue is longer than the grid renders -->
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium px-1">
+                    Showing the <?= $procShown ?> oldest in prep; <span class="font-bold"><?= $procHidden ?></span> more
+                    queued further down the Orders list below.
+                </p>
+            <?php endif; ?>
 
             <!-- Empty State when no processing orders -->
             <div id="queueEmptyState" class="py-8 text-center flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 <?= !empty($processingOrders) ? 'hidden' : '' ?>">
@@ -1354,7 +1369,7 @@
                     
                     let imgTag = '';
                     if (it.image_url) {
-                        imgTag = `<img src="${escapeHtml(it.image_url)}" class="w-9 h-9 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800" alt="">`;
+                        imgTag = `<img src="${escapeHtml(it.image_url)}" class="w-9 h-9 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800" alt="" loading="lazy" decoding="async">`;
                     } else {
                         imgTag = `<div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0"><span class="material-symbols-outlined text-[16px]">inventory_2</span></div>`;
                     }
@@ -1779,7 +1794,7 @@
                     itemsHtml += `
                         <div class="flex items-center justify-between gap-2 text-xs">
                             <div class="flex items-center gap-2 min-w-0 flex-1">
-                                ${imgUrl ? `<img src="${imgUrl}" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="">` : `<span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-[14px] material-symbols-outlined">inventory_2</span>`}
+                                ${imgUrl ? `<img src="${imgUrl}" class="w-7 h-7 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shrink-0" alt="" loading="lazy" decoding="async">` : `<span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400 text-[14px] material-symbols-outlined">inventory_2</span>`}
                                 <div class="min-w-0 flex-1">
                                     <p class="font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">${item.product_name || 'Product'}</p>
                                     <p class="text-[10px] text-slate-400 font-mono">₱${price}</p>

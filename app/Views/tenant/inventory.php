@@ -214,7 +214,7 @@ function inv_stock_pill(int $stock, int $threshold): array {
                                         <div class="relative w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0 mt-0.5">
                                             <?php if (!empty($p['image_url'])): ?>
                                                 <?php $imgSrc = product_image_url($p['image_url'], 'thumbnail'); ?>
-                                                <img src="<?= esc($imgSrc) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-cover">
+                                                <img src="<?= esc($imgSrc) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                             <?php else: ?>
                                                 <span class="material-symbols-outlined text-[20px] text-slate-400">inventory_2</span>
                                             <?php endif; ?>
@@ -386,7 +386,7 @@ function inv_stock_pill(int $stock, int $threshold): array {
                             <div class="relative w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
                                 <?php if (!empty($p['image_url'])): ?>
                                     <?php $imgSrc = product_image_url($p['image_url'], 'thumbnail'); ?>
-                                    <img src="<?= esc($imgSrc) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-cover">
+                                    <img src="<?= esc($imgSrc) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                 <?php else: ?>
                                     <span class="material-symbols-outlined text-[24px] text-slate-400">inventory_2</span>
                                 <?php endif; ?>

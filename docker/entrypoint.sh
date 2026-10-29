@@ -132,28 +132,60 @@ mkdir -p /var/www/html/public/uploads/profiles \
 chown -R www-data:www-data /var/www/html/public/uploads
 chmod -R 775 /var/www/html/public/uploads
 
-# Run automatic database migrations if enabled and database environment variables are present
-RUN_MIGRATIONS="${RUN_MIGRATIONS:-true}"
+# Run automatic database migrations if enabled and database environment variables are present.
+# Off by default: schema changes are applied deliberately (docs/DEPLOY_RENDER.md), not
+# implicitly on every cold start, so a restart can never race a partially migrated schema.
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-false}"
 
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
     if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ] || [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ] || [ -n "$database_default_hostname" ] || [ -n "$DATABASE_DEFAULT_HOSTNAME" ]; then
         echo "Database environment detected. Checking database connectivity before migrations..."
-        # Brief retry loop (up to 6 seconds) in case MySQL is still booting up on cold start
+        # Brief retry loop (up to 6 seconds) in case the database is still booting up on cold start
         RETRY_COUNT=0
         MAX_RETRIES=3
         until php spark migrate --all || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Database migration attempt $RETRY_COUNT failed or waiting for MySQL readiness... retrying in 2s ($RETRY_COUNT/$MAX_RETRIES)"
+            echo "Database migration attempt $RETRY_COUNT failed or waiting for database readiness... retrying in 2s ($RETRY_COUNT/$MAX_RETRIES)"
             sleep 2
         done
         if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-            echo "Warning: Database migrations could not be completed automatically. The application will continue booting."
-        else
-            echo "Database migrations completed successfully."
+            # A half-migrated schema surfaces as per-request failures long after the
+            # deploy reports success. Fail the deploy where the operator can see it.
+            echo "ERROR: Database migrations failed after ${MAX_RETRIES} attempts. Refusing to boot." >&2
+            exit 1
         fi
+        echo "Database migrations completed successfully."
     fi
 else
     echo "RUN_MIGRATIONS=false. Skipping database migrations on boot for fast wake-up."
+fi
+
+# Cache persistence guard. CACHE_HANDLER=database is what keeps pending carts
+# readable across restarts (Cart::paymongoWebhook reads them by session id). If
+# the handler is set but ci_cache was never migrated, every cache write fails
+# silently, so make the misconfiguration visible. Warn only: this must not stop
+# a boot that would otherwise succeed.
+if [ "${CACHE_HANDLER:-}" = "database" ]; then
+    if php spark db:table ci_cache > /dev/null 2>&1; then
+        echo "CACHE_HANDLER=database and ci_cache is present."
+    else
+        echo "WARNING: CACHE_HANDLER=database but the ci_cache table is missing. Run 'php spark migrate --all' or unset CACHE_HANDLER." >&2
+    fi
+fi
+
+# Fail fast in production if the payment webhook secret is unset or still the
+# documented placeholder: with either value every PayMongo webhook fails HMAC
+# verification and paid orders silently never confirm. Reference the variable
+# only for emptiness/comparison so its value is never echoed into logs.
+if [ "${CI_ENVIRONMENT}" = "production" ]; then
+    case "${PAYMONGO_WEBHOOK_SECRET:-}" in
+        ""|"whsec_placeholder_secret")
+            echo "ERROR: PAYMONGO_WEBHOOK_SECRET is unset or still the placeholder value. Refusing to boot." >&2
+            echo "Set the real whsec_... signing secret from the PayMongo dashboard in your host environment." >&2
+            exit 1
+            ;;
+    esac
+    echo "PAYMONGO_WEBHOOK_SECRET present."
 fi
 
 # Start PHP-FPM in the background

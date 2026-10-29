@@ -159,3 +159,61 @@ if (!function_exists('humanize_status')) {
         return ucwords($normalized);
     }
 }
+
+if (!function_exists('client_ip')) {
+    /**
+     * Resolve the real client IP for rate-limit keys behind a load balancer.
+     *
+     * On Render, nginx and PHP-FPM share a single container, so REMOTE_ADDR is
+     * always 127.0.0.1 and CodeIgniter's own proxy trust list left-to-right scan
+     * lets a caller forge the bucket by sending their own X-Forwarded-For entry.
+     * The edge *appends* the true peer address, so the rightmost non-private,
+     * non-reserved entry is the one the client cannot control.
+     *
+     * Note: FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE are the valid
+     * PHP flags; there is no FILTER_FLAG_NO_PUB_RANGE.
+     */
+    function client_ip(?\CodeIgniter\HTTP\RequestInterface $request = null): string
+    {
+        $header = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
+
+        if ($header !== '') {
+            $entries = array_reverse(array_map('trim', explode(',', $header)));
+
+            foreach ($entries as $entry) {
+                if ($entry === '') {
+                    continue;
+                }
+
+                if (filter_var(
+                        $entry,
+                        FILTER_VALIDATE_IP,
+                        FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+                    ) !== false) {
+                    return $entry;
+                }
+
+                // Tolerate an IPv4-with-port form such as 203.0.113.7:5678.
+                if (str_contains($entry, ':') && ! str_contains($entry, '.')) {
+                    continue; // bare IPv6 address already failed the checks above
+                }
+
+                $host = substr($entry, 0, strrpos($entry, ':'));
+
+                if (filter_var(
+                        $host,
+                        FILTER_VALIDATE_IP,
+                        FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+                    ) !== false) {
+                    return $host;
+                }
+            }
+        }
+
+        $fromRequest = $request !== null ? $request->getIPAddress() : '';
+
+        return $fromRequest !== '' && $fromRequest !== '0.0.0.0'
+            ? $fromRequest
+            : (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    }
+}

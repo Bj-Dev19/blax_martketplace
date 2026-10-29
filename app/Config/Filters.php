@@ -41,6 +41,7 @@ class Filters extends BaseFilters
         'authThrottle'   => \App\Filters\AuthRateLimiter::class,
         'actionThrottle' => \App\Filters\ActionRateLimiter::class,
         'appProfile'     => \App\Filters\PerformanceFilter::class,
+        'compression'    => \App\Filters\CompressionFilter::class,
     ];
 
     /**
@@ -94,6 +95,8 @@ class Filters extends BaseFilters
             'appProfile',
             // 'honeypot',
             'secureheaders',
+            // Last so it sees the final body, after PageCache/Toolbar have finished with it.
+            'compression',
         ],
     ];
 

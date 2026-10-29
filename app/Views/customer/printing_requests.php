@@ -255,6 +255,19 @@
                                 <span class="text-base sm:text-lg font-extrabold font-mono text-terra-green dark:text-emerald-400">₱<?= esc($reqPrice) ?></span>
                             </div>
 
+                            <?php $reqShipFee = (float) ($req['shipping_fee'] ?? 0); ?>
+                            <?php if (!$isPickup && $reqShipFee > 0): ?>
+                                <p class="basis-full -mt-1 text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 flex-wrap">
+                                    <span class="material-symbols-outlined text-[13px] text-sky-600 dark:text-sky-400">route</span>
+                                    Includes ₱<?= number_format($reqShipFee, 2) ?> distance-based shipping fee<?= !empty($req['distance_km']) ? ' &middot; ' . number_format((float) $req['distance_km'], 1) . ' km route' : '' ?>
+                                </p>
+                            <?php elseif (!$isPickup): ?>
+                                <p class="basis-full -mt-1 text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[13px] text-sky-600 dark:text-sky-400">route</span>
+                                    Shipping ₱0.00 &middot; within the included distance
+                                </p>
+                            <?php endif; ?>
+
                             <!-- Actions -->
                             <div class="flex flex-wrap items-center gap-2 justify-end">
 

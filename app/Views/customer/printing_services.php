@@ -22,7 +22,7 @@
     $rawHeroImg = !empty($sc['hero_image']['image_url']) 
         ? $sc['hero_image']['image_url'] 
         : (!empty($sc['hero_image']['text_value']) ? $sc['hero_image']['text_value'] : null);
-    $psImage = cms_image_url($rawHeroImg, 'banner', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80');
+    $psImage = cms_image_url($rawHeroImg, 'banner');
 ?>
 
 <main class="max-w-container-max mx-auto px-4 md:px-8 lg:px-10 flex-grow w-full py-6 sm:py-8 md:py-10 flex flex-col gap-10 sm:gap-14 md:gap-16">
@@ -302,7 +302,7 @@
             </span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 md:gap-5">
+        <div class="cv-skip grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4 md:gap-5">
             <?php if (!empty($shops)): ?>
                 <?php foreach ($shops as $s): ?>
                     <div class="bento-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-terra-green/40 dark:hover:border-terra-green/40 rounded-3xl overflow-hidden flex flex-col justify-between group shadow-2xs hover:shadow-xl transition-all duration-300">
@@ -320,7 +320,7 @@
                                 <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white dark:bg-slate-900 shadow-md border-2 border-slate-200/90 dark:border-slate-700 p-0.5 overflow-hidden mb-2.5 group-hover:scale-105 transition-transform relative ring-2 ring-terra-green/10">
                                     <?php $pLogo = logo_url($s['logo_url'] ?? null); ?>
                                     <?php if (!empty($pLogo)): ?>
-                                        <img class="w-full h-full object-cover rounded-full" src="<?= esc($pLogo) ?>" alt="<?= esc($s['shop_name']) ?>" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                                        <img class="w-full h-full object-cover rounded-full" src="<?= esc($pLogo) ?>" alt="<?= esc($s['shop_name']) ?>" loading="lazy" decoding="async" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
                                         <div class="hidden w-full h-full bg-terra-green/10 rounded-full flex items-center justify-center text-terra-green font-bold">
                                             <span class="material-symbols-outlined text-[24px]">print</span>
                                         </div>

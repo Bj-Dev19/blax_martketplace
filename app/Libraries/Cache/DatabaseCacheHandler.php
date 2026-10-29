@@ -10,6 +10,10 @@ use CodeIgniter\Cache\Handlers\BaseHandler;
  * Stores cache entries in a `ci_cache` table so they persist across
  * ephemeral serverless instances (e.g. Vercel). This handler is used
  * when CI4's built-in DatabaseHandler is not yet available.
+ *
+ * Every public method carries an explicit signature: CodeIgniter 4.7 added
+ * return types (and a `mixed` $value parameter on save()) to CacheInterface,
+ * and an untyped override is a fatal declaration error against them.
  */
 class DatabaseCacheHandler extends BaseHandler
 {
@@ -48,7 +52,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function initialize()
+    public function initialize(): void
     {
         // Nothing to initialize.
     }
@@ -56,7 +60,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function get(string $key)
+    public function get(string $key): mixed
     {
         try {
             $row = $this->getDb()->table($this->tableName)
@@ -89,7 +93,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function save(string $key, $value, int $ttl = 60)
+    public function save(string $key, mixed $value, int $ttl = 60): bool
     {
         try {
             $serialized = serialize($value);
@@ -125,7 +129,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function delete(string $key)
+    public function delete(string $key): bool
     {
         try {
             return (bool) $this->getDb()->table($this->tableName)
@@ -140,7 +144,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function deleteMatching(string $pattern)
+    public function deleteMatching(string $pattern): int
     {
         try {
             $sqlPattern = str_replace('*', '%', $pattern);
@@ -157,7 +161,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function increment(string $key, int $offset = 1)
+    public function increment(string $key, int $offset = 1): bool|int
     {
         $current = $this->get($key);
 
@@ -176,7 +180,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function decrement(string $key, int $offset = 1)
+    public function decrement(string $key, int $offset = 1): bool|int
     {
         return $this->increment($key, -$offset);
     }
@@ -184,7 +188,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function clean()
+    public function clean(): bool
     {
         try {
             $this->getDb()->table($this->tableName)->truncate();
@@ -198,7 +202,7 @@ class DatabaseCacheHandler extends BaseHandler
     /**
      * {@inheritDoc}
      */
-    public function getCacheInfo()
+    public function getCacheInfo(): array|false|object|null
     {
         try {
             return [
@@ -211,8 +215,11 @@ class DatabaseCacheHandler extends BaseHandler
 
     /**
      * {@inheritDoc}
+     *
+     * The interface contract is `?array`, so a missing row or a failed read
+     * returns null (not false) — CI4's own handlers treat null as "miss".
      */
-    public function getMetaData(string $key)
+    public function getMetaData(string $key): ?array
     {
         try {
             $row = $this->getDb()->table($this->tableName)
@@ -221,7 +228,7 @@ class DatabaseCacheHandler extends BaseHandler
                 ->getRowArray();
 
             if ($row === null) {
-                return false;
+                return null;
             }
 
             $createdAt = (int) $row['created_at'];
@@ -233,7 +240,7 @@ class DatabaseCacheHandler extends BaseHandler
                 'data'   => unserialize($row['value']),
             ];
         } catch (\Throwable $e) {
-            return false;
+            return null;
         }
     }
 

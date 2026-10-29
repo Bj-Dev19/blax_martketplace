@@ -1197,7 +1197,7 @@ $customerHasOrderMap = $customerHasOrderMap ?? [];
                         <!-- Product Image -->
                         <div class="w-full aspect-square rounded-xl bg-slate-50 dark:bg-slate-900/60 overflow-hidden flex items-center justify-center relative p-1.5">
                             ${p.image_url 
-                                ? `<img src="${p.image_url}" class="w-full h-full object-contain group-hover:scale-105 transition-transform" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<div class=\\'text-primary/40 flex flex-col items-center gap-1\\'><span class=\\'material-symbols-outlined text-3xl sm:text-4xl\\'>inventory_2</span><span class=\\'text-[9px] uppercase font-bold text-outline\\'>No Image</span></div>'">` 
+                                ? `<img src="${esc(p.image_url)}" class="w-full h-full object-contain group-hover:scale-105 transition-transform" alt="${esc(p.name)}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='<div class=\\'text-primary/40 flex flex-col items-center gap-1\\'><span class=\\'material-symbols-outlined text-3xl sm:text-4xl\\'>inventory_2</span><span class=\\'text-[9px] uppercase font-bold text-outline\\'>No Image</span></div>'">` 
                                 : `<div class="text-primary/40 flex flex-col items-center gap-1"><span class="material-symbols-outlined text-3xl sm:text-4xl">inventory_2</span><span class="text-[9px] uppercase font-bold text-outline">No Image</span></div>`}
                             
                             <!-- In-cart Badge -->

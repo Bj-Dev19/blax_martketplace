@@ -18,7 +18,9 @@ $routes->get('healthz', $healthHandler);
 $routes->get('health', $healthHandler);
 $routes->get('ping', $healthHandler);
 $routes->get('/', 'Home::index');
-$routes->post('ai/query', 'Home::aiQuery');
+// ai/query fans out to the Cohere API, so every unthrottled hit burns
+// third-party quota on an unauthenticated route.
+$routes->post('ai/query', 'Home::aiQuery', ['filter' => 'actionThrottle']);
 $routes->post('api/route', 'CustomerOrderController::computeRoute', ['filter' => 'actionThrottle']);
 
 // Auth Routes
@@ -50,7 +52,9 @@ $routes->get('shop/(:segment)', 'Customer::shop/$1');
 $routes->get('product/(:num)', 'Customer::product/$1');
 $routes->get('printing-services', 'Customer::printingServices');
 $routes->post('printing/request', 'Customer::submitPrintingRequest', ['filter' => 'actionThrottle']);
-$routes->post('printing/count-pages', 'Customer::countPrintingPages');
+// count-pages shells out to pdfinfo against an upload capped at 50 MB, which is
+// the cheapest CPU-exhaustion primitive on the public surface.
+$routes->post('printing/count-pages', 'Customer::countPrintingPages', ['filter' => 'actionThrottle']);
 $routes->post('printing/cancel', 'Customer::cancelPrintingRequest');
 $routes->get('printing/callback', 'Customer::printingPaymentCallback');
 

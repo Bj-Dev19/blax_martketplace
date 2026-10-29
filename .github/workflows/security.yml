@@ -1,0 +1,56 @@
+name: Security
+
+# Guards against re-introducing committed credentials (the PayMongo sk_live_
+# fallback in app/Services/PaymongoService.php was once published) and against
+# shipping a framework release with a known critical advisory.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the leaked value lives in an early commit, so a
+          # shallow clone would not demonstrate that the scan covers history.
+          fetch-depth: 0
+
+      - name: gitleaks
+        # Pinned official image rather than gitleaks-action, which additionally
+        # requires a GITLEAKS_LICENSE secret; a missing secret would turn this
+        # job red for reasons unrelated to the scan result.
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.18.4 \
+            detect --source=/repo --config=/repo/.gitleaks.toml --redact --exit-code 1
+
+  dependencies:
+    name: Dependency advisories (composer audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: composer install --no-interaction --no-dev --prefer-dist --no-progress
+
+      # Audits exactly the dependency set the image ships, so an unpatched
+      # CodeIgniter release cannot reach a deploy. --no-dev is deliberate: the
+      # require-dev tree is not in the image, and an advisory in a test-only
+      # package would turn this job red for something that cannot ship. Run
+      # `composer audit` (without --no-dev) locally when touching dev deps.
+      - name: composer audit
+        run: composer audit --no-dev
+
+      - name: npm audit
+        run: npm audit --audit-level=high

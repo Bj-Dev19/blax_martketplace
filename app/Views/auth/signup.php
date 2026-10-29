@@ -19,9 +19,7 @@
         <div class="relative z-10 space-y-4 sm:space-y-6">
             <header class="flex items-center justify-between gap-3">
                 <a class="flex items-center gap-3 group transition-transform hover:scale-[1.02]" href="<?= base_url('/') ?>">
-                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#4a7c59] text-white flex items-center justify-center shadow-xl shadow-[#131e17]/50 ring-1 ring-white/20 shrink-0">
-                        <span class="material-symbols-outlined text-[22px] sm:text-[23px]">shopping_bag</span>
-                    </div>
+                    <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="44" height="44" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl shrink-0 shadow-xl shadow-[#131e17]/50 ring-1 ring-white/20">
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="font-extrabold text-xl sm:text-2xl tracking-tight text-white leading-none font-serif">Blax</span>

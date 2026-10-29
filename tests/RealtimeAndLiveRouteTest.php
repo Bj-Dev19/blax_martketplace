@@ -237,7 +237,10 @@ class RealtimeAndLiveRouteTest extends CIUnitTestCase
         $json2 = json_decode($res2->getJSON(), true);
         $this->assertTrue($json2['success']);
         $this->assertFalse($json2['changed']);
-        $this->assertEmpty($json2['notifications']);
+        // The tenant fast path skips heavy keys (notifications, summaries) and only
+        // echoes the change signals, including the delivery signal.
+        $this->assertEmpty($json2['notifications'] ?? []);
+        $this->assertArrayHasKey('delivery_sig', $json2);
     }
 
     public function testAdminRealtimeCheckFastPath()

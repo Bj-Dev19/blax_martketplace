@@ -242,7 +242,7 @@ $chart_total        = (float) ($chart_total ?? 0);
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <?php if (!empty($p['image_url'])): ?>
-                                            <img src="<?= esc(product_image_url($p['image_url'], 'thumbnail')) ?>" alt="<?= esc($p['name']) ?>" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700">
+                                            <img src="<?= esc(product_image_url($p['image_url'], 'thumbnail')) ?>" alt="<?= esc($p['name']) ?>" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-700" loading="lazy" decoding="async">
                                         <?php else: ?>
                                             <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-400">
                                                 <span class="material-symbols-outlined text-[20px]">inventory_2</span>

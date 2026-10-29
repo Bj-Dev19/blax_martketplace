@@ -19,7 +19,7 @@ class ActionRateLimiter implements FilterInterface
         }
 
         $throttler = service('throttler');
-        $ip = $request->getIPAddress() ?: '127.0.0.1';
+        $ip = client_ip($request) ?: '127.0.0.1';
         $path = trim($request->getUri()->getPath(), '/');
         $key = 'action_throttle_' . md5($ip . '_' . $path);
 

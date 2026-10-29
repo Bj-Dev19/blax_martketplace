@@ -163,7 +163,7 @@
                                     <div>
                                         <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white block">Doorstep Delivery</span>
                                         <span id="buynow-delivery-subtext" class="text-[11px] text-slate-500 dark:text-slate-400 block">
-                                            <?= !empty($shippingQuote['distance_text']) ? esc($shippingQuote['distance_text']) . ' road route' : 'Polomolok area' ?>
+                                            <?= !empty($shippingQuote['distance_text']) ? esc($shippingQuote['distance_text']) . (empty($shippingQuote['distance_approximate']) ? ' road route' : '') : 'Polomolok area' ?>
                                         </span>
                                     </div>
                                 </div>
@@ -173,6 +173,9 @@
                             </div>
                             <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2.5 pl-6 leading-relaxed">
                                 <?= $shopOffersDelivery ? 'Distance-based fee calculated via Google Maps Routes.' : 'Doorstep delivery is currently not offered by this shop.' ?>
+                            </p>
+                            <p id="buynow-distance-note" class="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-lg px-2.5 py-1.5 mt-2 leading-relaxed<?= empty($shippingQuote['distance_approximate']) ? ' hidden' : '' ?>">
+                                <?= esc($shippingQuote['accuracy_notice'] ?? '') ?>
                             </p>
                         </label>
 
@@ -669,7 +672,16 @@
                 isDeliverable = !!q.deliverable;
 
                 if (deliverySubtext) {
-                    deliverySubtext.textContent = (q.distance_text || '—') + ' road route';
+                    deliverySubtext.textContent = (q.distance_text || '—') + (q.distance_approximate ? '' : ' road route');
+                }
+                var distNote = document.getElementById('buynow-distance-note');
+                if (distNote) {
+                    if (q.distance_approximate && q.accuracy_notice) {
+                        distNote.textContent = q.accuracy_notice;
+                        distNote.classList.remove('hidden');
+                    } else {
+                        distNote.classList.add('hidden');
+                    }
                 }
                 if (deliveryFeeBadge) {
                     deliveryFeeBadge.textContent = formatMoney(baseShipping);

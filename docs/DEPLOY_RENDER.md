@@ -84,6 +84,8 @@ Under your Web Service -> **Environment**, configure the following variables (re
 | `DB_USER` | `avnadmin` | Aiven Overview |
 | `DB_PASSWORD` | `<your-aiven-password>` | Aiven Overview |
 | `DB_DATABASE` | `blax_inventory` | Aiven Databases tab |
+| `DB_SSL_CA` | `/var/www/html/docker/certs/aiven-ca.pem` | Aiven Services -> your service -> Connection info (download the service CA and commit it to `docker/certs/aiven-ca.pem`) |
+| `DB_SSL_VERIFY` | `true` | Set `false` only to debug a CA mismatch; that keeps encryption but drops server authentication |
 | `CLOUDINARY_CLOUD_NAME` | `<your-cloud-name>` | Cloudinary Dashboard |
 | `CLOUDINARY_API_KEY` | `<your-api-key>` | Cloudinary Dashboard |
 | `CLOUDINARY_API_SECRET` | `<your-api-secret>` | Cloudinary Dashboard |
@@ -98,7 +100,18 @@ Under your Web Service -> **Environment**, configure the following variables (re
 | `TEXTBEE_API_KEY` | `<your-textbee-key>` | TextBee Dashboard |
 | `TEXTBEE_DEVICE_ID` | `<your-device-id>` | TextBee Dashboard |
 | `TEXTBEE_BASE_URL` | `https://api.textbee.dev/api/v1` | TextBee Default |
-| `RUN_MIGRATIONS` | `true` (or `false` after 1st deploy) | Optional: set `false` to speed up wake-ups |
+| `CACHE_HANDLER` | `database` | Required. The free tier's filesystem is ephemeral, so a restart would otherwise drop the `pending_cart_*` entries the PayMongo webhook reads back |
+| `RUN_MIGRATIONS` | `false` | Default. Flip to `true` for exactly one deploy when a migration is pending, then flip it back (see below) |
+
+### Applying migrations
+
+Boot-time migration is off by default, and a failing migration now aborts the deploy
+instead of booting onto a half-migrated schema. To apply a pending migration:
+
+1. Run it against the production database yourself:
+   `php spark migrate --all` (locally with `DB_*` pointed at Aiven, or in a one-off shell in the Render service).
+2. Verify the schema, then temporarily set `RUN_MIGRATIONS: "true"` and deploy once, or skip it entirely if step 1 already applied everything.
+3. Set `RUN_MIGRATIONS` back to `"false"`.
 
 ---
 
@@ -108,7 +121,7 @@ Under your Web Service -> **Environment**, configure the following variables (re
 2. Watch the deployment logs:
    - Nginx boots and listens on the dynamic `${PORT}` injected by Render.
    - PHP-FPM boots with optimized OPcache and `expose_php = Off`.
-   - Health check queries `/healthz` and reports HTTP 200 without database overhead.
+   - Health check queries `/health`, which is handled by PHP, so the probe fails when the FPM pool is dead. (`/healthz` still exists and is answered by nginx for cheap external pre-warm pings.)
 
 ---
 

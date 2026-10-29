@@ -46,7 +46,7 @@ class AiAssistant extends BaseController
 
         // Basic abuse protection on an endpoint that reaches an external API.
         $throttler = service('throttler');
-        if ($throttler->check(md5('ai-chat-' . $this->request->getIPAddress()), 20, MINUTE) === false) {
+        if ($throttler->check(md5('ai-chat-' . client_ip($this->request)), 20, MINUTE) === false) {
             return $this->response->setStatusCode(429)->setJSON([
                 'status'  => 'error',
                 'message' => 'You are searching a bit too quickly. Please try again in a moment.',

@@ -11,6 +11,24 @@ if (!function_exists('cloudinary_transform_url')) {
     }
 }
 
+if (!function_exists('placeholder_image_url')) {
+    /**
+     * Local stand-in for a missing/broken image.
+     *
+     * Used to point at images.unsplash.com, so every product without a photo cost a
+     * cross-origin DNS + TLS round trip and failed outright offline. These ship with
+     * the app, are cacheable like any other asset, and need no third-party availability.
+     *
+     * @param string $kind 'image' (square product tile) or 'banner' (wide cover)
+     */
+    function placeholder_image_url(string $kind = 'image'): string
+    {
+        $file = $kind === 'banner' ? 'banner.svg' : 'image.svg';
+
+        return base_url('assets/placeholder/' . $file);
+    }
+}
+
 if (!function_exists('product_image_url')) {
     /**
      * Resolve a product image to a renderable URL with Cloudinary optimization.
@@ -18,7 +36,7 @@ if (!function_exists('product_image_url')) {
      * Pass 'thumbnail' for 160x160 or 'detail' for 960x960.
      * Preserves backward compatibility if a fallback URL string is passed as 2nd argument.
      */
-    function product_image_url(?string $url, string $variant = 'card', string $fallback = 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'): string
+    function product_image_url(?string $url, string $variant = 'card', string $fallback = ''): string
     {
         if (str_starts_with($variant, 'http://') || str_starts_with($variant, 'https://')) {
             $fallback = $variant;
@@ -26,7 +44,7 @@ if (!function_exists('product_image_url')) {
         }
 
         if ($url === null || trim($url) === '') {
-            return $fallback;
+            return $fallback !== '' ? $fallback : placeholder_image_url();
         }
 
         $url = trim($url);
@@ -39,7 +57,7 @@ if (!function_exists('product_image_url')) {
         if (defined('FCPATH')) {
             $localDiskPath = FCPATH . ltrim($url, '/\\');
             if (!is_file($localDiskPath)) {
-                return $fallback;
+                return $fallback !== '' ? $fallback : placeholder_image_url();
             }
         }
 
@@ -52,7 +70,7 @@ if (!function_exists('cms_image_url')) {
      * Resolve a CMS banner or content image to a renderable URL with Cloudinary optimization.
      * Default variant is 'banner' (1440 max width with f_auto,q_auto).
      */
-    function cms_image_url(?string $url, string $variant = 'banner', string $fallback = 'https://images.unsplash.com/photo-1556742049-0a67daf64f42?auto=format&fit=crop&w=1440&q=80'): string
+    function cms_image_url(?string $url, string $variant = 'banner', string $fallback = ''): string
     {
         if (str_starts_with($variant, 'http://') || str_starts_with($variant, 'https://')) {
             $fallback = $variant;
@@ -61,7 +79,7 @@ if (!function_exists('cms_image_url')) {
 
         $url = trim((string) $url);
         if ($url === '') {
-            return $fallback;
+            return $fallback !== '' ? $fallback : placeholder_image_url('banner');
         }
 
         if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
@@ -71,7 +89,7 @@ if (!function_exists('cms_image_url')) {
         if (defined('FCPATH')) {
             $localDiskPath = FCPATH . ltrim($url, '/\\');
             if (!is_file($localDiskPath)) {
-                return $fallback;
+                return $fallback !== '' ? $fallback : placeholder_image_url('banner');
             }
         }
 

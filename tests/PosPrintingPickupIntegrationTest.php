@@ -6,12 +6,16 @@ use App\Models\OrderModel;
 use App\Models\PrintingRequestModel;
 use App\Models\PaymentModel;
 
+require_once __DIR__ . '/support/PosPickupFixtures.php';
+
 class PosPrintingPickupIntegrationTest extends CIUnitTestCase
 {
     use FeatureTestTrait;
+    use PosPickupFixtures;
 
     protected function tearDown(): void
     {
+        $this->posCleanup();
         \Config\Services::resetSingle('renderer');
         parent::tearDown();
     }
@@ -46,47 +50,48 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
         $pendingOrdNum = 'ORD-TEST-PEND-' . $uniq;
         $procOrdNum = 'ORD-TEST-PROC-' . $uniq;
 
-        // Insert ready_for_pickup order
-        $orderModel->insert([
+        // Insert ready_for_pickup order. Anchored at QUEUE_ANCHOR so it is the
+        // head of the FIFO window regardless of how deep the real backlog is.
+        $this->posTrack('orders', $orderModel->insert([
             'order_number'       => $readyOrdNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 120.00,
             'total_amount'       => 120.00,
             'status'             => 'ready_for_pickup',
             'payment_status'     => 'unpaid',
-            'placed_at'          => date('Y-m-d H:i:s'),
-        ]);
+            'placed_at'          => self::QUEUE_ANCHOR,
+        ]));
 
         // Insert pending order
-        $orderModel->insert([
+        $this->posTrack('orders', $orderModel->insert([
             'order_number'       => $pendingOrdNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 120.00,
             'total_amount'       => 120.00,
             'status'             => 'pending',
             'payment_status'     => 'unpaid',
             'placed_at'          => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         // Insert processing order
-        $orderModel->insert([
+        $this->posTrack('orders', $orderModel->insert([
             'order_number'       => $procOrdNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
             'fulfillment_method' => 'pickup',
-            'payment_method'     => 'counter_cash',
+            'payment_method'     => 'cod',
             'subtotal'           => 120.00,
             'total_amount'       => 120.00,
             'status'             => 'processing',
             'payment_status'     => 'unpaid',
             'placed_at'          => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         $res = $this->asTenant(1)->get('tenant/pos');
         $res->assertOK();
@@ -115,8 +120,9 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
         $completedNum     = 'PR-COMPLETED-' . $uniq;
         $cancelledNum     = 'PR-CANCELLED-' . $uniq;
 
-        // 1. Valid: pickup + ready_for_pickup
-        $prModel->insert([
+        // 1. Valid: pickup + ready_for_pickup. Anchored at QUEUE_ANCHOR so it is
+        // the head of the printing FIFO window (see PosPickupFixtures).
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $readyPickupNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -127,11 +133,11 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'status'             => 'ready_for_pickup',
             'total_price'        => 150.00,
             'down_payment'       => 75.00,
-            'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+            'created_at'         => self::QUEUE_ANCHOR,
+        ]));
 
         // 2. Invalid: delivery + ready_for_pickup
-        $prModel->insert([
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $readyDeliveryNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -143,10 +149,10 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'total_price'        => 150.00,
             'down_payment'       => 75.00,
             'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         // 3. Invalid: pickup + in_production
-        $prModel->insert([
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $inProdNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -158,10 +164,10 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'total_price'        => 100.00,
             'down_payment'       => 50.00,
             'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         // 4. Invalid: pickup + completed
-        $prModel->insert([
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $completedNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -173,10 +179,10 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'total_price'        => 80.00,
             'down_payment'       => 80.00,
             'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         // 5. Invalid: pickup + cancelled
-        $prModel->insert([
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $cancelledNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -188,7 +194,7 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'total_price'        => 50.00,
             'down_payment'       => 0.00,
             'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         $res = $this->asTenant(1)->get('tenant/pos');
         $res->assertOK();
@@ -220,7 +226,7 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
         $reqNum = 'PR-SRCH-' . $uniq;
         $fileName = 'Custom_File_Report_' . $uniq . '.docx';
 
-        $prModel->insert([
+        $this->posTrack('printing_requests', $prModel->insert([
             'request_number'     => $reqNum,
             'customer_id'        => 3,
             'shop_id'            => 1,
@@ -231,8 +237,8 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'status'             => 'ready_for_pickup',
             'total_price'        => 60.00,
             'down_payment'       => 30.00,
-            'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+            'created_at'         => self::QUEUE_ANCHOR,
+        ]));
 
         $res = $this->asTenant(1)->get('tenant/pos');
         $res->assertOK();
@@ -266,6 +272,7 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'down_payment'       => 100.00,
             'created_at'         => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('printing_requests', $id);
 
         // Authenticate as Shop 1
         $res = $this->asTenant(1)->get('tenant/pos');
@@ -309,10 +316,11 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'down_payment'       => 50.00,
             'created_at'         => date('Y-m-d H:i:s'),
         ]);
+        $this->posTrack('printing_requests', $prId);
 
         // Simulate online 50.00 down payment
         $payRef = 'ref_online_down_' . $uniq;
-        $paymentModel->insert([
+        $this->posTrack('payments', $paymentModel->insert([
             'payable_type'     => 'printing_request',
             'payable_id'       => $prId,
             'method'           => 'gcash',
@@ -321,7 +329,7 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
             'status'           => 'verified',
             'processed_at'     => date('Y-m-d H:i:s'),
             'created_at'       => date('Y-m-d H:i:s'),
-        ]);
+        ]));
 
         $initialPrCount = $prModel->countAllResults();
 
@@ -331,8 +339,13 @@ class PosPrintingPickupIntegrationTest extends CIUnitTestCase
         $body = $posView->response()->getBody();
 
         $this->assertStringContainsString('Final_Print_' . $uniq . '.pdf', $body);
-        $this->assertStringContainsString('DOWN PAYMENT PAID (₱50.00)', $body);
-        $this->assertStringContainsString('NEVER charge the down payment again', $body);
+        $this->assertStringContainsString('DOWN PAYMENT PAID', $body);
+        // The anti-double-charge guard is the settlement card crediting the online
+        // down payment instead of re-billing it: the print box must show the credit
+        // and the collectible must drop to the remaining balance only.
+        $this->assertStringContainsString('Online Paid Credit:', $body);
+        $this->assertStringContainsString('-₱50.00', $body);
+        $this->assertStringContainsString('Remaining Print Balance:', $body);
         $this->assertStringContainsString('50.00', $body);
 
         // 2. Complete the pickup via posCompletePickup (collect remaining 50.00 at counter)

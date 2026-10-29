@@ -10,11 +10,35 @@ class PaymongoService
 
     public function __construct(?string $secretKey = null, ?string $publicKey = null)
     {
+        // Credentials resolve from the environment ONLY. There must never be a
+        // literal fallback default here: a hardcoded key in this file was once
+        // committed and published. Configure PAYMONGO_SECRET_KEY per environment.
         $this->secretKey = $secretKey
             ?? (string) (getenv('PAYMONGO_SECRET_KEY') ?: ($_ENV['PAYMONGO_SECRET_KEY'] ?? ''));
 
         $this->publicKey = $publicKey
             ?? (string) (getenv('PAYMONGO_PUBLIC_KEY') ?: ($_ENV['PAYMONGO_PUBLIC_KEY'] ?? ''));
+
+        $this->assertConfiguredSecret();
+    }
+
+    /**
+     * Fail fast in production when the secret key is absent or obviously wrong.
+     * A silently-unconfigured key turns every payment/transfer call into a
+     * confusing upstream 401, so surface the misconfiguration at construction.
+     *
+     * @throws \RuntimeException
+     */
+    private function assertConfiguredSecret(): void
+    {
+        if (! defined('ENVIRONMENT') || ENVIRONMENT !== 'production') {
+            return;
+        }
+
+        if ($this->secretKey === '' || ! preg_match('/^sk_(live|test)_/', $this->secretKey)) {
+            // Never interpolate the key value into the message.
+            throw new \RuntimeException('PayMongo secret key is not configured for production');
+        }
     }
 
     /**

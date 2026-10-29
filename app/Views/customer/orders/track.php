@@ -191,6 +191,12 @@
                         <p class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-200 leading-relaxed">
                             <?= esc($destAddressText) ?>
                         </p>
+                        <?php if (!empty($destApproximate)): ?>
+                            <p class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wide">
+                                <span class="material-symbols-outlined text-[13px]">location_off</span>
+                                Approximate location &mdash; pending exact geocode
+                            </p>
+                        <?php endif; ?>
                         <?php if (!empty($shippingAddress['recipient_name'])): ?>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                 Recipient: <strong class="text-slate-900 dark:text-slate-200"><?= esc($shippingAddress['recipient_name']) ?></strong> 
@@ -218,7 +224,8 @@
                                     <?php if (!empty($itemImg)): ?>
                                         <img src="<?= esc($itemImg) ?>" 
                                              alt="<?= esc($pName) ?>" 
-                                             class="w-full h-full object-cover object-center" 
+                                             class="w-full h-full object-cover object-center"
+                                             loading="lazy" decoding="async"
                                              onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" />
                                         <div class="hidden w-full h-full flex items-center justify-center text-slate-400">
                                             <span class="material-symbols-outlined text-xl">image_not_supported</span>
@@ -254,7 +261,7 @@
                                 <span class="font-mono">₱<?= number_format((float) ($order['subtotal'] ?? 0), 2) ?></span>
                             </div>
                             <div class="flex justify-between">
-                                <span>Delivery Fee</span>
+                                <span>Delivery Fee<?= !empty($order['distance_km']) ? ' <span class="text-[10px] font-mono">(' . number_format((float) $order['distance_km'], 1) . ' km route)</span>' : '' ?></span>
                                 <span class="font-mono">₱<?= number_format((float) ($order['shipping_fee'] ?? 0), 2) ?></span>
                             </div>
                             <div class="flex justify-between font-bold text-slate-900 dark:text-white pt-1.5 border-t border-slate-200 dark:border-slate-700 text-xs sm:text-sm">
@@ -389,6 +396,23 @@
     const DEST_ADDRESS   = <?= json_encode($destAddressText) ?>;
     const COURIER_NAME   = <?= json_encode($courierName) ?>;
     const ORDER_STATUS   = <?= json_encode($order['status'] ?? 'pending') ?>;
+    const ORDER_ID       = <?= (int) ($order['id'] ?? 0) ?>;
+
+    // Realtime: when the marketplace poll bus detects this order's status transitioned
+    // server-side (e.g. shipped -> in_transit -> delivered), refresh the tracking view once.
+    let __trackAutoReloaded = false;
+    window.addEventListener('blax:customer-realtime', function(e) {
+        const res = e && e.detail;
+        if (!res || __trackAutoReloaded) return;
+        const match = (arr) => Array.isArray(arr)
+            ? arr.find(function(x) { return String(x.id) === String(ORDER_ID); })
+            : null;
+        const o = match(res.active_orders) || match(res.active_printing);
+        if (o && o.status && o.status !== ORDER_STATUS) {
+            __trackAutoReloaded = true;
+            setTimeout(function() { location.reload(); }, 1200);
+        }
+    });
 
     let trackMap          = null;
     let courierMarker     = null;

@@ -22,7 +22,7 @@
         $rawHeroImg = !empty($sc['hero_image']['image_url']) 
             ? $sc['hero_image']['image_url'] 
             : (!empty($sc['hero_image']['text_value']) ? $sc['hero_image']['text_value'] : null);
-        $heroImage = cms_image_url($rawHeroImg, 'https://images.unsplash.com/photo-1556742049-0a67daf64f42?auto=format&fit=crop&w=1440&q=80');
+        $heroImage = cms_image_url($rawHeroImg);
         $catalogTitle = $sc['catalog_title']['text_value'] ?? 'Global Product Catalog';
         $catalogSubtitle = $sc['catalog_subtitle']['text_value'] ?? 'Explore top-rated products from verified local merchants across Polomolok.';
     ?>
@@ -245,10 +245,7 @@
                         $slug = $s['slug'] ?? '';
                         $coverUrl = !empty($s['cover_photo_url'])
                             ? cover_photo_url($s['cover_photo_url'], 'card')
-                            : ($curatedCovers[$slug] 
-                                ?? (!empty($s['offers_printing'])
-                                    ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80'
-                                    : 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80'));
+                            : ($curatedCovers[$slug] ?? placeholder_image_url('banner'));
                         $categoryName = $curatedCategories[$slug]
                             ?? (!empty($s['offers_printing']) ? 'Printing & Digital Services' : 'Retail General Merchandise');
                         $location = !empty($s['barangay']) ? $s['barangay'] . ', ' . ($s['city'] ?? 'Polomolok') : ($s['city'] ?? 'Polomolok');
@@ -455,7 +452,7 @@
         </div>
 
         <!-- Product Grid: 2 cols on mobile, 3 on tablet, 4-5 on desktop -->
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+        <div id="product-grid" class="cv-skip grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
 
             <?php if (!empty($products)): ?>
                 <?php foreach ($products as $p): ?>
@@ -468,7 +465,7 @@
                         <!-- Image Container with Hover Zoom & Warm Neutral Stage -->
                         <div class="relative aspect-square bg-[#faf7f2] dark:bg-slate-800/40 overflow-hidden flex items-center justify-center p-3">
                             <a href="<?= base_url('product/' . $p['id']) ?>" class="block w-full h-full flex items-center justify-center">
-                                <img src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                <img src="<?= esc($imageUrl) ?>" alt="<?= esc($p['name']) ?>" class="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" loading="lazy" onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
                             </a>
                             
                             <!-- Merchant Tag Badge -->
@@ -611,7 +608,7 @@
     </section>
 
     <!-- Local Community Trust Grid (4 Pillars) -->
-    <section class="mt-4 pt-10 border-t border-slate-200/80 dark:border-slate-800">
+    <section class="cv-skip mt-4 pt-10 border-t border-slate-200/80 dark:border-slate-800">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             <div class="bento-card rounded-2xl p-5 flex items-start gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xs">

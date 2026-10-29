@@ -579,6 +579,24 @@ class Cart extends BaseController
     }
 
     /**
+     * True when the configured webhook secret is empty or an obvious template
+     * value copied from docs/examples. Such a secret is publicly guessable, so
+     * it must be treated exactly like an unset one: fail closed.
+     */
+    private function isPlaceholderWebhookSecret(string $secret): bool
+    {
+        if ($secret === '') {
+            return true;
+        }
+
+        if (strcasecmp($secret, 'whsec_placeholder_secret') === 0) {
+            return true;
+        }
+
+        return (bool) preg_match('/^(whsec_)?(placeholder|your|changeme|test_secret|secret)$/i', $secret);
+    }
+
+    /**
      * PayMongo Webhook Endpoint
      * Handles checkout_session.payment.paid events asynchronously and idempotently.
      */
@@ -593,8 +611,9 @@ class Cart extends BaseController
         }
 
         $webhookSecret = (string) (env('PAYMONGO_WEBHOOK_SECRET') ?? '');
-        if (empty($webhookSecret)) {
-            log_message('error', 'PAYMONGO_WEBHOOK_SECRET is not configured.');
+        if ($this->isPlaceholderWebhookSecret($webhookSecret)) {
+            // Log the variable name only, never its value.
+            log_message('error', 'PAYMONGO_WEBHOOK_SECRET is unset or still a placeholder value; rejecting webhook.');
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Webhook secret not configured']);
         }
 

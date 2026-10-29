@@ -29,6 +29,9 @@ class PrintingRequestModel extends Model
         'fulfillment_method',
         'total_price',
         'down_payment',
+        'shipping_fee',
+        'distance_km',
+        'shipping_address_id',
         'status',
         'printer_assigned',
         'progress_percent',
@@ -176,8 +179,9 @@ class PrintingRequestModel extends Model
     }
 
     /**
-     * Requests currently in production for a shop, oldest first, used by
-     * the production queue timeline.
+     * Requests waiting on the printing desk for a shop: freshly submitted jobs
+     * first (they need acceptance before anything can happen), then jobs already
+     * in production, each oldest-first so the queue stays FIFO.
      */
     public function getProductionQueue(int $shopId, int $limit = 10): array
     {
@@ -185,7 +189,8 @@ class PrintingRequestModel extends Model
             ->select('pr.*, u.first_name, u.last_name, u.profile_image_url, u.email, u.phone')
             ->join('users u', 'u.id = pr.customer_id', 'left')
             ->where('pr.shop_id', $shopId)
-            ->where('pr.status', 'in_production')
+            ->whereIn('pr.status', ['new', 'in_production'])
+            ->orderBy("FIELD(pr.status, 'new', 'in_production')", 'ASC', false)
             ->orderBy('pr.created_at', 'ASC')
             ->limit($limit)
             ->get()->getResultArray();

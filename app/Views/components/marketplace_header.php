@@ -16,9 +16,7 @@
 
             <!-- Brand Logo -->
             <a href="<?= base_url('/') ?>" class="flex items-center gap-2 group transition-transform">
-                <div class="w-9 h-9 rounded-xl bg-terra-green/10 dark:bg-terra-green/20 border border-terra-green/30 text-terra-green flex items-center justify-center font-extrabold shadow-2xs group-hover:scale-105 transition-transform">
-                    <span class="material-symbols-outlined text-[22px]">storefront</span>
-                </div>
+                <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="36" height="36" class="w-9 h-9 rounded-xl shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                 <div class="flex flex-col">
                     <span class="font-display text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
                         Blax<span class="text-terra-green">.</span>

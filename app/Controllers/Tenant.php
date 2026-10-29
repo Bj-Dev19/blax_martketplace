@@ -528,11 +528,15 @@ class Tenant extends BaseController
         );
 
         $processingOrders = $orderModel->getProcessingOrdersForShop($shopId);
+        // The grid above is capped, so the badges come from a count query instead of
+        // count($processingOrders) — otherwise a backlog would silently shrink the number.
+        $processingCounts = $orderModel->getProcessingOrderCountsForShop($shopId);
 
         return view('tenant/orders', [
             'shop'             => $shop,
             'orders'           => $result['orders'],
             'processingOrders' => $processingOrders,
+            'processingCounts' => $processingCounts,
             'pager'            => $result['pager'],
             'per_page'         => $perPage,
             'summary'          => $orderModel->getOrdersSummary($shopId),
@@ -654,6 +658,7 @@ class Tenant extends BaseController
         $rawLastOrderId = $this->request->getGet('last_order_id');
         $rawLastPrintingId = $this->request->getGet('last_printing_id');
         $rawLastNotifId = $this->request->getGet('last_notif_id');
+        $rawLastDeliverySig = $this->request->getGet('last_delivery_sig');
 
         // Consolidated snapshot in 1 single round-trip query
         $db = \Config\Database::connect();
@@ -669,22 +674,32 @@ class Tenant extends BaseController
         $currentMaxNotifId = (int) ($snapRow['max_notif_id'] ?? 0);
         $unreadCount       = (int) ($snapRow['unread_count'] ?? 0);
 
-        // Fast-path: if heartbeat poll and no new orders/printing/notifications, return immediately (skips 8+ heavy summary queries & recent notifs fetch)
+        // Delivery change signal (id + status only; ignores GPS churn so the global
+        // poll does not thrash while a rider broadcasts live coordinates every few seconds).
+        $deliverySnap    = (new \App\Models\DeliveryModel())->getRealtimeDeliverySnapshot($shopId, null);
+        $deliverySig     = (string) $deliverySnap['sig'];
+        $deliveryRows    = $deliverySnap['deliveries'];
+        $maxDeliveryId   = (int) $deliverySnap['max_id'];
+        $deliveryUnchanged = ($rawLastDeliverySig === null || $rawLastDeliverySig === '' || (string) $rawLastDeliverySig === $deliverySig);
+
+        // Fast-path: if heartbeat poll and no new orders/printing/notifications/deliveries, return immediately (skips 8+ heavy summary queries & recent notifs fetch)
         if ($rawLastOrderId !== null && $rawLastOrderId !== '' && $rawLastPrintingId !== null && $rawLastPrintingId !== '') {
             $lastOrderId = (int) $rawLastOrderId;
             $lastPrintingId = (int) $rawLastPrintingId;
             $lastNotifId = $rawLastNotifId !== null && $rawLastNotifId !== '' ? (int) $rawLastNotifId : null;
 
-            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId)) {
+            if ($currentMaxOrderId <= $lastOrderId && $currentMaxPrintId <= $lastPrintingId && ($lastNotifId === null || $currentMaxNotifId <= $lastNotifId) && $deliveryUnchanged) {
                 return $this->response
                     ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
                     ->setJSON([
-                        'success'         => true,
-                        'changed'         => false,
-                        'max_order_id'    => $currentMaxOrderId,
-                        'max_printing_id' => $currentMaxPrintId,
-                        'max_notif_id'    => $currentMaxNotifId,
-                        'unread_count'    => $unreadCount,
+                        'success'          => true,
+                        'changed'          => false,
+                        'max_order_id'     => $currentMaxOrderId,
+                        'max_printing_id'  => $currentMaxPrintId,
+                        'max_notif_id'     => $currentMaxNotifId,
+                        'unread_count'     => $unreadCount,
+                        'delivery_sig'     => $deliverySig,
+                        'max_delivery_id'  => $maxDeliveryId,
                     ]);
             }
         }
@@ -831,6 +846,8 @@ class Tenant extends BaseController
                     'down_payment'       => (float) ($pr['down_payment'] ?? 0),
                     'down_payment_fmt'   => number_format((float) ($pr['down_payment'] ?? 0), 2),
                     'fulfillment_method' => strtolower($pr['fulfillment_method'] ?? 'delivery'),
+                    'shipping_fee'       => (float) ($pr['shipping_fee'] ?? 0),
+                    'distance_km'        => (float) ($pr['distance_km'] ?? 0),
                     'status'             => $pr['status'] ?? 'new',
                     'created_at'         => $pr['created_at'],
                     'placed_at_fmt'      => date('M d, g:i A', strtotime($pr['created_at'] ?? 'now')),
@@ -842,24 +859,41 @@ class Tenant extends BaseController
         $printSummary = $printingModel->getPrintSummary($shopId);
         $inventorySummary = (new ProductModel())->getInventorySummary($shopId);
 
+        // Deliveries newly appearing since the client's known high-water id (for toast),
+        // plus the full active set the page listener reconciles against.
+        $knownMaxDeliveryId = $this->request->getGet('last_max_delivery_id');
+        $newDeliveries = [];
+        if ($knownMaxDeliveryId !== null && $knownMaxDeliveryId !== '') {
+            $kId = (int) $knownMaxDeliveryId;
+            foreach ($deliveryRows as $dRow) {
+                if ((int) $dRow['id'] > $kId) {
+                    $newDeliveries[] = $dRow;
+                }
+            }
+        }
+
         return $this->response
             ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
             ->setJSON([
-                'success'           => true,
-                'changed'           => true,
-                'max_order_id'      => $currentMaxOrderId,
-                'max_printing_id'   => $currentMaxPrintId,
-                'max_notif_id'      => $currentMaxNotifId,
-                'has_new_orders'    => !empty($newOrders),
-                'new_orders'        => $newOrders,
-                'has_new_printing'  => !empty($newPrinting),
-                'new_printing'      => $newPrinting,
-                'unread_count'      => $unreadCount,
-                'notifications'     => $recentNotifs,
-                'summary'           => $summary,
-                'printing_summary'  => $printSummary,
-                'inventory_summary' => $inventorySummary,
-                'timestamp'         => date('Y-m-d H:i:s'),
+                'success'             => true,
+                'changed'             => true,
+                'max_order_id'        => $currentMaxOrderId,
+                'max_printing_id'     => $currentMaxPrintId,
+                'max_notif_id'        => $currentMaxNotifId,
+                'has_new_orders'      => !empty($newOrders),
+                'new_orders'          => $newOrders,
+                'has_new_printing'    => !empty($newPrinting),
+                'new_printing'        => $newPrinting,
+                'unread_count'        => $unreadCount,
+                'notifications'       => $recentNotifs,
+                'summary'             => $summary,
+                'printing_summary'    => $printSummary,
+                'inventory_summary'   => $inventorySummary,
+                'delivery_sig'        => $deliverySig,
+                'max_delivery_id'     => $maxDeliveryId,
+                'new_deliveries'      => $newDeliveries,
+                'active_deliveries'   => $deliveryRows,
+                'timestamp'           => date('Y-m-d H:i:s'),
             ]);
     }
 
@@ -1581,6 +1615,118 @@ class Tenant extends BaseController
     }
 
     /**
+     * Escrow/released/payout totals for a shop, computed entirely with SQL
+     * aggregation instead of loading the shop's whole order and printing history
+     * into PHP.
+     *
+     * This is the variant the withdrawal path can afford: the four aggregates run
+     * outside the GET_LOCK critical section and can be re-checked inside it
+     * without holding the lock across a full-history scan and a PHP usort.
+     *
+     * The CASE expressions below are a literal transcription of the per-row logic
+     * in getShopEscrowAndBalance(), which remains the presentation path. Keep the
+     * two in sync; ToastContract-style equivalence is asserted by
+     * tests/EscrowAggregateEquivalenceTest.php.
+     *
+     * @return array{available_balance: float, escrow_holding: float, released_earnings: float, total_deductions: float}
+     */
+    public function computeShopEscrowTotals(int $shopId): array
+    {
+        $db = \Config\Database::connect();
+
+        // Mirrors: strtolower(trim((string) ($row['col'] ?? '')))
+        $oStatus  = "LOWER(TRIM(COALESCE(o.status, '')))";
+        $oMethod  = "LOWER(TRIM(COALESCE(o.payment_method, '')))";
+        $oPaid    = "LOWER(TRIM(COALESCE(o.payment_status, '')))";
+        $posMethod = "LOWER(TRIM(COALESCE(o.pos_payment_method, '')))";
+        $posPaid  = "LOWER(TRIM(COALESCE(o.pos_payment_status, '')))";
+        $isOnline = "({$oMethod} IN ('gcash', 'paymongo', 'online_gcash') AND {$oPaid} = 'paid')";
+        $isPos    = "({$posMethod} = 'gcash' AND {$posPaid} IN ('paid', 'completed'))";
+
+        // Verified GCash payments win; otherwise the order's own payment columns
+        // decide, exactly as the presentation path does.
+        $orderAmount = '
+            CASE WHEN COALESCE(op.paid_amount, 0) > 0 THEN COALESCE(op.paid_amount, 0)
+                 ELSE (
+                    CASE WHEN ' . $isOnline . ' THEN COALESCE(o.subtotal, o.total_amount, 0) ELSE 0 END
+                  + CASE WHEN ' . $isPos . ' AND NOT ' . $isOnline . ' THEN COALESCE(o.total_amount, 0)
+                         WHEN ' . $isPos . ' AND ' . $isOnline . ' AND COALESCE(o.pos_additional_amount, 0) > 0 THEN COALESCE(o.pos_additional_amount, 0)
+                         ELSE 0 END
+                 ) END';
+
+        // A cancelled order (status or a set cancelled_at) contributes nothing, a
+        // zero/negative GCash amount is skipped rather than bucketed, and archived
+        // orders are excluded because getOrdersByShop() excludes them.
+        // IS NOT NULL matches PHP's !empty() on the hydrated row: under the strict
+        // modes this schema runs with, a zero-date string cannot be stored, so a
+        // literal '0000-00-00' comparison would only make the query throw.
+        $cancelled = '(o.cancelled_at IS NOT NULL)';
+
+        $orderSql = '
+            SELECT COALESCE(SUM(CASE WHEN t.status_l IN (\'delivered\', \'completed\') THEN t.amt ELSE 0 END), 0) AS released,
+                   COALESCE(SUM(CASE WHEN t.status_l IN (\'delivered\', \'completed\') THEN 0 ELSE t.amt END), 0) AS escrow
+            FROM (
+                SELECT CASE WHEN ' . $oStatus . ' = \'cancelled\' OR ' . $cancelled . ' THEN 0
+                            ELSE (' . $orderAmount . ') END AS amt,
+                       ' . $oStatus . ' AS status_l
+                FROM orders o
+                LEFT JOIN (
+                    SELECT p.payable_id, SUM(p.amount) AS paid_amount
+                    FROM payments p
+                    WHERE p.payable_type = \'order\' AND p.status = \'verified\' AND LOWER(COALESCE(p.method, \'\')) = \'gcash\'
+                    GROUP BY p.payable_id
+                ) op ON op.payable_id = o.id
+                WHERE o.shop_id = ?
+                  AND NOT EXISTS (
+                        SELECT 1 FROM archived_items ai
+                        WHERE ai.item_type = \'order\' AND ai.shop_id = o.shop_id AND ai.item_id = o.id
+                  )
+            ) t
+            WHERE t.amt > 0';
+
+        $orderTotals = $db->query($orderSql, [$shopId])->getRowArray();
+
+        $prSql = '
+            SELECT COALESCE(SUM(CASE WHEN t.status_l = \'completed\' THEN t.amt ELSE 0 END), 0) AS released,
+                   COALESCE(SUM(CASE WHEN t.status_l = \'completed\' THEN 0 ELSE t.amt END), 0) AS escrow
+            FROM (
+                SELECT CASE WHEN LOWER(TRIM(COALESCE(pr.status, \'\'))) = \'cancelled\' THEN 0
+                            ELSE (CASE WHEN COALESCE(pp.paid_amount, 0) > 0 THEN COALESCE(pp.paid_amount, 0)
+                                       WHEN COALESCE(pr.down_payment, 0) > 0 THEN pr.down_payment
+                                       ELSE 0 END) END AS amt,
+                         LOWER(TRIM(COALESCE(pr.status, \'\'))) AS status_l
+                FROM printing_requests pr
+                LEFT JOIN (
+                    SELECT p.payable_id, SUM(p.amount) AS paid_amount
+                    FROM payments p
+                    WHERE p.payable_type = \'printing_request\' AND p.status = \'verified\' AND LOWER(COALESCE(p.method, \'\')) = \'gcash\'
+                    GROUP BY p.payable_id
+                ) pp ON pp.payable_id = pr.id
+                WHERE pr.shop_id = ?
+            ) t
+            WHERE t.amt > 0';
+
+        $prTotals = $db->query($prSql, [$shopId])->getRowArray();
+
+        $payoutRow = $db->table('payout_requests')
+            ->where('shop_id', $shopId)
+            ->whereNotIn('status', ['rejected', 'failed', 'cancelled'])
+            ->selectSum('amount')
+            ->get()->getRowArray();
+        $deductions = (float) ($payoutRow['amount'] ?? 0);
+
+        $released = (float) ($orderTotals['released'] ?? 0) + (float) ($prTotals['released'] ?? 0);
+        $escrow   = (float) ($orderTotals['escrow'] ?? 0) + (float) ($prTotals['escrow'] ?? 0);
+
+        return [
+            'available_balance' => max(0.0, round($released - $deductions, 2)),
+            'escrow_holding'    => round($escrow, 2),
+            'released_earnings' => round($released, 2),
+            'total_deductions'  => $deductions,
+        ];
+    }
+
+    /**
      * Compute shop owner's available balance and escrow holdings based strictly on GCash payments.
      * Cash and COD payments are directly collected in person by the merchant and are NOT withdrawable.
      * Only completed and delivered transactions paid via GCash are credited to Available Balance.
@@ -1599,10 +1745,12 @@ class Tenant extends BaseController
             ->where('pr.shop_id', $shopId)
             ->get()->getResultArray();
 
-        $releasedEarnings = 0.0;
-        $escrowHolding    = 0.0;
-        $settledRecords   = [];
-        $escrowRecords    = [];
+        // The money numbers come from computeShopEscrowTotals(), the single SQL
+        // aggregate shared with the withdrawal gate. This loop only builds the
+        // presentation rows, so the two can never drift apart.
+        $totals        = $this->computeShopEscrowTotals($shopId);
+        $settledRecords = [];
+        $escrowRecords  = [];
 
         // Batch pre-fetch all verified GCash payments in 1 query to avoid N+1 queries
         $orderIds = array_map('intval', array_column($orders, 'id'));
@@ -1696,7 +1844,6 @@ class Tenant extends BaseController
             $channel = $isOnlineGcash ? 'Online PayMongo GCash' : ($isPosGcash ? 'Counter POS (GCash QR)' : 'GCash');
 
             if (in_array($status, ['delivered', 'completed'], true)) {
-                $releasedEarnings += $gcashAmount;
                 $settledRecords[] = [
                     'id'            => (int) $o['id'],
                     'reference'     => (string) ($o['order_number'] ?? ('#' . $o['id'])),
@@ -1710,7 +1857,6 @@ class Tenant extends BaseController
                     'completed_at'  => $o['completed_at'] ?? $o['placed_at'] ?? date('Y-m-d H:i:s'),
                 ];
             } else {
-                $escrowHolding += $gcashAmount;
                 $escrowRecords[] = [
                     'id'            => (int) $o['id'],
                     'reference'     => (string) ($o['order_number'] ?? ('#' . $o['id'])),
@@ -1757,7 +1903,6 @@ class Tenant extends BaseController
             $fileName = !empty($pr['file_name']) ? $pr['file_name'] : 'Document.pdf';
 
             if ($status === 'completed') {
-                $releasedEarnings += $prGcashAmount;
                 $settledRecords[] = [
                     'id'            => (int) $pr['id'],
                     'reference'     => (string) ($pr['request_number'] ?? ('PR-' . $pr['id'])),
@@ -1772,7 +1917,6 @@ class Tenant extends BaseController
                     'completed_at'  => $pr['completed_at'] ?? $pr['created_at'] ?? date('Y-m-d H:i:s'),
                 ];
             } else {
-                $escrowHolding += $prGcashAmount;
                 $escrowRecords[] = [
                     'id'            => (int) $pr['id'],
                     'reference'     => (string) ($pr['request_number'] ?? ('PR-' . $pr['id'])),
@@ -1797,23 +1941,9 @@ class Tenant extends BaseController
             return strtotime($b['placed_at']) <=> strtotime($a['placed_at']);
         });
 
-        // Deduct active payout requests (exclude rejected, failed, or cancelled)
-        $payouts = $db->table('payout_requests')
-            ->where('shop_id', $shopId)
-            ->whereNotIn('status', ['rejected', 'failed', 'cancelled'])
-            ->selectSum('amount')
-            ->get()->getRowArray();
-        $payoutDeductions = (float) ($payouts['amount'] ?? 0);
-
-        $availableBalance = max(0.0, round($releasedEarnings - $payoutDeductions, 2));
-
-        return [
-            'available_balance' => $availableBalance,
-            'escrow_holding'    => round($escrowHolding, 2),
-            'released_earnings' => round($releasedEarnings, 2),
-            'total_deductions'  => $payoutDeductions,
-            'settled_records'   => array_slice($settledRecords, 0, 50),
-            'escrow_records'    => array_slice($escrowRecords, 0, 50),
+        return $totals + [
+            'settled_records' => array_slice($settledRecords, 0, 50),
+            'escrow_records'  => array_slice($escrowRecords, 0, 50),
         ];
     }
 
@@ -3077,6 +3207,19 @@ class Tenant extends BaseController
         $lockName = 'withdrawal_lock_shop_' . $shopId;
         $lockAcquired = false;
 
+        // Preflight the balance before entering the critical section. The old code
+        // ran the full history aggregation (every order and printing request of the
+        // shop, plus a PHP sort) while holding GET_LOCK, so the advisory lock -
+        // which is session-scoped and shares this pooled connection - was pinned
+        // for the duration of a table scan. The aggregate is read-only, so running
+        // it unlocked is safe; the authoritative re-check below still gates the
+        // insert under the lock.
+        $preflightBalance = (float) $this->computeShopEscrowTotals($shopId)['available_balance'];
+
+        if ($amount > $preflightBalance) {
+            return redirect()->back()->with('error', 'Amount exceeds your available balance (₱' . number_format($preflightBalance, 2) . '). Funds awaiting delivery are held in escrow.');
+        }
+
         try {
             $lockRes = $db->query('SELECT GET_LOCK(?, 5) AS lock_acquired', [$lockName])->getRowArray();
             $lockAcquired = ((int) ($lockRes['lock_acquired'] ?? 0)) === 1;
@@ -3087,9 +3230,10 @@ class Tenant extends BaseController
 
             $db->transBegin();
 
-            // Re-evaluate available balance inside transaction under advisory lock
-            $balanceData = $this->getShopEscrowAndBalance($shopId);
-            $availableBalance = (float) $balanceData['available_balance'];
+            // Re-check the single gating aggregate under the lock. The full balance
+            // breakdown was already computed before GET_LOCK was taken; only the
+            // number that can be raced by a concurrent request is re-read here.
+            $availableBalance = (float) $this->computeShopEscrowTotals($shopId)['available_balance'];
 
             if ($amount > $availableBalance) {
                 $db->transRollback();
@@ -6357,27 +6501,25 @@ class Tenant extends BaseController
             }
         }
 
-        // Coordinates check & fallback
+        // Coordinates resolution — prefer the customer's stored shipping address coordinate,
+        // then street geocoding. Barangay centroid is only a last resort and is clearly
+        // flagged as approximate ($destApproximate) so the UI shows an "address pending
+        // geocode" badge instead of presenting a coarse pin as a real location.
         $destLat = (float) ($delivery['destination_latitude'] ?? 0);
         $destLng = (float) ($delivery['destination_longitude'] ?? 0);
+        $destApproximate = false;
 
-        if ($destLat === 0.0 || $destLng === 0.0) {
+        if (!DeliveryModel::isPolomolokCoordinate($destLat, $destLng)) {
+            $shippingAddr = null;
             if ($order && !empty($order['shipping_address_id'])) {
                 $shippingAddr = (new \App\Models\ShippingAddressModel())->find($order['shipping_address_id']);
-                if ($shippingAddr && !empty($shippingAddr['latitude']) && !empty($shippingAddr['longitude'])) {
-                    $destLat = (float) $shippingAddr['latitude'];
-                    $destLng = (float) $shippingAddr['longitude'];
-                }
+            } elseif ($printingRequest && !empty($printingRequest['shipping_address_id'])) {
+                $shippingAddr = (new \App\Models\ShippingAddressModel())->find($printingRequest['shipping_address_id']);
             }
-        }
-
-        if (($destLat === 0.0 || $destLng === 0.0) && !empty($delivery['destination_address'])) {
-            $mapsService = new \App\Services\GoogleMapsService();
-            $geo = $mapsService->geocodeAddress($delivery['destination_address']);
-            if ($geo) {
-                $destLat = $geo['lat'];
-                $destLng = $geo['lng'];
-                // Persist geocoded coordinates to prevent redundant remote API lookups on future loads
+            if ($shippingAddr && DeliveryModel::isPolomolokCoordinate((float) ($shippingAddr['latitude'] ?? 0), (float) ($shippingAddr['longitude'] ?? 0))) {
+                $destLat = (float) $shippingAddr['latitude'];
+                $destLng = (float) $shippingAddr['longitude'];
+                // Cache on the delivery row so future loads skip the address lookup
                 try {
                     $deliveryModel->update($deliveryId, [
                         'destination_latitude'  => $destLat,
@@ -6387,13 +6529,43 @@ class Tenant extends BaseController
             }
         }
 
-        if ($destLat === 0.0 || $destLng === 0.0) {
-            $destLat = 6.2136;
-            $destLng = 125.0661;
+        if (!DeliveryModel::isPolomolokCoordinate($destLat, $destLng) && !empty($delivery['destination_address'])) {
+            $mapsService = new \App\Services\GoogleMapsService();
+            $geo = $mapsService->geocodeAddress($delivery['destination_address']);
+            if ($geo && DeliveryModel::isPolomolokCoordinate((float) $geo['lat'], (float) $geo['lng'])) {
+                $destLat = $geo['lat'];
+                $destLng = $geo['lng'];
+                // Google-resolved results carry a place_id; offline centroid fallbacks
+                // never do, so results without one are treated as approximate.
+                $destApproximate = empty($geo['place_id']);
+                if (!$destApproximate) {
+                    // Persist geocoded coordinates to prevent redundant remote API lookups on future loads
+                    try {
+                        $deliveryModel->update($deliveryId, [
+                            'destination_latitude'  => $destLat,
+                            'destination_longitude' => $destLng,
+                        ]);
+                    } catch (\Throwable $e) {}
+                }
+            }
         }
 
-        $shopLat = !empty($shop['latitude']) && (float) $shop['latitude'] != 0 ? (float) $shop['latitude'] : 6.2136;
-        $shopLng = !empty($shop['longitude']) && (float) $shop['longitude'] != 0 ? (float) $shop['longitude'] : 125.0661;
+        if (!DeliveryModel::isPolomolokCoordinate($destLat, $destLng)) {
+            // Last resort: render at the destination's barangay centroid (never the
+            // generic town center unless the address has no recognizable barangay).
+            $centroid = DeliveryModel::getBarangayCoordinate((string) ($delivery['destination_address'] ?? ''));
+            if ($centroid) {
+                $destLat = (float) $centroid['lat'];
+                $destLng = (float) $centroid['lng'];
+            } else {
+                $destLat = DeliveryModel::POLOMOLOK_CENTER_LAT;
+                $destLng = DeliveryModel::POLOMOLOK_CENTER_LNG;
+            }
+            $destApproximate = true;
+        }
+
+        $shopLat = !empty($shop['latitude']) && (float) $shop['latitude'] != 0 ? (float) $shop['latitude'] : DeliveryModel::POLOMOLOK_CENTER_LAT;
+        $shopLng = !empty($shop['longitude']) && (float) $shop['longitude'] != 0 ? (float) $shop['longitude'] : DeliveryModel::POLOMOLOK_CENTER_LNG;
 
         service('renderer')->setData(['shop' => $shop]);
 
@@ -6408,6 +6580,7 @@ class Tenant extends BaseController
             'shopLng'         => $shopLng,
             'destLat'         => $destLat,
             'destLng'         => $destLng,
+            'destApproximate' => $destApproximate,
             'activeNav'       => 'delivery',
             'title'           => 'Delivery #' . ($delivery['tracking_id'] ?? $deliveryId),
         ]);

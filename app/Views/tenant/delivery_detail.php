@@ -68,16 +68,20 @@
         <!-- Map Column (7 cols / or Fullscreen on toggle or mobile) -->
         <div id="mapOuterCol" class="lg:col-span-7 space-y-4">
 
+            <!-- Fullscreen root: wraps BOTH the map card and the QR scanner modal so the
+                 scanner is painted on the browser top layer while fullscreen is active. -->
+            <div id="deliveryFullscreenRoot">
+
             <!-- Map Container Wrapper (Supports Fullscreen Viewport Mode) -->
             <div id="deliveryMapWrapper" class="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-md transition-all duration-300">
                 
                 <!-- TOP FLOATING CONTROLS WRAPPER (Stacked cleanly in both normal and fullscreen modes) -->
-                <div id="fullscreenTopOverlay" class="w-full relative z-20">
+                <div id="fullscreenTopOverlay" class="w-full relative z-20 pt-[env(safe-area-inset-top)]">
 
-                    <!-- Map Header Overlay Bar -->
-                    <div id="mapTopBar" class="p-3 sm:p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-850/90 backdrop-blur-md">
+                    <!-- Row 1 · Command header: identity + live status + primary actions -->
+                    <div id="mapTopBar" class="px-3 sm:px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/80 dark:bg-slate-850/90 backdrop-blur-md">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center font-bold shrink-0">
+                            <span class="w-8 h-8 rounded-xl bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0" aria-hidden="true">
                                 <span class="material-symbols-outlined text-[19px]">near_me</span>
                             </span>
                             <div class="min-w-0">
@@ -85,36 +89,35 @@
                                 <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">Polomolok, South Cotabato &bull; Direct Waypoint Route</p>
                             </div>
                         </div>
-                        
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700' ?>">
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700' ?>">
                                 <span class="w-2 h-2 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?>"></span>
-                                <span class="hidden sm:inline"><?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'GPS Live Active' : 'Passive Tracking' ?></span>
-                                <span class="sm:hidden">GPS Live</span>
+                                <span><?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'GPS Live Active' : 'Passive Tracking' ?></span>
                             </span>
 
-                            <!-- Quick Scan QR Action in Header -->
-                            <button type="button" 
-                                    onclick="openDeliveryScanner()" 
-                                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer"
-                                    title="Open Delivery QR Scanner">
-                                <span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
-                                <span class="hidden sm:inline">Scan QR</span>
+                            <!-- Primary action: scan the delivery QR pass -->
+                            <button type="button"
+                                    onclick="openDeliveryScanner()"
+                                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                                    title="Scan Delivery QR" aria-label="Scan Delivery QR">
+                                <span class="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+                                <span class="hidden md:inline">Scan QR</span>
                             </button>
 
-                            <!-- Fullscreen Map Action Icon Button -->
-                            <button type="button" 
+                            <!-- Fullscreen map toggle -->
+                            <button type="button"
                                     id="btnToggleMapFullscreenIcon"
-                                    onclick="toggleFullscreenNavigation()" 
-                                    class="p-1.5 sm:p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-all cursor-pointer"
-                                    title="Toggle Fullscreen Delivery Map">
+                                    onclick="toggleFullscreenNavigation()"
+                                    class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-terra-green"
+                                    title="Toggle Fullscreen Delivery Map" aria-label="Toggle Fullscreen Delivery Map">
                                 <span id="fullscreenBtnInnerIcon" class="material-symbols-outlined text-[18px]">fullscreen</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Live GPS Broadcasting & Quick Controls Bar -->
-                    <div id="liveTrackingBar" class="p-2.5 px-3.5 sm:px-4 bg-slate-50/90 dark:bg-slate-850/95 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2.5 text-xs flex-wrap">
+                    <!-- Row 2 · GPS status + segmented map-control cluster -->
+                    <div id="liveTrackingBar" class="px-3 sm:px-4 py-2 bg-slate-50/90 dark:bg-slate-850/95 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs flex-wrap">
                         <div class="flex items-center gap-2 min-w-0">
                             <span id="gpsIndicatorDot" class="w-2.5 h-2.5 rounded-full <?= in_array($delivery['status'], ['shipped', 'in_transit']) ? 'bg-emerald-500 animate-ping' : 'bg-slate-400' ?> shrink-0"></span>
                             <span class="font-bold text-slate-900 dark:text-white shrink-0">GPS:</span>
@@ -129,45 +132,40 @@
                                     Awaiting dispatch
                                 <?php endif; ?>
                             </span>
+                            <span id="gpsLastUpdated" class="font-mono text-slate-400 text-[10px] hidden lg:inline"></span>
                         </div>
 
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span id="gpsLastUpdated" class="font-mono text-slate-400 text-[10px] hidden md:inline"></span>
-                            
-                            <!-- Satellite / Roadmap Toggle Button -->
-                            <button type="button" 
+                        <div class="flex items-center gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 shrink-0">
+                            <button type="button"
                                     id="btn-tenant-map-type"
                                     onclick="toggleTenantMapType()"
-                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
-                                    title="Toggle Satellite / Roadmap View">
-                                <span id="tenantMapTypeIcon" class="material-symbols-outlined text-[14px] text-terra-green">satellite_alt</span>
-                                <span id="tenantMapTypeText">Satellite</span>
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    title="Toggle Satellite / Roadmap view" aria-label="Toggle Satellite or Roadmap view">
+                                <span id="tenantMapTypeIcon" class="material-symbols-outlined text-[18px] text-terra-green">satellite_alt</span>
+                                <span id="tenantMapTypeText" class="hidden xl:inline">Satellite</span>
                             </button>
 
-                            <!-- Auto-Follow Camera Button -->
-                            <button type="button" 
+                            <button type="button"
                                     id="btn-tenant-autofollow"
                                     onclick="toggleTenantAutoFollow()"
-                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-terra-green hover:text-white text-[11px] font-bold transition-all cursor-pointer">
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    title="Toggle auto-follow camera" aria-label="Toggle auto-follow camera">
                                 <span id="tenantAutoFollowDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span id="tenantAutoFollowText">Auto: ON</span>
+                                <span id="tenantAutoFollowText" class="hidden xl:inline">Auto: ON</span>
                             </button>
 
-                            <!-- Center Map on Rider Button -->
-                            <button type="button" 
+                            <button type="button"
                                     onclick="centerOnTenantRider()"
-                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold shadow-2xs transition-all cursor-pointer">
-                                <span class="material-symbols-outlined text-[13px]">my_location</span>
-                                <span>Center</span>
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    title="Center map on courier" aria-label="Center map on courier">
+                                <span class="material-symbols-outlined text-[18px]">my_location</span>
                             </button>
 
-                            <!-- Force GPS Sync Button -->
-                            <button type="button" 
+                            <button type="button"
                                     onclick="refreshTenantGps()"
-                                    class="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
-                                    title="Force GPS Location Re-detect">
-                                <span class="material-symbols-outlined text-[13px] text-terra-green">sync</span>
-                                <span>Sync</span>
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    title="Refresh GPS location" aria-label="Refresh GPS location">
+                                <span class="material-symbols-outlined text-[18px]">sync</span>
                             </button>
                         </div>
                     </div>
@@ -222,10 +220,10 @@
 
                 <!-- Google Maps Canvas with Floating QR Code Scanner -->
                 <div class="relative w-full" id="mapCanvasContainer">
-                    <div id="singleDeliveryMap" class="w-full h-[480px] sm:h-[540px] bg-slate-100 dark:bg-slate-800 z-0 relative transition-all duration-300" style="min-height:480px;"></div>
+                    <div id="singleDeliveryMap" class="w-full h-[58vh] min-h-[340px] sm:h-[64vh] lg:h-[70vh] bg-slate-100 dark:bg-slate-800 z-0 relative transition-all duration-300" style="min-height:340px;"></div>
 
                     <!-- PROMINENT FLOATING "SCAN DELIVERY QR" BUTTON (Always Visible, Unclipped) -->
-                    <div id="floatingQrContainer" class="absolute bottom-5 left-5 z-40 pointer-events-auto">
+                    <div id="floatingQrContainer" class="absolute left-4 sm:left-5 z-40 pointer-events-auto bottom-[calc(1.25rem_+_env(safe-area-inset-bottom))]">
                         <button type="button" 
                                 id="btnFloatingQrScan"
                                 onclick="openDeliveryScanner()" 
@@ -240,7 +238,7 @@
                     </div>
 
                     <!-- Turn-by-Turn Quick Floating Pill Button (Lower Right) -->
-                    <div id="btnFloatingDirections" class="absolute bottom-5 right-5 z-40 pointer-events-auto">
+                    <div id="btnFloatingDirections" class="absolute right-4 sm:right-5 z-40 pointer-events-auto bottom-[calc(1.25rem_+_env(safe-area-inset-bottom))]">
                         <a href="https://www.google.com/maps/dir/?api=1&destination=<?= esc($destLat) ?>,<?= esc($destLng) ?>" 
                            target="_blank" 
                            rel="noopener noreferrer"
@@ -251,9 +249,18 @@
                     </div>
                 </div>
 
-                <!-- Map Legend Banner -->
-                <div id="mapLegendBanner" class="p-3 px-4 bg-slate-50/70 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 flex-wrap gap-2">
-                    <div class="flex items-center gap-4">
+                <!-- Map footer: collapsible legend + always-visible destination coordinates -->
+                <div id="mapLegendBanner" class="px-3 sm:px-4 py-2 bg-slate-50/70 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <button type="button" onclick="document.getElementById('mapLegendKeys').classList.toggle('hidden')" class="inline-flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-300 hover:text-terra-green transition-colors cursor-pointer" aria-label="Toggle map legend">
+                            <span class="material-symbols-outlined text-[16px]">info</span>
+                            <span>Legend</span>
+                        </button>
+                        <div class="text-[11px] font-mono text-slate-400">
+                            Dest: <?= number_format($destLat, 5) ?>, <?= number_format($destLng, 5) ?>
+                        </div>
+                    </div>
+                    <div id="mapLegendKeys" class="hidden mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-4 flex-wrap">
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-3 rounded-full bg-orange-600 inline-block shadow-2xs"></span>
                             <strong class="text-slate-800 dark:text-slate-200">Live Courier (You)</strong>
@@ -263,13 +270,93 @@
                             <strong class="text-slate-800 dark:text-slate-200">Destination (Customer)</strong>
                         </span>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Destination Coordinates -->
-                    <div class="text-[11px] font-mono text-slate-400">
-                        Dest: <?= number_format($destLat, 5) ?>, <?= number_format($destLng, 5) ?>
+            <!-- QR Scanner modal lives INSIDE #deliveryFullscreenRoot so it paints on the browser top layer while the map is fullscreen -->
+            <div id="deliveryDetailQrScannerModal" class="hidden fixed inset-0 bg-black/80 z-[100000] flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 relative">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[24px]">qr_code_scanner</span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Scan Delivery QR Pass</h3>
+                                <p class="text-xs text-slate-400 font-mono">Expected: <strong class="text-terra-green">#<?= esc($delivery['tracking_id']) ?></strong></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="closeDeliveryScanner()" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+                            <span class="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Scan Mode Tabs -->
+                    <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white dark:bg-slate-900 text-terra-green shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+                            <span>Live Camera</span>
+                        </button>
+                        <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">add_photo_alternate</span>
+                            <span>Scan from Photo</span>
+                        </button>
+                    </div>
+
+                    <!-- Mode 1: Live Camera Viewfinder -->
+                    <div id="deliveryCameraContainer" class="space-y-2">
+                        <div class="rounded-2xl overflow-hidden bg-black aspect-square relative flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
+                            <div id="delivery-detail-qr-reader" class="w-full h-full"></div>
+                            <div class="qr-viewfinder-overlay pointer-events-none absolute inset-4 border border-white/20 rounded-xl">
+                                <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-terra-green rounded-tl-lg"></div>
+                                <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-terra-green rounded-tr-lg"></div>
+                                <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-terra-green rounded-bl-lg"></div>
+                                <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-terra-green rounded-br-lg"></div>
+                                <div class="qr-laser-line"></div>
+                            </div>
+                        </div>
+                        <p id="scannerStatus" class="text-xs text-center text-slate-400 font-medium">Point camera directly at customer's pickup pass, doorstep QR, or printed receipt</p>
+                    </div>
+
+                    <!-- Mode 2: Scan from Photo / Image File -->
+                    <div id="deliveryFileContainer" class="hidden space-y-2">
+                        <label for="deliveryPhotoUpload" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-terra-green/40 hover:border-terra-green rounded-2xl bg-terra-green/5 hover:bg-terra-green/10 transition-all cursor-pointer text-center group">
+                            <span class="p-3 bg-terra-green/10 text-terra-green rounded-2xl material-symbols-outlined text-3xl group-hover:scale-110 transition-transform mb-2">image_search</span>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">Click to Select QR Photo / Take Photo</span>
+                            <span class="text-[11px] text-slate-400 mt-1">Upload an image of the recipient's QR pass</span>
+                            <input id="deliveryPhotoUpload" type="file" accept="image/*" class="hidden" onchange="handleDeliveryPhotoUpload(this)">
+                        </label>
+                        <p id="photoScanStatus" class="text-xs text-center text-slate-400 font-medium hidden"></p>
+                    </div>
+
+                    <!-- Result Box -->
+                    <div id="scanResultBox" class="hidden p-3.5 rounded-2xl border space-y-2.5 transition-all">
+                        <div class="flex items-start gap-2.5">
+                            <span id="scanResultIcon" class="material-symbols-outlined text-[22px] mt-0.5">check_circle</span>
+                            <div class="flex-1 min-w-0">
+                                <p id="scanResultMessage" class="text-xs font-bold leading-relaxed"></p>
+                                <p id="scanResultSub" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5"></p>
+                            </div>
+                        </div>
+                        <div id="scanActionBtnContainer" class="pt-1"></div>
+                    </div>
+
+                    <!-- Manual Tracking ID Input Fallback -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Manual Code / Tracking Entry</label>
+                        <div class="flex items-center gap-2">
+                            <input id="manualTrackingInput" 
+                                   type="text" 
+                                   placeholder="e.g. <?= esc($delivery['tracking_id']) ?>" 
+                                   class="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:outline-none">
+                            <button type="button" onclick="submitManualTracking()" class="px-4 py-2 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shrink-0 cursor-pointer">
+                                Verify
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+            </div><!-- /#deliveryFullscreenRoot -->
 
             <!-- Destination Address Card (Below Map in Standard Mode) -->
             <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 flex items-start justify-between gap-3.5 shadow-xs">
@@ -279,6 +366,12 @@
                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Delivery Destination Address</h4>
                         <p class="text-sm font-bold text-slate-900 dark:text-white mt-0.5 leading-snug"><?= esc($delivery['destination_address'] ?: 'Customer Delivery Address, Polomolok') ?></p>
                         <p class="text-xs font-mono text-slate-400 mt-1">Coordinates: <?= number_format($destLat, 6) ?>, <?= number_format($destLng, 6) ?></p>
+                        <?php if (!empty($destApproximate)): ?>
+                        <p class="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-bold uppercase tracking-wide">
+                            <span class="material-symbols-outlined text-[13px]">location_off</span>
+                            Address pending geocode &mdash; approximate location
+                        </p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -367,7 +460,7 @@
 
                 <div class="flex items-center gap-3 pt-1">
                     <?php if (!empty($customer['profile_image_url'])): ?>
-                        <img src="<?= esc(profile_image_url($customer['profile_image_url'])) ?>" class="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700" alt="Customer">
+                        <img src="<?= esc(profile_image_url($customer['profile_image_url'])) ?>" class="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700" alt="Customer" loading="lazy" decoding="async">
                     <?php else: ?>
                         <div class="w-12 h-12 rounded-full bg-terra-green/10 text-terra-green flex items-center justify-center font-bold text-base ring-2 ring-slate-100 dark:ring-slate-800">
                             <?= strtoupper(substr($customer['first_name'] ?? 'C', 0, 1)) ?>
@@ -418,7 +511,7 @@
                             <div class="py-2.5 flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <?php if ($img): ?>
-                                        <img src="<?= esc($img) ?>" class="w-11 h-11 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" alt="<?= esc($it['product_name']) ?>">
+                                        <img src="<?= esc($img) ?>" class="w-11 h-11 rounded-xl object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0" alt="<?= esc($it['product_name']) ?>" loading="lazy" decoding="async">
                                     <?php else: ?>
                                         <div class="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200/60 dark:border-slate-700">
                                             <span class="material-symbols-outlined text-[20px]">inventory_2</span>
@@ -472,6 +565,10 @@
                         <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Pages & Copies:</span><span class="font-bold text-slate-900 dark:text-white"><?= (int)$printingRequest['page_count'] ?> pages &times; <?= (int)$printingRequest['copies'] ?> copies</span></div>
                         <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Paper & Color:</span><span class="font-bold text-slate-900 dark:text-white"><?= esc($printingRequest['paper_size']) ?> (<?= esc($printingRequest['color_mode']) ?>)</span></div>
                         <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Binding:</span><span class="font-bold text-slate-900 dark:text-white"><?= esc($printingRequest['binding_option'] ?: 'None') ?></span></div>
+                        <?php $prShipFee = (float) ($printingRequest['shipping_fee'] ?? 0); ?>
+                        <?php if ($prShipFee > 0): ?>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Delivery Fee<?= !empty($printingRequest['distance_km']) ? ' (' . number_format((float) $printingRequest['distance_km'], 1) . ' km route)' : '' ?>:</span><span class="font-bold font-mono text-sky-700 dark:text-sky-400">₱<?= number_format($prShipFee, 2) ?></span></div>
+                        <?php endif; ?>
                         <div class="flex justify-between pt-2 border-t border-slate-100 dark:border-slate-800 font-bold"><span class="text-slate-900 dark:text-white">Total Price:</span><span class="font-mono text-terra-green text-sm">₱<?= number_format((float)$printingRequest['total_price'], 2) ?></span></div>
                     </div>
                 <?php else: ?>
@@ -650,6 +747,7 @@
     function enterFullscreenNavigation() {
         isFullscreenMode = true;
         const wrapper = document.getElementById('deliveryMapWrapper');
+        const root = document.getElementById('deliveryFullscreenRoot');
         const headerIcon = document.getElementById('fullscreenHeaderIcon');
         const headerText = document.getElementById('fullscreenHeaderText');
         const innerIcon = document.getElementById('fullscreenBtnInnerIcon');
@@ -662,17 +760,20 @@
             if (headerText) headerText.textContent = 'Exit Fullscreen';
             if (innerIcon) innerIcon.textContent = 'fullscreen_exit';
 
-            // Attempt HTML5 native fullscreen on wrapper
+            // Attempt HTML5 native fullscreen on the ROOT (which also contains the QR
+            // scanner modal) so the scanner paints on the top layer while fullscreen.
+            const fsTarget = root || wrapper;
+            if (root) root.classList.add('delivery-fullscreen-root');
             try {
                 if (!isNativeFullscreen()) {
-                    if (wrapper.requestFullscreen) {
-                        wrapper.requestFullscreen().catch(() => {});
-                    } else if (wrapper.webkitRequestFullscreen) {
-                        wrapper.webkitRequestFullscreen();
-                    } else if (wrapper.mozRequestFullScreen) {
-                        wrapper.mozRequestFullScreen();
-                    } else if (wrapper.msRequestFullscreen) {
-                        wrapper.msRequestFullscreen();
+                    if (fsTarget.requestFullscreen) {
+                        fsTarget.requestFullscreen().catch(() => {});
+                    } else if (fsTarget.webkitRequestFullscreen) {
+                        fsTarget.webkitRequestFullscreen();
+                    } else if (fsTarget.mozRequestFullScreen) {
+                        fsTarget.mozRequestFullScreen();
+                    } else if (fsTarget.msRequestFullscreen) {
+                        fsTarget.msRequestFullscreen();
                     }
                 }
             } catch(e) {}
@@ -687,6 +788,7 @@
     function exitFullscreenNavigation() {
         isFullscreenMode = false;
         const wrapper = document.getElementById('deliveryMapWrapper');
+        const root = document.getElementById('deliveryFullscreenRoot');
         const headerIcon = document.getElementById('fullscreenHeaderIcon');
         const headerText = document.getElementById('fullscreenHeaderText');
         const innerIcon = document.getElementById('fullscreenBtnInnerIcon');
@@ -694,6 +796,7 @@
         if (wrapper) {
             wrapper.classList.remove('delivery-map-fullscreen');
             document.body.style.overflow = '';
+            if (root) root.classList.remove('delivery-fullscreen-root');
 
             if (headerIcon) headerIcon.textContent = 'fullscreen';
             if (headerText) headerText.textContent = 'Fullscreen Map';
@@ -736,9 +839,15 @@
         });
     });
 
-    // Fallback ESC key listener
+    // Fallback ESC key listener: close the scanner modal first, then exit fullscreen
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isFullscreenMode) {
+        if (e.key !== 'Escape') return;
+        const modal = document.getElementById('deliveryDetailQrScannerModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closeDeliveryScanner();
+            return;
+        }
+        if (isFullscreenMode) {
             exitFullscreenNavigation();
         }
     });
@@ -1475,91 +1584,22 @@
     }
 </script>
 
-<!-- Floating Delivery QR Code Scanner Modal (z-[100000] so it stays above fullscreen map) -->
-<div id="deliveryDetailQrScannerModal" class="hidden fixed inset-0 bg-black/80 z-[100000] flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 relative">
-        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-[24px]">qr_code_scanner</span>
-                </div>
-                <div>
-                    <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Scan Delivery QR Pass</h3>
-                    <p class="text-xs text-slate-400 font-mono">Expected: <strong class="text-terra-green">#<?= esc($delivery['tracking_id']) ?></strong></p>
-                </div>
-            </div>
-            <button type="button" onclick="closeDeliveryScanner()" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-                <span class="material-symbols-outlined text-[20px]">close</span>
-            </button>
-        </div>
-
-        <!-- Scan Mode Tabs -->
-        <div class="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <button type="button" id="deliveryTabCameraBtn" onclick="switchDeliveryScanMode('camera')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-white dark:bg-slate-900 text-terra-green shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px]">photo_camera</span>
-                <span>Live Camera</span>
-            </button>
-            <button type="button" id="deliveryTabFileBtn" onclick="switchDeliveryScanMode('file')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px]">add_photo_alternate</span>
-                <span>Scan from Photo</span>
-            </button>
-        </div>
-
-        <!-- Mode 1: Live Camera Viewfinder -->
-        <div id="deliveryCameraContainer" class="space-y-2">
-            <div class="rounded-2xl overflow-hidden bg-black aspect-square relative flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
-                <div id="delivery-detail-qr-reader" class="w-full h-full"></div>
-                <div class="qr-viewfinder-overlay pointer-events-none absolute inset-4 border border-white/20 rounded-xl">
-                    <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-terra-green rounded-tl-lg"></div>
-                    <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-terra-green rounded-tr-lg"></div>
-                    <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-terra-green rounded-bl-lg"></div>
-                    <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-terra-green rounded-br-lg"></div>
-                    <div class="qr-laser-line"></div>
-                </div>
-            </div>
-            <p id="scannerStatus" class="text-xs text-center text-slate-400 font-medium">Point camera directly at customer's pickup pass, doorstep QR, or printed receipt</p>
-        </div>
-
-        <!-- Mode 2: Scan from Photo / Image File -->
-        <div id="deliveryFileContainer" class="hidden space-y-2">
-            <label for="deliveryPhotoUpload" class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-terra-green/40 hover:border-terra-green rounded-2xl bg-terra-green/5 hover:bg-terra-green/10 transition-all cursor-pointer text-center group">
-                <span class="p-3 bg-terra-green/10 text-terra-green rounded-2xl material-symbols-outlined text-3xl group-hover:scale-110 transition-transform mb-2">image_search</span>
-                <span class="text-xs font-bold text-slate-900 dark:text-white">Click to Select QR Photo / Take Photo</span>
-                <span class="text-[11px] text-slate-400 mt-1">Upload an image of the recipient's QR pass</span>
-                <input id="deliveryPhotoUpload" type="file" accept="image/*" class="hidden" onchange="handleDeliveryPhotoUpload(this)">
-            </label>
-            <p id="photoScanStatus" class="text-xs text-center text-slate-400 font-medium hidden"></p>
-        </div>
-
-        <!-- Result Box -->
-        <div id="scanResultBox" class="hidden p-3.5 rounded-2xl border space-y-2.5 transition-all">
-            <div class="flex items-start gap-2.5">
-                <span id="scanResultIcon" class="material-symbols-outlined text-[22px] mt-0.5">check_circle</span>
-                <div class="flex-1 min-w-0">
-                    <p id="scanResultMessage" class="text-xs font-bold leading-relaxed"></p>
-                    <p id="scanResultSub" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5"></p>
-                </div>
-            </div>
-            <div id="scanActionBtnContainer" class="pt-1"></div>
-        </div>
-
-        <!-- Manual Tracking ID Input Fallback -->
-        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Manual Code / Tracking Entry</label>
-            <div class="flex items-center gap-2">
-                <input id="manualTrackingInput" 
-                       type="text" 
-                       placeholder="e.g. <?= esc($delivery['tracking_id']) ?>" 
-                       class="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-terra-green focus:outline-none">
-                <button type="button" onclick="submitManualTracking()" class="px-4 py-2 bg-terra-green text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-all shrink-0 cursor-pointer">
-                    Verify
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- QR scanner modal relocated into #deliveryFullscreenRoot (directly after the map card) so it renders on the fullscreen top layer -->
 
 <style>
+/* Fullscreen root: the native fullscreen element now contains BOTH the map card and the
+   scanner modal, so the scanner renders on the top layer while fullscreen is active. */
+#deliveryFullscreenRoot.delivery-fullscreen-root:fullscreen,
+#deliveryFullscreenRoot.delivery-fullscreen-root:-webkit-full-screen,
+#deliveryFullscreenRoot.delivery-fullscreen-root:-moz-full-screen,
+#deliveryFullscreenRoot.delivery-fullscreen-root:-ms-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    background: #0f172a !important;
+    overflow: hidden !important;
+}
+
 /* Real-world Navigation Fullscreen Takeover */
 .delivery-map-fullscreen {
     position: fixed !important;
@@ -1654,20 +1694,42 @@
 /* Floating Action Buttons Placed Cleanly on Screen (Guaranteed Visible in Fullscreen) */
 .delivery-map-fullscreen #floatingQrContainer {
     position: absolute !important;
-    bottom: 24px !important;
+    bottom: calc(24px + env(safe-area-inset-bottom)) !important;
     left: 24px !important;
     z-index: 50 !important;
 }
 
 .delivery-map-fullscreen #btnFloatingDirections {
     position: absolute !important;
-    bottom: 24px !important;
+    bottom: calc(24px + env(safe-area-inset-bottom)) !important;
     right: 24px !important;
     z-index: 50 !important;
 }
 
 #deliveryDetailQrScannerModal {
     z-index: 100000 !important;
+}
+
+/* Keep the scanner panel scrollable on short viewports */
+#deliveryDetailQrScannerModal > div {
+    max-height: 92dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/* Small screens: present the scanner as a bottom sheet */
+@media (max-width: 639px) {
+    #deliveryDetailQrScannerModal {
+        align-items: flex-end;
+        padding: 0;
+    }
+    #deliveryDetailQrScannerModal > div {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+    #deliveryCameraContainer > div {
+        max-height: 48vh;
+    }
 }
 
 #delivery-detail-qr-reader #qr-shaded-region {

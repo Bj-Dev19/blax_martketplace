@@ -243,7 +243,7 @@ class DeliveryTrackingAndFleetTest extends CIUnitTestCase
         $result->assertOK();
 
         $body = $result->response()->getBody();
-        $this->assertStringContainsString('Platform Analytics &amp; Intelligence', $body);
+        $this->assertStringContainsString('Analytics &amp; Revenue Intelligence', $body);
         $this->assertStringContainsString('Admin Revenue Growth &amp; Fee Velocity', $body);
         $this->assertStringContainsString('Marketplace GMV', $body);
         $this->assertStringContainsString('Channel &amp; Logistics Share', $body);

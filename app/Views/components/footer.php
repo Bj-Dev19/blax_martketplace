@@ -17,6 +17,7 @@
             <!-- Brand & Platform Trust Badges (4 Cols on Desktop) -->
             <div class="lg:col-span-4 flex flex-col gap-4">
                 <a class="inline-flex items-center gap-2.5 group w-fit" href="<?= base_url('/') ?>">
+                    <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="36" height="36" class="w-9 h-9 rounded-xl shrink-0">
                     <div>
                         <span class="text-xl font-display font-extrabold text-slate-900 dark:text-white tracking-tight block leading-none">Blax</span>
                         <span class="text-[10px] font-bold uppercase tracking-widest text-terra-green block mt-0.5">Local Marketplace</span>

@@ -29,7 +29,7 @@ $catalogTitleVal = $itemsByKey['catalog_title']['text_value'] ?? 'Global Product
 $catalogSubVal   = $itemsByKey['catalog_subtitle']['text_value'] ?? 'Explore top-rated products from verified local merchants across Polomolok.';
 
 $heroImgRow     = $itemsByKey['hero_image'] ?? null;
-$rawHeroImg     = $heroImgRow['image_url'] ?? 'https://images.unsplash.com/photo-1556742049-0a67daf64f42?auto=format&fit=crop&w=1440&q=80';
+$rawHeroImg     = $heroImgRow['image_url'] ?? null;
 $heroImgUrl     = !empty($rawHeroImg) ? (str_starts_with($rawHeroImg, 'http') ? $rawHeroImg : base_url($rawHeroImg)) : '';
 
 $footerEmailVal = $itemsByKey['footer_contact_email']['text_value'] ?? 'support@blaxinventory.com';
@@ -196,7 +196,7 @@ $footerCopyVal  = $itemsByKey['footer_copyright']['text_value'] ?? ('© ' . date
 
                             <div class="relative w-full aspect-[3/1] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-950 group shadow-inner">
                                 <?php if (!empty($heroImgUrl)): ?>
-                                    <img src="<?= esc($heroImgUrl) ?>" alt="Hero Banner" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300">
+                                    <img src="<?= esc($heroImgUrl) ?>" alt="Hero Banner" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" loading="lazy" decoding="async">
                                     <a href="<?= esc($heroImgUrl) ?>" target="_blank" class="absolute inset-0 bg-slate-950/40 backdrop-blur-xs text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold gap-1.5">
                                         <span class="material-symbols-outlined text-[18px]">open_in_new</span>
                                         <span>View Full Image</span>

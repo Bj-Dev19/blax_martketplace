@@ -120,6 +120,19 @@ class ShopModel extends Model
     protected function applyDirectoryVisibilityClause(?string $dateStr = null): void
     {
         $calModel = new ShopCalendarScheduleModel();
+
+        // The clause below is raw SQL, so it fails at query time (not here) on environments
+        // where the create-table migration has not run yet. Degrade to "show everything".
+        try {
+            if (!$this->db->tableExists('shop_calendar_schedules')) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[ShopModel::applyDirectoryVisibilityClause] schema probe: ' . $e->getMessage());
+
+            return;
+        }
+
         $calModel->ensureSchema();
 
         $dateStr   = $dateStr ?: date('Y-m-d');

@@ -37,7 +37,16 @@ class ProductModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    public function getProductsWithDetails($shopId = null, $categoryId = null, $search = null)
+    /**
+     * Products joined with shop, category, primary image and variant count.
+     *
+     * $limit is opt-in and defaults to null (unbounded), so existing callers and
+     * tests that rely on the full result set keep working. Pass it whenever the
+     * caller only needs a page of rows: without it every call materializes the
+     * whole catalog, plus one product_variants COUNT subquery per row, into PHP
+     * memory on a 128 MB worker.
+     */
+    public function getProductsWithDetails($shopId = null, $categoryId = null, $search = null, ?int $limit = null)
     {
         $builder = $this->db->table('products p')
             ->select('p.*, s.shop_name, s.slug as shop_slug, c.name as category_name, pi.image_url, (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) as variant_count', false)
@@ -57,6 +66,10 @@ class ProductModel extends Model
                 ->like('p.name', $search)
                 ->orLike('p.description', $search)
                 ->groupEnd();
+        }
+
+        if ($limit !== null && $limit > 0) {
+            $builder->limit($limit);
         }
 
         return $builder->get()->getResultArray();

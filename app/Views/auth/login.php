@@ -22,9 +22,7 @@ $isShopOwner = ($initialRole ?? 'customer') === 'shop_owner';
         <!-- Brand Header & Quick Nav -->
         <header class="relative z-10 flex items-center justify-between gap-3">
             <a class="group flex items-center gap-3 transition-transform hover:scale-[1.02]" href="<?= base_url('/') ?>">
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-[#3a6347] via-[#4a7c59] to-[#78a886] flex items-center justify-center text-white shadow-xl shadow-[#131e17]/50 ring-1 ring-white/20 shrink-0">
-                    <span class="material-symbols-outlined text-[22px] sm:text-[23px] text-white">storefront</span>
-                </div>
+                <img src="<?= base_url('assets/brand/logo-mark.svg') ?>" alt="Blax" width="44" height="44" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl shrink-0 shadow-xl shadow-[#131e17]/50 ring-1 ring-white/20">
                 <div>
                     <div class="flex items-center gap-2">
                         <span class="font-extrabold text-xl sm:text-2xl tracking-tight text-white leading-none font-serif">Blax</span>

@@ -44,6 +44,8 @@ class ShippingFeeLimitAndPolomolokTest extends CIUnitTestCase
             'included_distance_km'     => 2.00,
             'additional_fee_per_km'    => 10.00,
             'max_delivery_distance_km' => 25.00,
+            // Test-only distance override (production quotes always use real route km).
+            'simulate_distance_km'     => 1,
         ];
 
         // Test distances <= 2.0 km (0.5 km, 1.0 km, 1.4 km Poblacion, 1.9 km, 2.0 km exact limit)
@@ -91,6 +93,7 @@ class ShippingFeeLimitAndPolomolokTest extends CIUnitTestCase
             'included_distance_km'     => 2.00,
             'additional_fee_per_km'    => 10.00,
             'max_delivery_distance_km' => 25.00,
+            'simulate_distance_km'     => 1,
         ];
 
         // Bracket 1 (2.01 km to 4.00 km): +1 step -> +₱10.00 -> Total ₱20.00
@@ -160,6 +163,7 @@ class ShippingFeeLimitAndPolomolokTest extends CIUnitTestCase
             'included_distance_km'     => 2.00,
             'additional_fee_per_km'    => 10.00,
             'max_delivery_distance_km' => 25.00,
+            'simulate_distance_km'     => 1,
         ];
 
         foreach ($polomolokDestinations as $dest) {
@@ -239,7 +243,7 @@ class ShippingFeeLimitAndPolomolokTest extends CIUnitTestCase
         $quoteBeyondRadius = $mapsService->calculateDeliveryQuote(
             $shop,
             $polomolokFarAddr,
-            $settings + ['override_distance_km' => 28.0]
+            $settings + ['simulate_distance_km' => 1, 'override_distance_km' => 28.0]
         );
         $this->assertFalse($quoteBeyondRadius['deliverable']);
         $this->assertTrue($quoteBeyondRadius['is_polomolok']);

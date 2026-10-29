@@ -99,14 +99,32 @@ class ShippingAddressAndToastTest extends CIUnitTestCase
         $this->assertTrue($body['success']);
         $this->assertStringContainsString('successfully', $body['message']);
 
-        // Verify record in database has assigned centroid
+        // Verify record in database: with no pin posted, the address must still land
+        // on real Polomolok geometry — a street geocode when a key is configured,
+        // otherwise the barangay centroid. Never the generic town center.
         $saved = $addressModel->where('user_id', $customerId)->orderBy('id', 'DESC')->first();
         $this->assertNotNull($saved);
         $this->assertEquals('Cannery Site', $saved['address_line2']);
         $this->assertEquals('Polomolok', $saved['city']);
         $this->assertEquals('9504', $saved['postal_code']);
-        $this->assertEqualsWithDelta(6.2415, (float)$saved['latitude'], 0.01);
-        $this->assertEqualsWithDelta(125.0902, (float)$saved['longitude'], 0.01);
+        $this->assertNotNull($saved['latitude'], 'A coordinate must be resolved for the address.');
+        $this->assertTrue(
+            DeliveryModel::isPolomolokCoordinate((float) $saved['latitude'], (float) $saved['longitude']),
+            'The resolved coordinate must stay inside the Polomolok service area.'
+        );
+
+        $centroid = DeliveryModel::getBarangayCoordinate('Cannery Site', 'Polomolok');
+        $isStreetGeocode = !empty($saved['place_id']);
+        $this->assertTrue(
+            $isStreetGeocode || abs((float) $saved['latitude'] - $centroid['lat']) <= 0.01,
+            'Without a posted pin the address is either street-geocoded (place_id set) or placed on its barangay centroid.'
+        );
+        $this->assertFalse(
+            !$isStreetGeocode
+                && abs((float) $saved['latitude'] - DeliveryModel::POLOMOLOK_CENTER_LAT) < 0.0002
+                && abs((float) $saved['longitude'] - DeliveryModel::POLOMOLOK_CENTER_LNG) < 0.0002,
+            'A known barangay must not be snapped onto the Polomolok town center.'
+        );
 
         // Cleanup
         $addressModel->delete($saved['id']);

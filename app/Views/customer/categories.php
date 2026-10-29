@@ -92,7 +92,7 @@
                                  src="<?= esc($imgSrc) ?>" 
                                  alt="<?= esc($tCat['name']) ?>" 
                                  loading="lazy"
-                                 onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                 onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
                             
                             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
 
@@ -142,7 +142,7 @@
             <span class="text-xs font-semibold font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full"><?= count($categories ?? []) ?> categories</span>
         </div>
 
-        <div id="all-categories-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+        <div id="all-categories-grid" class="cv-skip grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             <?php if (!empty($categories)): ?>
                 <?php foreach ($categories as $cat): ?>
                     <a class="category-card bento-card bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 hover:border-terra-green/40 shadow-2xs" href="<?= base_url('category/' . ($cat['slug'] ?? $cat['id'])) ?>" data-name="<?= esc(strtolower($cat['name'])) ?>">
@@ -153,7 +153,7 @@
                                      src="<?= esc(product_image_url($cat['image_url'], 'card')) ?>" 
                                      alt="<?= esc($cat['name']) ?>" 
                                      loading="lazy"
-                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80';">
+                                     onerror="this.onerror=null; this.src='<?= esc(placeholder_image_url()) ?>';">
                             <?php else: ?>
                                 <div class="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                     <span class="material-symbols-outlined text-terra-green/60 text-4xl group-hover:scale-110 transition-transform">category</span>

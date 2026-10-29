@@ -153,7 +153,7 @@
                                         $resolvedShopLogo = $rawShopLogo !== '' ? logo_url($rawShopLogo) : '';
                                         ?>
                                         <?php if (!empty($resolvedShopLogo)): ?>
-                                            <img src="<?= esc($resolvedShopLogo) ?>" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-terra-green text-xl\'>storefront</span>';" />
+                                            <img src="<?= esc($resolvedShopLogo) ?>" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-terra-green text-xl\'>storefront</span>';" />
                                         <?php else: ?>
                                             <span class="material-symbols-outlined text-terra-green text-xl">storefront</span>
                                         <?php endif; ?>
@@ -611,6 +611,19 @@
             console.debug('Fleet auto-refresh skipped:', err);
         });
     }
+    window.refreshFleetPins = refreshFleetPins;
+
+    // Realtime hook: when the global admin poll bus reports a delivery change,
+    // re-sync fleet markers/KPIs immediately instead of waiting for the 15s timer.
+    (function() {
+        let fleetEventTimer = null;
+        window.addEventListener('blax:admin-delivery-update', function() {
+            clearTimeout(fleetEventTimer);
+            fleetEventTimer = setTimeout(function() {
+                try { refreshFleetPins(); } catch (e) {}
+            }, 800);
+        });
+    })();
 
     function renderGroupedShops(groupedShops) {
         const container = document.getElementById('grouped-shops-container');
@@ -644,7 +657,7 @@
             }
 
             const shopLogo = logoSrc 
-                ? `<img src="${encodeURI(logoSrc)}" alt="" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\\'material-symbols-outlined text-terra-green text-xl\\\'>storefront</span>';" />`
+                ? `<img src="${encodeURI(logoSrc)}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\\'material-symbols-outlined text-terra-green text-xl\\\'>storefront</span>';" />`
                 : `<span class="material-symbols-outlined text-terra-green text-xl">storefront</span>`;
 
             let deliveriesHtml = '';

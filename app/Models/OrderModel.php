@@ -222,10 +222,15 @@ class OrderModel extends Model
     }
 
     /**
-     * Retrieves all active processing orders for a given shop along with their
+     * Retrieves active processing orders for a given shop along with their
      * order items and customer info for the dedicated processing fulfillment queue.
+     *
+     * Bounded on purpose: this grid is rendered inline on every orders-page view, so an
+     * unbounded fetch turns a shop with a long backlog into one huge page. Anything past
+     * the cap is still counted by getProcessingOrderCountsForShop() and reachable through
+     * the paginated list below the queue.
      */
-    public function getProcessingOrdersForShop(int $shopId): array
+    public function getProcessingOrdersForShop(int $shopId, int $limit = 24): array
     {
         $archived = $this->db->table('archived_items')
             ->select('item_id')
@@ -240,6 +245,7 @@ class OrderModel extends Model
             ->whereIn('orders.status', ['pending', 'processing'])
             ->whereNotIn('orders.id', $archived, false)
             ->orderBy('orders.placed_at', 'ASC')
+            ->limit(max(1, $limit))
             ->get()
             ->getResultArray();
 
@@ -265,6 +271,38 @@ class OrderModel extends Model
         unset($ord);
 
         return $orders;
+    }
+
+    /**
+     * True queue size behind the bounded processing grid, split by fulfillment method.
+     * Mirrors getProcessingOrdersForShop()'s predicate exactly (same statuses, same
+     * archived exclusion) so the badges never disagree with what is actually queued.
+     *
+     * @return array{all:int,pickup:int,delivery:int}
+     */
+    public function getProcessingOrderCountsForShop(int $shopId): array
+    {
+        $archived = $this->db->table('archived_items')
+            ->select('item_id')
+            ->where('shop_id', $shopId)
+            ->where('item_type', 'order');
+
+        $rows = $this->db->table('orders')
+            ->select("CASE WHEN LOWER(COALESCE(fulfillment_method,'delivery')) = 'pickup' THEN 'pickup' ELSE 'delivery' END AS bucket, COUNT(*) AS c")
+            ->where('shop_id', $shopId)
+            ->whereIn('status', ['pending', 'processing'])
+            ->whereNotIn('id', $archived, false)
+            ->groupBy('bucket', false)
+            ->get()
+            ->getResultArray();
+
+        $counts = ['all' => 0, 'pickup' => 0, 'delivery' => 0];
+        foreach ($rows as $r) {
+            $counts[$r['bucket']] += (int) $r['c'];
+            $counts['all']        += (int) $r['c'];
+        }
+
+        return $counts;
     }
 
     /**

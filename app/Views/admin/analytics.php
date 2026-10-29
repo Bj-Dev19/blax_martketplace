@@ -304,7 +304,7 @@
                                             <span class="w-7 text-center font-black text-sm <?= $rank <= 3 ? 'text-amber-500' : 'text-on-surface-variant font-mono' ?>"><?= $medal ?></span>
                                             <div class="w-10 h-10 rounded-2xl bg-terra-green/10 text-terra-green border border-terra-green/20 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 shadow-2xs">
                                                 <?php if (!empty($s['logo_url'])): ?>
-                                                    <img src="<?= esc(logo_url($s['logo_url'])) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover">
+                                                    <img src="<?= esc(logo_url($s['logo_url'])) ?>" alt="<?= esc($s['shop_name']) ?>" class="w-full h-full object-cover" loading="lazy" decoding="async">
                                                 <?php else: ?>
                                                     <span class="font-display font-black text-xs"><?= esc(strtoupper(substr($s['shop_name'] ?? 'S', 0, 2))) ?></span>
                                                 <?php endif; ?>

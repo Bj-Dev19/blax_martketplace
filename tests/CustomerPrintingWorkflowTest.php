@@ -192,7 +192,10 @@ class CustomerPrintingWorkflowTest extends CIUnitTestCase
             'total_amount'        => 120.00,
             'status'              => 'pending',
             'payment_status'      => 'unpaid',
-            'placed_at'           => date('Y-m-d H:i:s'),
+            // Backdated so this row sorts to the front of the queue's bounded FIFO window
+            // (oldest placed first); a freshly placed row would be evicted by shop 1's
+            // accumulated backlog and the assertion would depend on ambient data.
+            'placed_at'           => date('Y-m-d H:i:s', strtotime('-120 days')),
         ]);
 
         $queue = $orderModel->getProcessingOrdersForShop($shopId);

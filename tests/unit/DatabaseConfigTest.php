@@ -159,4 +159,71 @@ class DatabaseConfigTest extends CIUnitTestCase
             putenv('DATABASE_DEFAULT_HOSTNAME');
         }
     }
+
+    /**
+     * A CA bundle is the only thing that actually turns MySQLi encryption on, and
+     * verification must default to enabled once one is supplied.
+     */
+    public function testSslCaEnablesEncryptionAndVerification()
+    {
+        $ca = ROOTPATH . 'docker' . DIRECTORY_SEPARATOR . 'certs' . DIRECTORY_SEPARATOR . '.gitkeep';
+        putenv('DB_SSL_CA=' . $ca);
+
+        try {
+            $config = new \Config\Database();
+
+            $this->assertSame($ca, $config->default['encrypt']['ssl_ca'],
+                'DB_SSL_CA must reach encrypt.ssl_ca, the option that enables TLS');
+            $this->assertTrue($config->default['encrypt']['ssl_verify'],
+                'Verification must default to true when a CA is configured');
+        } finally {
+            putenv('DB_SSL_CA');
+        }
+    }
+
+    /**
+     * An explicit DB_SSL_VERIFY=false still encrypts but skips server auth, which
+     * is the documented troubleshooting mode - not the default.
+     */
+    public function testSslVerifyCanBeDisabledExplicitly()
+    {
+        putenv('DB_SSL_CA=' . ROOTPATH . 'docker/certs/.gitkeep');
+        putenv('DB_SSL_VERIFY=false');
+
+        try {
+            $config = new \Config\Database();
+
+            $this->assertArrayHasKey('ssl_ca', $config->default['encrypt'],
+                'Encryption stays enabled even when verification is disabled');
+            $this->assertFalse($config->default['encrypt']['ssl_verify']);
+        } finally {
+            putenv('DB_SSL_CA');
+            putenv('DB_SSL_VERIFY');
+        }
+    }
+
+    /**
+     * Without any TLS env var the shipped inert shape must survive untouched, so
+     * localhost/dev groups keep connecting exactly as before.
+     */
+    public function testEncryptStaysInertWithoutTlsEnvVars()
+    {
+        putenv('DB_SSL_CA');
+        putenv('DB_SSL_VERIFY');
+        putenv('DB_SSL_CAPATH');
+        putenv('DB_SSL_CIPHER');
+
+        $config  = new \Config\Database();
+        $encrypt = $config->default['encrypt'];
+
+        if (isset($encrypt['ssl_ca'])) {
+            // A developer machine may legitimately ship DB_SSL_CA in .env, which
+            // CI loads into the dotted config before this assertion can run.
+            $this->markTestSkipped('A CA bundle is configured in the ambient environment; inert case not observable.');
+        }
+
+        $this->assertIsArray($encrypt);
+        $this->assertArrayNotHasKey('ssl_ca', $encrypt);
+        $this->assertFalse($encrypt['ssl_verify']);
+    }
 }

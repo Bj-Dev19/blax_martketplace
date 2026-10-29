@@ -47,7 +47,7 @@
                                     <div class="flex items-center gap-3 min-w-0">
                                         <a href="<?= esc($shopUrl) ?>" class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center shrink-0">
                                             <?php if (!empty($fav['logo_url'])): ?>
-                                                <img class="w-full h-full object-cover" src="<?= esc(logo_url($fav['logo_url'])) ?>" alt="<?= esc($fav['shop_name']) ?> logo">
+                                                <img class="w-full h-full object-cover" src="<?= esc(logo_url($fav['logo_url'])) ?>" alt="<?= esc($fav['shop_name']) ?> logo" loading="lazy" decoding="async">
                                             <?php else: ?>
                                                 <span class="material-symbols-outlined text-2xl text-terra-green dark:text-emerald-400">store</span>
                                             <?php endif; ?>

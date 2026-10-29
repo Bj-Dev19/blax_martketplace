@@ -1,0 +1,72 @@
+# Gitleaks configuration for blax_inventory.
+#
+# Purpose: prevent recurrence of a live PayMongo secret key being committed as a
+# hardcoded fallback default in app/Services/PaymongoService.php. That value was
+# published in the repository history, so credential shape-checks are enforced
+# on every commit and pull request.
+#
+# Run locally:  gitleaks detect --source . --config .gitleaks.toml
+# Run over full history (required once after adopting this file):
+#               gitleaks detect --source . --config .gitleaks.toml --no-git
+
+title = "blax_inventory gitleaks rules"
+
+[extend]
+# Inherit gitleaks' built-in rules (AWS, GitHub tokens, private keys, etc.).
+useDefault = true
+
+[[rules]]
+id = "paymongo-secret-key"
+description = "PayMongo live/test secret key"
+regex = '''sk_(live|test)_[A-Za-z0-9]{10,}'''
+keywords = ["sk_live", "sk_test"]
+
+[[rules]]
+id = "paymongo-public-key"
+description = "PayMongo publishable key"
+regex = '''pk_(live|test)_[A-Za-z0-9]{10,}'''
+keywords = ["pk_live", "pk_test"]
+
+[[rules]]
+id = "paymongo-webhook-secret"
+description = "PayMongo webhook signing secret"
+regex = '''whsec_[A-Za-z0-9]{10,}'''
+keywords = ["whsec_"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API / Maps key"
+regex = '''AIza[0-9A-Za-z_\-]{30,}'''
+keywords = ["AIza"]
+
+[allowlist]
+description = "Placeholder and non-secret paths"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.render\.example$''',
+  '''^env$''',
+  '''docs/DEPLOY_RENDER\.md$''',
+  '''^tests/_support/''',
+  '''^\.github/''',
+  '''\.gitleaks\.toml$''',
+]
+regexes = [
+  # Documented template placeholders only — an actual key body never matches.
+  '''sk_live_your_secret_key_here''',
+  '''sk_test_your_secret_key_here''',
+  '''pk_live_your_publishable_key_here''',
+  '''whsec_your_webhook_secret_here''',
+  '''whsec_placeholder_secret''',
+  '''sk_live_\.\.\.''',
+  '''your_api_key_here''',
+]
+commits = [
+  # The commit that published the live PayMongo secret key as a hardcoded
+  # fallback default. History is deliberately preserved (rotate-and-keep, not
+  # rewrite), and that credential has been revoked and replaced, so scanning it
+  # would keep this job permanently red without protecting anything: every NEW
+  # leak still fails the scan. If this job trips on a later commit, run
+  #   gitleaks detect --source . --config .gitleaks.toml --no-git
+  # to locate the surviving occurrence rather than widening this list.
+  '''f7b4a7c95871f58decea5535792bb16df57a8775''',
+]

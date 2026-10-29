@@ -123,7 +123,7 @@
 
     <!-- Bento Shop Cards Grid -->
     <section>
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+        <div class="cv-skip grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             <?php if (!empty($shops)): ?>
                 <?php
                     $curatedCovers = [
@@ -146,10 +146,7 @@
                         $slug = $s['slug'] ?? '';
                         $coverUrl = !empty($s['cover_photo_url'])
                             ? cover_photo_url($s['cover_photo_url'], 'card')
-                            : ($curatedCovers[$slug] 
-                                ?? (!empty($s['offers_printing'])
-                                    ? 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=700&q=80'
-                                    : 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80'));
+                            : ($curatedCovers[$slug] ?? placeholder_image_url('banner'));
                         $categoryName = $curatedCategories[$slug]
                             ?? (!empty($s['offers_printing']) ? 'Printing & Digital Services' : 'Retail General Merchandise');
                         $location = !empty($s['barangay']) ? $s['barangay'] . ', ' . ($s['city'] ?? 'Polomolok') : ($s['city'] ?? 'Polomolok');
